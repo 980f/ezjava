@@ -1,0 +1,25 @@
+The TrueEnum'eration facility is an attempt to get compile time type
+checking for abstract enumerations. Java abuses the word "enumeration"
+to label an abstract indexing of a set of objects. For the rest of this
+document 'enumeration' means "giving distinct labels to".
+
+
+<p> The distinct but abstract integral values for an enumeration
+are in a class that extends class TrueEnum. When a text version of a
+value is required java's reflection mechanism is used to create a table
+of strings indexed by the class's integer members. The rest of the
+extension is a generated set of constructors.
+
+
+
+<p> TrueEnum's Value() member should only be used when Java mandates an
+actual integer. It exists for the sake of efficient <tt>switch </tt>
+implementation. All the case labels of a switch(te.Value()) should be of
+the form SomeClassEnum.label, where all "SomeClassEnum" tags are
+identical across the cases. This is one place where type checking cannot
+be done.
+
+
+
+<p>
+
