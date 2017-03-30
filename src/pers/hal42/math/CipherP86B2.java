@@ -217,14 +217,14 @@ public final class CipherP86B2 {
       if(URLed){
         baos.reset();
         bais = new ByteArrayInputStream(encrypted.getBytes());
-        OutputStream os = new net.paymate.net.URLEncoderFilterOutputStream(baos);
+        OutputStream os = new URLEncoderFilterOutputStream(baos);
         Streamer.swapStreams(bais, os);
         String urled = baos.toString();
         System.out.println("URLencoded: " + urled);
 
         baos.reset();
         bais = new ByteArrayInputStream(urled.getBytes());
-        InputStream is = new net.paymate.net.URLDecoderFilterInputStream(bais);
+        InputStream is = new URLDecoderFilterInputStream(bais);
         Streamer.swapStreams(is, baos);
         String unurled = baos.toString();
         System.out.println("URLdecoded: " + unurled);

@@ -1,7 +1,7 @@
-package pers.hal42.util.timer;
+package pers.hal42.timer;
 
-import pers.hal42.util.*;
 import pers.hal42.lang.ReflectX;
+import pers.hal42.timer.TimeBomb;
 
 public class Alarmum {
 /**

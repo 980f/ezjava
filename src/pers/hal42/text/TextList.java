@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.text;
 
 import java.util.Vector;
 import java.util.Collections;

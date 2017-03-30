@@ -19,48 +19,33 @@
  *
  * ----
  *
- * To run this from the commandline (paymate.jar could be something else):
- * java -cp paymate.jar net.paymate.util.Tester
- *   or
- * java -cp paymate.jar net.paymate.util.Tester usage
- *   or
- * java -cp paymate.jar net.paymate.util.Tester usage net.paymate.connection.ConnectionClient
- *   or
- * java -cp paymate.jar net.paymate.util.Tester net.paymate.connection.ConnectionClient
  *
  * no arguments                 - lists options available for this class's main()
  * 'usage'                      - lists ALL testable classes and their parameters
  * 'usage <classname>'          - lists the parameters for that class
  * '<classname> [<parameters>]' - tests the class
  *
- * ----
- *
- * NOTE:
- *  I tried creating objects of this as static members of classes and
- * then having them put themselves in a list when they were created.
- * However, the objects won't get created until the classes they are in
- * are needed somewhere else and are loaded!  So, basically, that won't work!
  *
  */
 
 package pers.hal42.util;
 
-import java.util.Arrays;
+import pers.hal42.logging.ErrorLogStream;
+
 import java.lang.reflect.Method;
-import java.lang.reflect.InvocationTargetException;
 
 // +++ possibly deal with threading issues?
 // +++ hopefully we would never call this with two separate threads
 
 public class Tester {
 
-  protected static final ErrorLogStream dbg = new ErrorLogStream(Tester.class.getName());
+  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(Tester.class);
 
-  public static final String getUsage(String className) {
+  public static String getUsage(String className) {
     return runMethod(className, usageMethodName, usageArgs, null, false);
   }
 
-  public static final void doTest(String className, String[] args) {
+  public static void doTest(String className, String[] args) {
     runMethod(className, testMethodName, testArgs, args, true);
   }
 
@@ -79,7 +64,7 @@ public class Tester {
   /**
    * +++ Do more in here later (do switches and turn off console logging, and make it log plain, etc.)
    */
-  public static final void main(String[] args) {
+  public static void main(String[] args) {
     int numArgs = args.length;
     ErrorLogStream.Console(ErrorLogStream.VERBOSE);
     if(numArgs == 0) {
@@ -109,14 +94,14 @@ public class Tester {
    * serves as a utility function that main() classes can use to pass limited args with
    */
 
-  public static final String [] shaveNargs(String[] args, int n) {
+  public static String [] shaveNargs(String[] args, int n) {
     int newLen = args.length - n;
     String[] newArgs = new String[newLen];
     System.arraycopy(args, n, newArgs, 0, newLen);
     return newArgs;
   }
 
-  public static final String makeClassName(String unknown) {
+  public static String makeClassName(String unknown) {
     return unknown.startsWith(classPrefix) ? unknown : classPrefix + unknown;
   }
 
@@ -125,24 +110,24 @@ public class Tester {
   private static final Class testArgs[] = {testArg.getClass()};
   private static final Class usageArgs[] = {};
   // one-case strings
-  private static final String classPrefix = "net.paymate.";
+  private static final String classPrefix = "pers.hal42."; //todo: use or share the logging system's logic here
   private static final String usageMethodName = "Usage";
   private static final String testMethodName = "Test";
   // local utility functions
-  private static final boolean validClass(Class c) {
+  private static boolean validClass(Class c) {
     return validObject(c, "Class");
   }
-  private static final boolean validMethod(Method m, String name) {
+  private static boolean validMethod(Method m, String name) {
     return validObject(m, "Method " + name);
   }
-  private static final boolean validObject(Object o, String type) {
+  private static boolean validObject(Object o, String type) {
     boolean valid = (o != null);
     if(!valid) {
       dbg.ERROR(type + " not found!");
     }
     return valid;
   }
-  private static final Method getMethod(Class c, String methodName, Class[] parameterTypes) {
+  private static Method getMethod(Class c, String methodName, Class[] parameterTypes) {
     Method m = null;
     if(validClass(c)) {
       try {

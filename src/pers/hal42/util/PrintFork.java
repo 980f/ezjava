@@ -2,7 +2,7 @@ package pers.hal42.util;
 
 import java.io.PrintStream;
 import java.io.OutputStream;
-import pers.hal42.util.ErrorLogStream;
+import pers.hal42.logging.*;
 import java.util.Vector;
 import pers.hal42.lang.StringX;
 
@@ -14,7 +14,7 @@ public class PrintFork {
   protected boolean registered = false;
 
   public static final PrintFork Fork(int i){
-    return (PrintFork)LogSwitchRegistry.printForkRegistry.elementAt(i);
+    return LogSwitchRegistry.printForkRegistry.elementAt(i);
   }
 
   protected static final boolean unFork(PrintFork pf) {

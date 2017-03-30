@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.logging;
 
 import pers.hal42.lang.StringX;
 

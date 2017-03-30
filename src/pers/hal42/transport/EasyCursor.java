@@ -1,9 +1,15 @@
-package pers.hal42.util;
+package pers.hal42.transport;
 
 
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.lang.TrueEnum;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.TextList;
+import pers.hal42.util.EasyHelper;
+import pers.hal42.util.EasyProperties;
+import pers.hal42.util.StringStack;
+import pers.hal42.util.isEasy;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,7 +24,7 @@ public class EasyCursor extends EasyProperties {
 
     public final static char SEP = '.';
 
-    public static final String makeKey(String morekey) {
+    public static String makeKey(String morekey) {
         return StringX.NonTrivial(morekey) ? morekey + SEP : "";
     }
 

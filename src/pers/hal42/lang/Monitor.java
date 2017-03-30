@@ -1,4 +1,4 @@
-
+package pers.hal42.lang;
 /*
 void amethod() {
   try {
@@ -15,8 +15,13 @@ also note that on construction you can supply your own debugger which has nice m
 
 */
 
-import  java.util.*;
-import pers.hal42.lang.ReflectX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.util.TextList;
+
+import java.util.Collections;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.Vector;
 
 public final class Monitor implements Comparable {
   protected Thread thread = null;
@@ -54,7 +59,7 @@ public final class Monitor implements Comparable {
 
   //each monitor is linkable to some other module's debugger, typically the owner's.
   public Monitor(String name,ErrorLogStream dbg) {
-    this.name = ReflectX.stripNetPaymate(name);
+    this.name = ReflectX.stripPackageRoot(name);
     this.d1b2g3 = dbg; // see dbg(), but don't call in here or you will get a loop/construction race condition
     addMonitor(this);
   }

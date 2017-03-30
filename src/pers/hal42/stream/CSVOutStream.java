@@ -7,9 +7,10 @@ import java.io.*;
 public class CSVOutStream extends FilterOutputStream {
 
   boolean linestarted=false;
+  public int EOL='\n'; //do NOT use system dependent info, use internet defaults.
 
   public void write(int b) throws IOException {
-    if(b=='\n'){
+    if(b==EOL){
       linestarted=false;
     }
     super.write(b);
@@ -32,7 +33,7 @@ public class CSVOutStream extends FilterOutputStream {
   }
 
   public CSVOutStream flushLine()throws IOException {
-    write('\n');
+    write(EOL);
     super.flush();
     return this;
   }

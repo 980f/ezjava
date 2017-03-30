@@ -1,13 +1,16 @@
-package pers.hal42.util;
-import  java.util.*;
-import  java.lang.reflect.*;
-import  java.io.*;
-import pers.hal42.io.IOX;
-import pers.hal42.lang.Bool;
-import pers.hal42.lang.StringX;
-import pers.hal42.lang.ReflectX;
-import pers.hal42.lang.ObjectX;
-import pers.hal42.lang.TrueEnum;
+package pers.hal42.transport;
+
+import pers.hal42.lang.*;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.stream.IOX;
+import pers.hal42.text.TextList;
+import pers.hal42.util.EasyUrlString;
+import pers.hal42.util.UTC;
+
+import java.io.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.*;
 
 // !!! NOTE: There should only be ONE instance each
 // !!!       of setProperty() and getProperty(), and NONE of get() and put()
@@ -46,7 +49,7 @@ class EasyProperties extends Properties {
     return keylist;
   }
 
-  public static final boolean isLegit(String value){
+  public static boolean isLegit(String value){
     return StringX.NonTrivial(value);// at least need this much!!! else 'default' values don't work
   }
 
@@ -339,14 +342,14 @@ class EasyProperties extends Properties {
     return list;
   }
 
-  public void saveEnum(String key, TrueEnum target){
-    setString(key,target.Image());
+  public void saveEnum(String key, Enum target){
+    setString(key,target.name());
   }
 
-  public void loadEnum(String key, TrueEnum target){
+  public void loadEnum(String key, Enum target){
     String prop=getString(key);
     if(prop!=null){
-      target.setto(prop);
+      target= Enum.valueOf(target.getClass(),prop);
     }
   }
 
@@ -355,20 +358,21 @@ class EasyProperties extends Properties {
    * it is strongly suggested that the TrueEnum.Prop member be used for this.
    * only in that case is this function (somewhat) multi-thread safe.
    */
-  public int getEnumValue(String key, TrueEnum proto){
-    String prop=getString(key);
-    if(StringX.NonTrivial(prop)){
-      synchronized (proto) {
-      //this is synched presuming that proto is one of the TrueEnum.Prop objects,
-      //and that this is the only place in the universe that uses the value of
-      //that object.
-        proto.setto(prop);
-        return proto.Value();
-      }
-    } else {
-      return TrueEnum.Invalid();
-    }
-  }
+  //todo: Enum
+//  public int getEnumValue(String key, Enum proto){
+//    String prop=getString(key);
+//    if(StringX.NonTrivial(prop)){
+//      synchronized (proto) {
+//      //this is synched presuming that proto is one of the TrueEnum.Prop objects,
+//      //and that this is the only place in the universe that uses the value of
+//      //that object.
+//        proto.setto(prop);
+//        return proto.Value();
+//      }
+//    } else {
+//      return Safe.INVALIDINDEX;
+//    }
+//  }
 
   public void setDate(String key,Date d){
     setLong(key,d.getTime());

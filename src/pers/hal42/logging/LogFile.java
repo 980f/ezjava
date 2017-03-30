@@ -1,8 +1,10 @@
 package pers.hal42.util;
 
-import  java.io.*;
-import  java.util.*;
-import  java.util.zip.*;
+import pers.hal42.lang.Monitor;
+import pers.hal42.logging.ErrorLogStream;
+
+import java.io.*;
+import java.util.*;
 
 public class LogFile extends Thread implements AtExit, Comparable  {
 
@@ -105,7 +107,7 @@ public class LogFile extends Thread implements AtExit, Comparable  {
     reader = bafifo.getBufferedReader();
     register(this);
     setDaemon(true);
-    Main.OnExit(this);
+    OnExit(this);
     start();
   }
 

@@ -27,7 +27,7 @@ public abstract class Service implements Comparable {
    */
   private static final Vector list = new Vector(10,10);
 
-  protected net.paymate.util.ServiceConfigurator configger = NULLER;
+  protected ServiceConfigurator configger = NULLER;
 
   public Service(String enumer, ServiceConfigurator configger, boolean startLogfile) {
     this.enumer = enumer;

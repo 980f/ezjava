@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.io;
 import  java.io.IOException;
 import  java.io.OutputStream;
 

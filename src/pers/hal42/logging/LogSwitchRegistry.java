@@ -1,14 +1,17 @@
-package pers.hal42.util;
+package pers.hal42.logging;
+
+import pers.hal42.util.PrintFork;
 
 import java.util.Vector;
 
 public class LogSwitchRegistry {
 
   private LogSwitchRegistry() {
-    // can't make one!
+    //there can be only one.
   }
 
-  public static final Vector registry = new Vector(100,100);
-  public static final Vector printForkRegistry = new Vector(100,100);
+  //originally this tolerated freefloating LogLevelEnum but that is now a java enum and doesn't work well.
+  public static final Vector<LogSwitch> registry = new Vector<>(100, 100);
+  public static final Vector<PrintFork> printForkRegistry = new Vector<>(100, 100);
 
 }

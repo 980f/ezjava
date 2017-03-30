@@ -1,11 +1,194 @@
-package pers.hal42.util;
-//import  net.paymate.Main; // --- I hate this
+package pers.hal42.stream;
 
 import  java.io.*;//getReader & getInputStream use just about everything
 
 public class Streamer implements Runnable {
-  private static final ErrorLogStream dbg = new ErrorLogStream(Streamer.class.getName(), ErrorLogStream.VERBOSE);
-/*
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Streamer.class, ErrorLogStream.WARNING);
+//values for "status"   // +++ enumerate
+  static final int NOTSTARTED = -1;
+  static final int RUNNING = 0;
+  static final int DONE = 1;
+  static final int ERRORED = 2;
+//special value for "howMany" argument
+  public static final int StreamForever=-1;
+
+//need to distinguish threads while debugging:
+  private static InstanceNamer threadNamer=new InstanceNamer("Streamer");
+
+  private Thread thread = null; //background piping occurs on this thread
+  private StreamEventListener listener = null; //bad things are reported to this thing
+  private boolean ignoreEOF = false; //for ill behaved input streams, ignore End Of File indications.
+  private int buffsize; //max ot transfer without coming up for air.
+  private long howmany;//max to transfer, <0 implies transfer forever.
+  private InputStream in = null; //input end of pipe
+  private OutputStream out = null;//output end of pipe
+
+  int status = NOTSTARTED;
+  public long count = 0;
+
+  //@todo code in swapStreams make DEFAULTBUFFERSIZE be an absolute max!!!
+  private static final int DEFAULTBUFFERSIZE = 10000;
+  private static final int MAXBUFFERSIZE = 100000;
+
+  private Streamer(InputStream in, OutputStream out, int buffsize, long
+   howmany, StreamEventListener listener, boolean ignoreEOF) {
+    this.in = in;
+    this.out = out;
+    this.listener = listener;
+    this.ignoreEOF = ignoreEOF;
+    this.buffsize = buffsize;
+    this.howmany = howmany;
+    if(listener != null) {//run on background thread
+      thread = new Thread(this, threadNamer.Next());
+      thread.start();
+    } else {//else run now.
+      run();
+    }
+  }
+
+  public static final Streamer Unbuffered(InputStream in, OutputStream out, boolean ignoreEOF) {
+    return Unbuffered(in, out, null, ignoreEOF);
+  }
+
+  public static final Streamer Unbuffered(InputStream in, OutputStream out, StreamEventListener listener, boolean ignoreEOF) {
+    return Buffered(in, out, 1, StreamForever, listener, ignoreEOF);//"Buffered" used but args defeat buffering
+  }
+
+  // most common use:
+  public static final Streamer Buffered(InputStream in, OutputStream out) {
+    return Buffered(in, out, DEFAULTBUFFERSIZE, StreamForever, null, false);//@@@
+  }
+  public static final Streamer Buffered(InputStream in, OutputStream out, int buffsize, long howmany, StreamEventListener listener, boolean ignoreEOF) {
+    return new Streamer(in, out, buffsize, howmany, listener, ignoreEOF);
+  }
+
+/**
+ * transfer bytes per arguments set on 'this'
+ */
+  public void run() {
+    status = RUNNING;
+    try {
+      // +++ add the ability to drop this to a lower priority. --- maybe not.  bad thing to muck with
+      count = swapStreams(in, out, buffsize, howmany, ignoreEOF); // the read blocking can make this run at a lower priority, for now
+      status = DONE;
+    } catch (Exception e) {
+      dbg.Caught(e);
+      status = ERRORED;
+    }
+    if(listener!=null) {
+      listener.notify(new EventObject(this));//not much info in this notification..need to extend EventObject into StreamClosingEvent
+    } else {
+      dbg.VERBOSE("Run ended, but can't notify since listener is null.");
+    }
+    in = null; //input end of pipe
+    out = null;//output end of pipe
+  }
+  // end of class proper
+  /////////////////
+
+  private boolean enabled = true; // set to false to kill one that has been streaming forever, but needs to stop!
+
+  public void StopAndClose() {
+    dbg.ERROR("Stopping and closing streams");
+    IOX.Close(in);
+    IOX.Close(out);
+    Stop();
+  }
+
+  public void StopNoClose() {
+    dbg.ERROR("Stopping but NOT closing streams");
+    Stop();
+  }
+
+  private void Stop() {
+    enabled = false;
+    if((thread != null) && thread.isAlive()) {
+      thread.interrupt();
+//      ThreadX.join(thread, 1000); // ??? --- safety feature
+    }
+  }
+
+  /**
+   * @param howMany - how many bytes to move; -1 means all
+   */
+  private /*public static*/ final long swapStreams(InputStream in, OutputStream out, int buffsize, long howMany, boolean ignoreEOF) throws IOException {
+    if(in == null) {
+      throw(new IOException("Streamer.swapStreams: IN is null."));
+    }
+    if(out == null) {
+      throw(new IOException("Streamer.swapStreams: OUT is null."));
+    }
+    boolean forever=howMany < 0;
+    // limit to < MAXBUFFERSIZE bytes, to be safe and reasonable
+    int max = MAXBUFFERSIZE; // the maximum we are willing to move
+    // don't use more than howMany:
+    if(!forever) {//then we are given amount to move
+      max = Math.min(max, (int)howMany);
+    }
+    // but don't move more than buffsize per iteration:
+    if(buffsize > 0) {
+      max = Math.min(max, buffsize);
+    }
+
+    long spewed = 0;
+    dbg.VERBOSE( (forever ? "piping forever":("piping up to "+howMany)) + " in chunks of "+max);
+    if(max == 1) {
+      int bytes = Receiver.EndOfInput;
+      while(enabled && (forever || (spewed < howMany))) {
+        dbg.VERBOSE("waiting for "+max+ " byte(s)");
+        bytes = in.read();
+        if(bytes == Receiver.EndOfInput){
+          if(ignoreEOF) {
+            dbg.VERBOSE("ignoring EOF, continuing");
+            ThreadX.sleepFor(5);//+++parameterize.
+            // use of read(byte[]) has defeated the "nicing" of javaxPort.
+            continue;
+          } else {
+            dbg.VERBOSE("EOF received after " + spewed + " bytes transferred!");
+            break;
+          }
+        }
+        if(bytes>ObjectX.INVALIDINDEX){//other negative values will come in someday!
+          dbg.VERBOSE("piped:"+Ascii.bracket(bytes));
+          out.write(bytes);
+          out.flush(); // ----- testing !!!
+          spewed++;
+        }
+      }
+      out.flush();
+    } else {
+      byte [] bytes = new byte[max];
+      while(enabled && (forever || (spewed < howMany))) {
+        dbg.VERBOSE("waiting for "+max+ " byte(s)");
+        int thisRead = in.read(bytes);
+        if(thisRead == Receiver.EndOfInput){
+          if(ignoreEOF) {
+            dbg.VERBOSE("ignoring EOF, continuing");
+            ThreadX.sleepFor(17);//+++parameterize.
+            // use of read(byte[]) has defeated the "nicing" of javaxPort.
+            continue;
+          } else {
+            dbg.VERBOSE("EOF received after " + spewed + " bytes transferred!");
+            break;
+          }
+        }
+        if(thisRead>-1){//other negative values will come in someday!
+          dbg.VERBOSE("piping "+thisRead+ " bytes");
+          out.write(bytes, 0, thisRead);
+          out.flush(); // ----- testing !!!
+          dbg.VERBOSE("piped:"+Ascii.bracket(bytes));
+          spewed+=thisRead;
+        }
+      }
+      out.flush();
+    }
+    return spewed;
+  }
+
+  /////////////////
+  // Stream related utilities, not attached to class members at all.
+
+  /* this was in use by jpos control layer stuff. Why is it commented out?
   public static final BufferedReader getReader(Object item) {
     BufferedReader casted=null;
     try {

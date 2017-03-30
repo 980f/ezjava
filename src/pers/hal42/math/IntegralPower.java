@@ -1,15 +1,17 @@
-package pers.hal42.util;
+package pers.hal42.math;
 
 import pers.hal42.lang.Bool;
 import pers.hal42.lang.MathX;
-import pers.hal42.lang.StringX;
 
 public class IntegralPower {
+  /** power = radix*exponent, if not overflowed*/
   public int power;
   public int radix;
   public int exponent;
+  //power of positive number wrapped into negative value.
   public boolean overflowed;
 
+  //?threshold at which we use RPE instead of ???
   public final static int useRPE=20;
 
   /**
@@ -75,7 +77,7 @@ public class IntegralPower {
   }
 
   /**
-   * @todo deal properly with negative @param value.
+   * todo: deal properly with negative @param value.
    */
   public static IntegralPower Above(int value,int radix){
     IntegralPower igp=IntegralPower.forRadix(radix);

@@ -1,9 +1,10 @@
-package pers.hal42.util;
+package pers.hal42.stream;
 
 import  java.io.PrintStream;
 import  java.io.BufferedReader;
 import  java.io.Reader;
 import  java.io.InputStreamReader;
+
 
 public class StringFIFO extends ObjectFifo{
 
@@ -18,7 +19,7 @@ public class StringFIFO extends ObjectFifo{
   }
 
   public synchronized void put(String obj){
-    lastWrite = System.currentTimeMillis();
+    lastWrite = DateX.utcNow();
     super.put(obj);
   }
 
@@ -27,7 +28,7 @@ public class StringFIFO extends ObjectFifo{
   }
 
   public synchronized void Clear(){
-    lastWrite = System.currentTimeMillis();
+    lastWrite = DateX.utcNow();
     super.Clear();
   }
 
@@ -67,7 +68,7 @@ class StringFIFOPrintStream extends PrintStream {
   }
 
   public void println(Object o) {
-    println(o.toString());
+    println(String.valueOf(o));
   }
 }
 

@@ -19,7 +19,7 @@ public class VirtualPrinter extends PrintStream {
 
   public String backTrace(){
     try {
-      return sbos.toString();
+      return String.valueOf(sbos);
     } finally {
       sbos.reset();
     }

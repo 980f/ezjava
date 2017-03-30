@@ -1,6 +1,4 @@
-
-import java.util.Date;
-import java.util.Vector;
+package pers.hal42.lang;
 
 public class ObjectX {
 
@@ -19,7 +17,7 @@ public class ObjectX {
     return arf != null && (filter == null || arf.getClass().equals(filter));
   }
 
-  public static final Object OnTrivial(Object primary, Object backup) {
+  public static Object OnTrivial(Object primary, Object backup) {
     return NonTrivial(primary) ? primary : backup;
   }
 
@@ -27,9 +25,9 @@ public class ObjectX {
    * linear search
    *
    */
-  public static final int linearSearch(Object [] a, Object key) {
+  public static <T extends Comparable<T>> int linearSearch(T [] a, T key) {
     for(int i = a.length; i-->0;) {
-      int cmp = ((Comparable)a[i]).compareTo(key);
+      int cmp = a[i].compareTo(key);//todo: apply random object compare funciton.
       if (cmp < 0) {
         continue;
       } else if (cmp > 0) {
@@ -56,7 +54,7 @@ public class ObjectX {
     return INVALIDINDEX; // insert at the end
   }
 
-  public static final boolean NonTrivial(Object o){
+  public static boolean NonTrivial(Object o){
     if(o instanceof String){
       return StringX.NonTrivial((String)o);
     }

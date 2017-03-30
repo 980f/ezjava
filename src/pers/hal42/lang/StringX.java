@@ -1,4 +1,4 @@
-
+package pers.hal42.lang;
 // includes stringbuffer stuff.  Maybe can create a StringBufferX to put that stuff in.
 
 public class StringX {
@@ -25,11 +25,11 @@ public class StringX {
 
   // --- extremely inefficient.  improve!
   //alh has a state machine in some old C code, til then this is nicely compact source.
-  public static final String replace(String source, String toReplace,String with) {
+  public static String replace(String source, String toReplace,String with) {
     return replace(new StringBuffer(TrivialDefault(source, "")),TrivialDefault(toReplace, ""), TrivialDefault(with, ""));
   }
 
-  public static final String replace(StringBuffer source, String toReplace, String with) {
+  public static String replace(StringBuffer source, String toReplace, String with) {
     boolean recurse = false;
     if (source == null) {
       return null;

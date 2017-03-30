@@ -6,15 +6,19 @@ package pers.hal42.logging;
  */
 
 
-import java.io.*;
-import java.util.Date;
-import java.util.Vector;
+import pers.hal42.lang.AtExit;
+import pers.hal42.logging.LogSwitch;
+import pers.hal42.util.StringStack;
+import pers.hal42.util.Tracer;
 
-
-// for the embedded exceptions
+import java.io.FileOutputStream;
+import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
-import java.lang.reflect.Field;
+import java.util.Vector;
+
+// for the embedded exceptions
 
 class NullBugger extends ErrorLogStream {
   NullBugger() {

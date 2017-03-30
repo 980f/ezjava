@@ -1,6 +1,11 @@
 package pers.hal42.util;
 
-import java.util.*;
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.logging.LogSwitch;
+
+import java.util.EmptyStackException;
+import java.util.Iterator;
+import java.util.Stack;
 
 public class StringStack {
   private static LogSwitch dumpLevel;

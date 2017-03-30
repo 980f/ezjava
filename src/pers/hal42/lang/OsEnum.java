@@ -3,7 +3,7 @@ package pers.hal42.lang;
 public enum OsEnum {
   Linux,NT,Windows,Windows2000,SunOS;
 
-  public int numValues(){
+  public static int numValues(){
     return values().length;
   }
 

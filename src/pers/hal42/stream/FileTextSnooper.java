@@ -1,8 +1,7 @@
-package pers.hal42.util;
+package pers.hal42.stream;
 import java.io.FileInputStream;
-
 public class FileTextSnooper {
-  private static final ErrorLogStream dbg = new ErrorLogStream(FileTextSnooper.class.getName());
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FileTextSnooper.class);
   private static final String LF = System.getProperty("line.separator");
 
   public static final void main(String [] args) {
@@ -29,7 +28,7 @@ public class FileTextSnooper {
   public void snoop() {
     FileInputStream file = null;
     int MORETHAN = minLength - 1;
-    dbg.VERBOSE(FileTextSnooper.class.getName() + " " + filename);
+    dbg.VERBOSE(ReflectX.shortClassName(this) + " " + filename);
     try {
       // open the file
       file = new FileInputStream(filename);
@@ -64,7 +63,7 @@ public class FileTextSnooper {
           // if you read in 4 or more, print them as a line (dbg)
           if(sb.length() > MORETHAN) {
             // eject it
-            dbg.VERBOSE(sb.toString());
+            dbg.VERBOSE(String.valueOf(sb));
           }
           sb.setLength(0); // clears it, for starting again
         }

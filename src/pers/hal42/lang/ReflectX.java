@@ -1,9 +1,12 @@
 package pers.hal42.lang;
 
-import java.lang.reflect.*;
-import pers.hal42.util.EasyCursor;
-import pers.hal42.util.ErrorLogStream;
-import pers.hal42.util.TextList;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.TextList;
+import pers.hal42.transport.EasyCursor;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+
 
 /* to get rid of debug create an exception object with all of the messages that are currently debug messages placed inside of it.
  */
@@ -27,12 +30,12 @@ public class ReflectX {
     }
     return false;
   }
-  private static final String paymatePackageRoot="pers.hal42.";//todo: better means of default package root.
+  private static final String packageRoot="pers.hal42.";//todo: better means of default package root.
   /**
    * @return string stripped of paymates package root IFF that root is present.
    */
-  public static final String stripNetPaymate(String lookup) {
-    return StringX.replace(lookup, paymatePackageRoot, "");
+  public static String stripPackageRoot(String lookup) {
+    return StringX.replace(lookup, packageRoot, "");
   }
   /**
    * @return the class name with out package of @param classy
@@ -47,20 +50,20 @@ public class ReflectX {
     return instance!=null? justClassName(instance.getClass()):"NULL";
   }
   /**
-   * @return the class name without "net.paymate" if that is present.
+   * @return the class name without the application's root.
    */
   public static String shortClassName(Class classy){
-    return classy!=null?stripNetPaymate(classy.getName()):"NULL";
+    return classy!=null? stripPackageRoot(classy.getName()):"NULL";
   }
   /**
-   * @return the class name without "net.paymate" if that is present.
+   * @return the class name without "packageRoot" if that is present.
    */
   public static String shortClassName(Object instance){
     return instance!=null? shortClassName(instance.getClass()):"NULL";
   }
 
   /**
-   * @return @param child prefixed with the class name without "net.paymate" if that is present.
+   * @return @param child prefixed with the class name without the packageRoot if that is present.
    */
   public static String shortClassName(Object instance,String child){
     return (instance!=null? shortClassName(instance.getClass()):"NULL")+"."+child;
@@ -74,8 +77,8 @@ public class ReflectX {
       return Class.forName(classname.trim());
     }
     catch (ClassNotFoundException cfe){
-      if( ! classname.startsWith(paymatePackageRoot)){
-        return classForName(paymatePackageRoot+classname);//2nd chance
+      if( ! classname.startsWith(packageRoot)){
+        return classForName(packageRoot+classname);//2nd chance
       }
       return null;
     }
@@ -84,10 +87,10 @@ public class ReflectX {
     }
   }
 /**
- * @return null constructor instance of given class. will try to prefix paymate's root
- * to classes that aren't found.
+ * @return no-args constructor instance of given class.
+ * will try to prefix package root to classes that aren't found.
  * On "not found" returns null,
- * @todo change to returning the exception!
+ * todo:? change to returning the exception!
  */
   public static Object newInstance(String classname){
     try {
@@ -136,19 +139,18 @@ public class ReflectX {
   /**
    * make an object given an @param ezc EasyCursor description of it.
    */
-  public static final Object Create(EasyCursor ezc, ErrorLogStream dbg){
+  public static Object Create(EasyCursor ezc, ErrorLogStream dbg){
     try {
       dbg=ErrorLogStream.NonNull(dbg);//ensure a bad debugger doesn't croak us.
       Class[] creatorArgs = {EasyCursor.class};
       Object [] arglist = { ezc } ;
       String classname= ezc.getString("class");
       dbg.VERBOSE(StringX.bracketed("Create:classname(",classname));
-      Class  claz=      classForName(classname);
+      Class  claz= classForName(classname);
       dbg.VERBOSE("Create:class:"+claz);
-
-      Method meth=      claz.getMethod("Create",creatorArgs);
+      Method meth= claz.getMethod("Create",creatorArgs);
       dbg.VERBOSE("Create:Method:"+meth);
-      Object obj=       meth.invoke(null,arglist);
+      Object obj=  meth.invoke(null,arglist);
       dbg.VERBOSE("Create:Object:"+obj);
       return obj;
     } catch(Exception any){
@@ -157,7 +159,7 @@ public class ReflectX {
     }
   }
 
-  public static final Object Create(EasyCursor ezc){
+  public static Object Create(EasyCursor ezc){
     return  Create(ezc,ErrorLogStream.Global());
   }
 
@@ -175,7 +177,7 @@ public class ReflectX {
  * Try getting them from the textlist below, instead.
  */
   public static TextList preloadClassErrors;
-  public static final boolean preloadClass(String className, boolean loadObject) {
+  public static boolean preloadClass(String className, boolean loadObject) {
     try {
       Class c = classForName(className);
       if(loadObject) {
@@ -191,7 +193,7 @@ public class ReflectX {
     }
   }
 
-  public static final boolean preloadClass(String className) {
+  public static boolean preloadClass(String className) {
     return preloadClass(className, false);
   }
 

@@ -370,7 +370,7 @@ public class Waiter {
     long remaining = millisecs - resleeper.millis();
     if(remaining > 0) {
       dbg.WARNING("Finishing the wait for " + remaining + " ms.");
-      net.paymate.lang.ThreadX.sleepFor(remaining);
+      ThreadX.sleepFor(remaining);
     } else {
       dbg.WARNING("Not waiting any further ("+remaining+" ms remaining)");
     }
