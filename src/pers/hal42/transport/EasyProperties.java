@@ -2,10 +2,11 @@ package pers.hal42.transport;
 
 import pers.hal42.lang.*;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.stream.IOX;
 import pers.hal42.text.TextList;
-import pers.hal42.util.EasyUrlString;
-import pers.hal42.util.UTC;
+import pers.hal42.timer.UTC;
+
 
 import java.io.*;
 import java.lang.reflect.Constructor;
@@ -17,10 +18,9 @@ import java.util.*;
 // !!!       All other functions should use getString() and setString()
 // !!!       so that we can extend and do transformations on data!
 
-public  //Receipt needs some legacy stuff
-class EasyProperties extends Properties {
+public class EasyProperties extends Properties {
 
-  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(EasyProperties.class, ErrorLogStream.WARNING);
+  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(EasyProperties.class, LogLevelEnum.WARNING);
 
   public EasyProperties(){
     super();

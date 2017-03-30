@@ -1,24 +1,25 @@
 package pers.hal42.text;
 
-import java.util.Vector;
-import java.util.Collections;
-//+++ add wrappers for writing functions that stretch for reasonable indices.
-import java.util.Enumeration;
-import java.util.StringTokenizer;
-import java.lang.String;
-
-import pers.hal42.lang.StringX;
 import pers.hal42.lang.Bool;
-import pers.hal42.lang.TrueEnum;
-import pers.hal42.lang.Fstring;
+import pers.hal42.lang.OS;
+import pers.hal42.lang.ReversedCompare;
+import pers.hal42.lang.StringX;
+import pers.hal42.transport.EasyUrlString;
+import pers.hal42.util.Ascii;
+
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Vector;
+
+//+++ add wrappers for writing functions that stretch for reasonable indices.
 
 public class TextList {
-  protected Vector storage;
+  public Vector<String> storage;
 
  //wrap all of Vector's functions that we preserve:
 
-  protected String safe(String o){
-    return StringX.TrivialDefault(o,""); // DO NOT USE StringX.OnTrivial !  It turns "" into " ", which is NOT what we need here.
+  public static String safe(String o){
+    return StringX.TrivialDefault(o,""); //# DO NOT USE StringX.OnTrivial: It turns "" into " ", which is NOT what we need here.
   }
 
   public TextList add(String o) {
@@ -475,16 +476,16 @@ public class TextList {
 
   /**
    * @return comma separated value string
-   * @see CSVstream
+   * @ see CSVstream
    * @todo recognize decimal strings and DON'T quote them.
    * note: this preserves leading and trailing space as well as internal space
    */
-  public String csv(boolean started){
+  public StringBuffer csv(boolean started){
     StringBuffer block= new StringBuffer(250); //wag
     boolean quoteit;
-    for(int i=0;i<storage.size();i++){
-      String thing=StringX.unNull(itemAt(i));
-      quoteit= thing.indexOf(' ')>=0; //+++ need to add more whitespace chars
+    for(String item:storage){
+      String thing=StringX.unNull(item);
+      quoteit= thing.indexOf('"')>=0; //todo: need to add more whitespace chars
       if(started){
         block.append(quoteit? ",\"" : ",");
       } else {
@@ -498,14 +499,10 @@ public class TextList {
         block.append('"');
       }
     }
-    return String.valueOf(block);
+    return block;
   }
 
 /***
- *  New method by ALJ, 12/28/2001
- *  Supercedes "SimpleCSV" by ALH
- *  does NOT honor nor strip double quotes.
- *  alh: added stripping of leading and trailing whitespace, fixed \r being at end of last item.
  *  Append strings from @param csv separating at commas.
  */
   public TextList simpleCsv(String csv) {
@@ -656,17 +653,19 @@ public class TextList {
     return demux;
   }
 
-  // anything you pass to this you sacrifice!
-  public static final TextList enumAsMenu(TrueEnum ennum) {
-    TextList newone = TextList.Empty();
-    int value = ennum.Value();
-    for (int i = 0; i < ennum.numValues(); i++) { //# natural order
-      ennum.setto(i);
-      newone.add(ennum.menuImage());
-    }
-    ennum.setto(value);
-    return newone;
-  }
+  //todo: add intermediate base class to enum so that we can get to the peer values.
+//  // anything you pass to this you sacrifice!
+//  public static TextList enumAsMenu(Enum ennum) {
+//    TextList newone = TextList.Empty();
+//    ennum.getClass()
+//    int value = ennum.Value();
+//    for (Enum item:ennum.getClass().getvalues();int i = 0; i < ennum.numValues(); i++) { //# natural order
+//      ennum.setto(i);
+//      newone.add(ennum.menuImage());
+//    }
+//    ennum.setto(value);
+//    return newone;
+//  }
 
 }
 

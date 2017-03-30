@@ -2,7 +2,7 @@ package pers.hal42.logging;
 
 
 import pers.hal42.lang.MathX;
-import pers.hal42.io.LogFile;
+import pers.hal42.stream.LogFile;
 import java.lang.Thread;
 import pers.hal42.lang.ThreadX;
 

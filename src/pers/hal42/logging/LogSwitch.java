@@ -1,8 +1,6 @@
 package pers.hal42.logging;
 
-import pers.hal42.lang.OS;
-import pers.hal42.lang.ReflectX;
-import pers.hal42.lang.StringX;
+import pers.hal42.lang.*;
 import pers.hal42.text.TextList;
 import pers.hal42.transport.EasyCursor;
 
@@ -128,8 +126,14 @@ public class LogSwitch implements Comparable {
     }
   }
 
+  /** @return existing one by the @param guiname, else create a new one and set its level to 'oncreate' */
   public static  LogSwitch getFor(String guiname,LogLevelEnum oncreate) {
-
+    for(LogSwitch item:LogSwitchRegistry.registry){
+      if(item.Name().equals(guiname)){
+        return item;
+      }
+    }
+    return new LogSwitch(guiname, Safe.deNull(oncreate,DEFAULT_LEVEL));
   }
 
   public static LogSwitch getFor(String guiname) {
@@ -260,10 +264,6 @@ public class LogSwitch implements Comparable {
     return this;
   }
 
-  public LogSwitch setLevel(int level){
-    return setto(legacy(level));
-  }
-
   public LogSwitch setLevel(LogLevelEnum lle){
     level=lle;
     return this;
@@ -277,12 +277,12 @@ public class LogSwitch implements Comparable {
   /**
   * if argument is the same or more severe than internal level we shall do something
   */
-  public boolean passes(int llev){
-    return (llev>=value) && (value!=LogLevelEnum.OFF) && (value!=LogLevelEnum.invalid);
+  public boolean passes(LogLevelEnum llev){
+    return (llev.ordinal()>=level.ordinal()) && (level!=LogLevelEnum.OFF);
   }
 
   public boolean is(LogLevelEnum llev){
-    return llev.Value()==Value();
+    return llev==level;
   }
 
 }

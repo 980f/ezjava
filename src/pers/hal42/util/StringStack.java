@@ -1,10 +1,11 @@
 package pers.hal42.util;
 
+import pers.hal42.lang.WeakSet;
 import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.logging.LogSwitch;
+import pers.hal42.text.TextList;
 
 import java.util.EmptyStackException;
-import java.util.Iterator;
 import java.util.Stack;
 
 public class StringStack {
@@ -14,7 +15,7 @@ public class StringStack {
     if(dumpLevel==null){
       dumpLevel = LogSwitch.getFor(StringStack.class);
     }
-    dumpLevel.setto(lle.Value());
+    dumpLevel.setLevel(lle);
   }
 
   protected Stack myStack;
@@ -82,7 +83,7 @@ public class StringStack {
    * The registry is used to track the push and pops of ErrorLogStream.
    * Since the StringStacks shouldn't get created over and over, for now we can make references in a list instead of using WeakSet.
    */
-  protected static WeakSet registry = null;
+  protected static WeakSet<StringStack> registry = null;
   private static final void register(StringStack thisone) {
     if(registry == null) {
       registry = new WeakSet(100, 10);
@@ -99,10 +100,10 @@ public class StringStack {
       if(dumpLevel == null) {
         ret.add("StringStack.dumpLevel is null!");
       } else {
-        switch(dumpLevel.Value()) {
-          case LogLevelEnum.VERBOSE:  empties = true;
-          case LogLevelEnum.WARNING:  details = true;
-          case LogLevelEnum.ERROR:    names   = true;
+        switch(dumpLevel.Level()) {
+          case VERBOSE:  empties = true;
+          case WARNING:  details = true;
+          case ERROR:    names   = true;
             break;
             // eventually will list ones with detected stack errors ...
         }
@@ -111,18 +112,18 @@ public class StringStack {
         ret.add("stack count:"+registry.size());
       }
 
-      for(Iterator iter = registry.iterator(); iter.hasNext();) {
-        StringStack stack = (StringStack)iter.next();
-        if(names) {
+      for (Object aRegistry : registry) {
+        StringStack stack = (StringStack) aRegistry;
+        if (names) {
           int j = stack.myStack.size();
-          if( empties || j > 0 ) {
+          if (empties || j > 0) {
             String line = stack.name() + "[" + j + "]";
-            if(details) {
+            if (details) {
               line += ":";
-              for(;j-->0;) {
+              for (; j-- > 0; ) {
                 try {
-                  String str = (String)stack.myStack.elementAt(j);
-                  line+=str+(j==0 ? "." : ",");
+                  String str = (String) stack.myStack.elementAt(j);
+                  line += str + (j == 0 ? "." : ",");
                 } catch (Exception ex) {
                   ret.add(ex.getMessage());
                 }

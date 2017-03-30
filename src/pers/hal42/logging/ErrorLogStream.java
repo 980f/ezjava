@@ -7,9 +7,11 @@ package pers.hal42.logging;
 
 
 import pers.hal42.lang.AtExit;
-import pers.hal42.logging.LogSwitch;
+import pers.hal42.lang.StringX;
+import pers.hal42.stream.LogFile;
+import pers.hal42.text.TextList;
+import pers.hal42.util.PrintFork;
 import pers.hal42.util.StringStack;
-import pers.hal42.util.Tracer;
 
 import java.io.FileOutputStream;
 import java.io.PrintStream;
@@ -47,8 +49,9 @@ public class ErrorLogStream implements AtExit {
     return DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
   }
 
-  public static final void Choke(int lle) {
-    globalLeveller().setto(lle);
+
+  public static void Choke(LogLevelEnum lle) {
+    globalLeveller().setLevel(lle);
   }
 
   private static Tracer Debug; // use Global() to get it!
@@ -121,7 +124,7 @@ public class ErrorLogStream implements AtExit {
   // stub
   }
 
-  public static final void endLogging() {
+  public static void endLogging() {
     if(fpf != null) {
       fpf.AtExit();
     }
@@ -142,14 +145,9 @@ public class ErrorLogStream implements AtExit {
 
   public String toSpam() {
     // just deal with THIS stream ...
-    return( (myLevel != null) ? (myLevel.Name() + ".level is " + myLevel.Image()) : "");
+    return( (myLevel != null) ? (myLevel.Name() + ".level is " + myLevel.level) : "");
   }
 
-//for legacy code
-  public final static int VERBOSE = LogLevelEnum.VERBOSE;
-  public final static int WARNING = LogLevelEnum.WARNING;
-  public final static int ERROR = LogLevelEnum.ERROR;
-  public final static int OFF = LogLevelEnum.OFF;
 
   //public
   protected LogSwitch myLevel = null;

@@ -1,32 +1,84 @@
 package pers.hal42.lang;
 // includes stringbuffer stuff.  Maybe can create a StringBufferX to put that stuff in.
 
+import static pers.hal42.lang.Safe.ox2;
+
 public class StringX {
   private StringX() {
-    // I exist for static reasons only
+    //#namespace
   }
 
-  // +++ Need a StartsWith(...)
+  /**
+   * Takes an array of strings and makes one big string by putting ", " in between each.
+   * This function preserves the order of the items in the list.
+   */
+  public static String commaDelimitedCat(String[] list) {
+    StringBuilder all = new StringBuilder(); //+_+ use stringbuffer, makes less garbage
+    boolean first = true;
+    int len = list.length;
+    for (String aList : list) {
+      all.append((first) ? "" : ", ");
+      all.append(aList);
+      first = false;
+    }
+    return all.toString();
+  }
 
-//  /**
-//   * Takes an array of strings and makes one big string by putting ", " in between each.
-//   * This function preserves the order of the items in the list.
-//   */
-//  public static final String commaDelimitedCat(String[] list) {
-//    String all = ""; //+_+ use stringbuffer, mkaes less garbag
-//    boolean first = true;
-//    int len = list.length;
-//    for (int i = 0; i < list.length; i++) {
-//      all += ( (first) ? "" : ", ") + list[i];
-//      first = false;
-//    }
-//    return all;
-//  }
+  public static String twoDigitFixed(long smallNumber) {
+    return ((smallNumber <= 9) ? "0" : "") + smallNumber;
+  }
+
+  public static String twoDigitFixed(String smallNumber) {
+    return twoDigitFixed(parseLong(smallNumber));
+  }
+
+  public static char hexDigit(int b) {
+    return Character.forDigit(b & 15, 16);
+  }
+
+  public static String ox2(byte b) {
+    char[] chars = new char[2];
+    chars[0] = hexDigit(b >> 4);
+    chars[1] = hexDigit(b);
+    return new String(chars);
+  }
+
+  public static String ox2(int i) {
+    return ox2((byte) (i & 255));
+  }
+
+  public static String ox2(long l) {
+    return ox2((byte) (l & 255));
+  }
+
+
+  public static StringBuffer hexImage(byte[] buffer, int offset, int length) {
+    //+++ parameter checks needed.
+    StringBuffer hexy = new StringBuffer(2 * length);
+    length += offset; //now is end index
+    for (int i = offset; i < length; i++) {
+      hexy.append(ox2(buffer[i]));
+    }
+    return hexy;
+  }
+
+  public static StringBuffer hexImage(byte[] buffer, int offset) {
+    return hexImage(buffer, offset, buffer.length - offset);
+  }
+
+  public static StringBuffer hexImage(byte[] buffer) {
+    return hexImage(buffer, 0, buffer.length);
+  }
+
+  public static StringBuffer hexImage(String s) {
+    return hexImage(s.getBytes());
+  }
+
 
   // --- extremely inefficient.  improve!
   //alh has a state machine in some old C code, til then this is nicely compact source.
-  public static String replace(String source, String toReplace,String with) {
-    return replace(new StringBuffer(TrivialDefault(source, "")),TrivialDefault(toReplace, ""), TrivialDefault(with, ""));
+  public static String replace(String source, String toReplace, String with) {
+    return replace(new StringBuffer(TrivialDefault(source, "")), TrivialDefault(toReplace, ""), TrivialDefault(with, ""));
   }
 
   public static String replace(StringBuffer source, String toReplace, String with) {
@@ -42,7 +94,7 @@ public class StringX {
     int withLen = with.length();
     int searchFrom = 0;
     int foundAt = 0;
-    while ( (foundAt = source.substring(searchFrom).indexOf(toReplace)) > -1) {
+    while ((foundAt = source.substring(searchFrom).indexOf(toReplace)) > -1) {
       int reallyAt = foundAt + searchFrom; //foundat is relative to searchFrom
       // +_+ improve this by dealing with cases separately (srcLen == repLen, srcLen < repLen, srcLen > repLen)
       source.delete(reallyAt, reallyAt + lookLen);
@@ -54,6 +106,7 @@ public class StringX {
   }
 
   private static final String SINGLEQUOTE = "'";
+
   // Used by database stuff.  Don't change without testing on all databases!
   public static final String singleQuoteEscape(String s) {
     String ret = null;
@@ -67,12 +120,13 @@ public class StringX {
   }
 
   private static final char SINGLEQUOTECHAR = '\'';
+
   // Used by database stuff.  Don't change without testing on all databases!
   public static final String unSingleQuoteEscape(String s) {
     String ret = null;
-    if(NonTrivial(s) && (s.length() > 1)) {
-      if((s.charAt(0) == SINGLEQUOTECHAR) && (s.charAt(s.length()-1) == SINGLEQUOTECHAR) ) {
-        s = subString(s, 1, s.length()-1);  // ??? does this work correctly?
+    if (NonTrivial(s) && (s.length() > 1)) {
+      if ((s.charAt(0) == SINGLEQUOTECHAR) && (s.charAt(s.length() - 1) == SINGLEQUOTECHAR)) {
+        s = subString(s, 1, s.length() - 1);  // ??? does this work correctly?
       }
       ret = replace(s, "''", SINGLEQUOTE); // convert two single-quotes into one
     }
@@ -83,7 +137,6 @@ public class StringX {
    * "arrname[","label" => "arrname[label]"
    * "arrname{","label" => "arrname{label}"
    * "" or null,"content" => " content "  i.e. default bracket char is space
-   *
    */
   public static String bracketed(String brack, String content) {
     if (!NonTrivial(brack)) {
@@ -103,14 +156,13 @@ public class StringX {
   public static char lastChar(String s) {
     if (NonTrivial(s)) {
       return s.charAt(s.length() - 1);
-    }
-    else {
+    } else {
       return CharX.INVALIDCHAR;
     }
   }
 
   public static final String insert(String receiver, int where, String toinsert) {
-    if ( (where != ObjectX.INVALIDINDEX) && (where < receiver.length())) {
+    if ((where != ObjectX.INVALIDINDEX) && (where < receiver.length())) {
       StringBuffer sb = new StringBuffer(receiver);
       sb.insert(where, toinsert);
       return sb.toString();
@@ -120,20 +172,22 @@ public class StringX {
 
   public static final int byteAt(String s, int at, int Default) {
     try {
-      return 255& (int)s.charAt(at);
-    }
-    catch (Exception ex) {
+      return 255 & (int) s.charAt(at);
+    } catch (Exception ex) {
       return Default;
     }
   }
+
   public static final int byteAt(String s, int at) {
-    return byteAt(s,at,MathX.INVALIDINTEGER);
+    return byteAt(s, at, MathX.INVALIDINTEGER);
   }
+
   public static final int firstByte(String s) {
-    return byteAt(s,0,MathX.INVALIDINTEGER);
+    return byteAt(s, 0, MathX.INVALIDINTEGER);
   }
+
   public static final int lastByte(String s) {
-    return byteAt(s,0,MathX.INVALIDINTEGER);
+    return byteAt(s, 0, MathX.INVALIDINTEGER);
   }
 
   /**
@@ -143,8 +197,7 @@ public class StringX {
   public static final char charAt(String s, int at, char Default) {
     try {
       return s.charAt(at);
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       return Default;
     }
   }
@@ -195,8 +248,7 @@ public class StringX {
       for (int i = more; i-- > 0; ) {
         str.insert(0, filler);
       }
-    }
-    else {
+    } else {
       for (int i = more; i-- > 0; ) {
         str.append(filler);
       }
@@ -224,8 +276,7 @@ public class StringX {
     int length;
     if (s != null && start >= 0 && end > start && start < (length = s.length())) {
       return s.substring(start, Math.min(length, end));
-    }
-    else {
+    } else {
       return "";
     }
   }
@@ -234,8 +285,7 @@ public class StringX {
     int length;
     if (s != null && start >= 0 && end > start && start < (length = s.length())) {
       return s.substring(start, Math.min(length, end));
-    }
-    else {
+    } else {
       return "";
     }
   }
@@ -243,8 +293,7 @@ public class StringX {
   public static final String restOfString(String s, int start) {
     if (s != null && start >= 0 && start < s.length()) {
       return s.substring(start);
-    }
-    else {
+    } else {
       return "";
     }
   }
@@ -268,8 +317,7 @@ public class StringX {
         while (start < end) {
           if (Character.isWhitespace(dirty.charAt(start))) {
             ++start;
-          }
-          else {
+          } else {
             break;
           }
         }
@@ -288,21 +336,20 @@ public class StringX {
 
   public static final String proper(String toChange) {
     return subString(toChange, 0, 1).toUpperCase() +
-        restOfString(toChange, 1).toLowerCase();
+      restOfString(toChange, 1).toLowerCase();
   }
 
   /**
+   * @param s      is a string that we wish to cut out a piece of
+   * @param cutter is the separator character
    * @return an index safe for the second operand of string::subString, if the cutter
    * char is not found then we will cut at the end of the string.
-   * @param s is a string that we wish to cut out a piece of
-   * @param cutter is the separator character
    */
   public static final int cutPoint(String s, char cutter) {
     try {
       int cutat = s.indexOf(cutter);
       return cutat < 0 ? s.length() : cutat;
-    }
-    catch (Exception any) {
+    } catch (Exception any) {
       return 0;
     }
   }
@@ -316,9 +363,11 @@ public class StringX {
     return sb;
   }
 
-  /** simple minded string parser
-   *  @param parsee words get removed from the front of this
-   *  @return the next contiguous non-white character grouping.
+  /**
+   * simple minded string parser
+   *
+   * @param parsee words get removed from the front of this
+   * @return the next contiguous non-white character grouping.
    */
   public static final String cutWord(StringBuffer parsee) {
     String retval = ""; //so that we can easily read past the end without getting nulls
@@ -328,8 +377,7 @@ public class StringX {
       while (start < end) {
         if (Character.isWhitespace(parsee.charAt(start))) {
           ++start;
-        }
-        else {
+        } else {
           break;
         }
       }
@@ -337,8 +385,7 @@ public class StringX {
       while (cut < end) {
         if (!Character.isWhitespace(parsee.charAt(cut))) {
           ++cut;
-        }
-        else {
+        } else {
           break;
         }
       }
@@ -373,8 +420,9 @@ public class StringX {
   /**
    * abysmally named, the one argument isn't tested for being equal to ALL of the strings
    * how about "equalsAny"  or "memberOf"?
-   * @param one a string
-   * @param two a set of strings
+   *
+   * @param one        a string
+   * @param two        a set of strings
    * @param ignoreCase how to compare
    * @return which string matches, or INVALIDINDEX
    */
@@ -394,11 +442,11 @@ public class StringX {
     return equalStrings(one, two, false);
   }
 
-  public static final boolean equalAnyStrings(String one, String [ ] two) {
+  public static final boolean equalAnyStrings(String one, String[] two) {
     return equalAnyStrings(one, two, false);
   }
 
-  public static final boolean equalAnyStrings(String one, String [ ] two, boolean ignoreCase) {
+  public static final boolean equalAnyStrings(String one, String[] two, boolean ignoreCase) {
     return equalStrings(one, two, ignoreCase) != ObjectX.INVALIDINDEX;
   }
 
@@ -411,13 +459,11 @@ public class StringX {
     if (NonTrivial(one)) {
       if (NonTrivial(two)) {
         return ignoreCase ? one.equalsIgnoreCase(two) : one.equals(two);
-      }
-      else {
+      } else {
         return false;
       }
-    }
-    else {
-      return!NonTrivial(two); //both trivial is a match
+    } else {
+      return !NonTrivial(two); //both trivial is a match
     }
   }
 
@@ -437,20 +483,20 @@ public class StringX {
     if (NonTrivial(one)) {
       if (NonTrivial(two)) {
         return one.compareTo(two);
-      }
-      else {
+      } else {
         return -1;
       }
-    }
-    else {
+    } else {
       return +1;
     }
   }
 
-  /** enhanced TrivialDefault
-   * @return a string that is not zero length
-   * @param s proposed string, usually from an untrusted variable
+  /**
+   * enhanced TrivialDefault
+   *
+   * @param s                  proposed string, usually from an untrusted variable
    * @param defaultReplacement fallback string, usually a constant
+   * @return a string that is not zero length
    */
   public static final String OnTrivial(String s, String defaultReplacement) {
     //this would of course be an infinite loop if the constant below were changed to be trivial...
@@ -475,9 +521,9 @@ public class StringX {
 
   public static final String clipEOL(String s, String EOL) {//final eol is undesirable, clip it off.
     String returner = unNull(s);
-    if(returner.length() > 0) {
+    if (returner.length() > 0) {
       int index = returner.lastIndexOf(EOL);
-      if(index == (returner.length()-EOL.length())) {
+      if (index == (returner.length() - EOL.length())) {
         returner = returner.substring(0, index);
       }
     }
@@ -488,34 +534,34 @@ public class StringX {
     return removeAll("\r", source);
   }
 
-  public final static String removeAll(String badchars,String source){
-    if(!NonTrivial(badchars)) {
+  public final static String removeAll(String badchars, String source) {
+    if (!NonTrivial(badchars)) {
       return source;
     }
-    StringBuffer copy=new StringBuffer(source.length());
-    for(int i=0;i<source.length();i++){
-      char c=source.charAt(i);
-      if(badchars.indexOf(c)<0){
+    StringBuffer copy = new StringBuffer(source.length());
+    for (int i = 0; i < source.length(); i++) {
+      char c = source.charAt(i);
+      if (badchars.indexOf(c) < 0) {
         copy.append(c);
       }
     }
     return String.valueOf(copy);
   }
 
-  protected static final String [][] replacers = {
-      { "\\\\", "\\" },
-        { "\\b", "\b" },
-        { "\\t", "\t" },
-        { "\\n", "\n" },
-        { "\\f", "\f" },
-        { "\\\"", "\"" },
-        { "\\r", "\r" },
-      { "\\'", "\'" },
+  protected static final String[][] replacers = {
+    {"\\\\", "\\"},
+    {"\\b", "\b"},
+    {"\\t", "\t"},
+    {"\\n", "\n"},
+    {"\\f", "\f"},
+    {"\\\"", "\""},
+    {"\\r", "\r"},
+    {"\\'", "\'"},
   };
 
   public static final String unescapeAll(String source) {
-    if(NonTrivial(source)) {
-      for(int i = replacers.length; i-->0;) {
+    if (NonTrivial(source)) {
+      for (int i = replacers.length; i-- > 0; ) {
         source = replace(source, replacers[i][0], replacers[i][1]); // not really efficient, but a kludge anyway ---
       }
     }
@@ -530,11 +576,11 @@ public class StringX {
     return subString(dottedName, dottedName.lastIndexOf(thing) + 1);
   }
 
-  private static int backSpace(StringBuffer buf){
-    if(buf!=null){
-      int tokill=buf.length()-1;
-      if(tokill>=0){
-        int ret=buf.charAt(tokill);
+  private static int backSpace(StringBuffer buf) {
+    if (buf != null) {
+      int tokill = buf.length() - 1;
+      if (tokill >= 0) {
+        int ret = buf.charAt(tokill);
         buf.setLength(tokill);
         return ret;
       }
@@ -542,41 +588,42 @@ public class StringX {
     return MathX.INVALIDINTEGER;
   }
 
-  public static final int parseInt(String s){//default radix 10
-    return parseInt(s,10);
+  public static final int parseInt(String s) {//default radix 10
+    return parseInt(s, 10);
   }
 
-  /** java.lang.Long.parseLong throws spurious exceptions,
-  *  and doesn't accept unsigned hex numbers that are otherwise acceptible to java.
-  */
-  public static final long parseLong(String s,int radix){
-    long acc=0;
-    boolean hadSign=false;
-    if(NonTrivial(s)){
-      s=s.trim();
-      int numchars=lengthOf(s);
+  /**
+   * java.lang.Long.parseLong throws spurious exceptions,
+   * and doesn't accept unsigned hex numbers that are otherwise acceptible to java.
+   */
+  public static final long parseLong(String s, int radix) {
+    long acc = 0;
+    boolean hadSign = false;
+    if (NonTrivial(s)) {
+      s = s.trim();
+      int numchars = lengthOf(s);
 
-      if( numchars<=0 || radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
+      if (numchars <= 0 || radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
         return 0;
       }
 
-      int nextChar=0;
-      if(s.charAt(nextChar)=='-'){
+      int nextChar = 0;
+      if (s.charAt(nextChar) == '-') {
         ++nextChar;
-        hadSign=true;
+        hadSign = true;
       }
 
-      if(s.charAt(nextChar)=='+'){//tolerate signed strings.
+      if (s.charAt(nextChar) == '+') {//tolerate signed strings.
         ++nextChar;
       }
 
-      while(nextChar<numchars){
-        int digit = Character.digit(s.charAt(nextChar++),radix);
-        if(digit<0){
+      while (nextChar < numchars) {
+        int digit = Character.digit(s.charAt(nextChar++), radix);
+        if (digit < 0) {
           break; //give em what we got so far
         }
-        acc*=radix;
-        acc+=digit;
+        acc *= radix;
+        acc += digit;
         /* could throw overflow:
         if(acc<0){//marginal overflow)
           if(!hadSign){
@@ -588,28 +635,28 @@ public class StringX {
         }
         */
       }
-      return hadSign? -acc : acc;
+      return hadSign ? -acc : acc;
     }
     return 0;
   }
 
-  public static final long parseLong(String s){//default radix 10
-    return parseLong(s,10);
+  public static final long parseLong(String s) {//default radix 10
+    return parseLong(s, 10);
   }
 
-  public static final double parseDouble(String s){
-    return parseDouble(s,0.0);
+  public static final double parseDouble(String s) {
+    return parseDouble(s, 0.0);
   }
 
-  public static final double parseDouble(String s,double onerror){
+  public static final double parseDouble(String s, double onerror) {
     try {
       return Double.parseDouble(s);
-    } catch (Exception caught){
+    } catch (Exception caught) {
       return onerror;      //be silent on errors
     }
   }
 
-  public static final int parseInt(String s,int radix){
-    return (int) (parseLong(s,radix) & 0xFFFFFFFF) ;
+  public static final int parseInt(String s, int radix) {
+    return (int) (parseLong(s, radix) & 0xFFFFFFFF);
   }
 }

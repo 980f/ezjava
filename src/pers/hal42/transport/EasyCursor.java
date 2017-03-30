@@ -7,7 +7,6 @@ import pers.hal42.lang.TrueEnum;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
 import pers.hal42.util.EasyHelper;
-import pers.hal42.util.EasyProperties;
 import pers.hal42.util.StringStack;
 import pers.hal42.util.isEasy;
 

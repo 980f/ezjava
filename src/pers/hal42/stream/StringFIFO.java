@@ -1,12 +1,14 @@
 package pers.hal42.stream;
 
-import  java.io.PrintStream;
-import  java.io.BufferedReader;
-import  java.io.Reader;
-import  java.io.InputStreamReader;
+import pers.hal42.lang.DateX;
+import pers.hal42.util.ObjectFifo;
+
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 
 
-public class StringFIFO extends ObjectFifo{
+public class StringFIFO extends ObjectFifo {
 
   private StringFIFOPrintStream ps = null;
   private StringFIFOFBufferedReader br = null;
@@ -78,7 +80,7 @@ class StringFIFOPrintStream extends PrintStream {
 class StringFIFOFBufferedReader extends BufferedReader {
   StringFIFO fifo = null;
   public StringFIFOFBufferedReader(StringFIFO fifo) {
-    super(new InputStreamReader(new NullInputStream()));
+    super(new InputStreamReader(new pers.hal42.stream.NullInputStream()));
     this.fifo = fifo;
   }
   public String readLine() {

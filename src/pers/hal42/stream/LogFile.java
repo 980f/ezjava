@@ -2,8 +2,11 @@ package pers.hal42.stream;
 
 import pers.hal42.lang.*;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.util.Accumulator;
 import pers.hal42.util.Counter;
 import pers.hal42.util.PrintFork;
+import pers.hal42.timer.*;
+
 
 import java.io.*;
 import java.util.*;
@@ -435,7 +438,7 @@ public class LogFile implements AtExit, Comparable {
    */
   public void internalFlush() {
     String next = null;
-    StopWatch sw = new StopWatch();
+    pers.hal42.util.timer.StopWatch sw = new pers.hal42.util.timer.StopWatch();
     do {
       next = null;
       try {

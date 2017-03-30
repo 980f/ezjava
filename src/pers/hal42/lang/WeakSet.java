@@ -79,20 +79,18 @@ import  java.lang.ref.ReferenceQueue;
  * @see		java.lang.ref.WeakReference
  */
 
-public class WeakSet extends AbstractSet {
+public class WeakSet<T> extends AbstractSet<T> {
 
-  Set hash = null;
+  Set<T> hash = null;
 
   /* Reference queue for cleared WeakObject */
   private ReferenceQueue queue = new ReferenceQueue();
 
-  /* Remove all invalidated entries from the map, that is, remove all entries
-     whose keys have been discarded.  This method should be invoked once by
-     each public mutator in this class.  We don't invoke this method in
-     public accessors because that can lead to surprising
-     ConcurrentModificationExceptions. */
+  /* Remove all invalidated entries from the map, that is, remove all entries whose keys have been discarded.
+     This method should be invoked once by each public mutator in this class.
+     We don't invoke this method in public accessors because that can lead to surprising ConcurrentModificationExceptions. */
   private void processQueue() {
-    WeakObject wk;
+    WeakObject<T> wk;
     while ((wk = (WeakObject)queue.poll()) != null) {
       hash.remove(wk);
     }

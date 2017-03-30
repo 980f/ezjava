@@ -1,6 +1,11 @@
-package pers.hal42.util;
-import pers.hal42.util.codec.Base64Codec;
+package pers.hal42.transport;
+
 import pers.hal42.lang.StringX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.TextList;
+import pers.hal42.util.Ascii;
+import pers.hal42.util.Base64Codec;
+import pers.hal42.util.isEasy;
 
 public class EasyUrlString implements isEasy {
 
@@ -92,12 +97,14 @@ public class EasyUrlString implements isEasy {
     return encodedValue();
   }
 
-  private static final void barf() {
+  ////////////
+  // command line utility to demo this class
+  private static void barf() {
     System.out.println("EasyUrlString option string\nwhere option is encode | decode.");
   }
 
   // for finding out what the values would be, if you could read them.  :)
-  public static final void main(String [] args) {
+  public static void main(String [] args) {
     if(args.length < 2) {
       barf();
     } else {

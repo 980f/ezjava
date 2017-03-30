@@ -1,4 +1,4 @@
-package pers.hal42.lang;
+package pers.hal42.text;
 
 import pers.hal42.lang.CharX;
 import pers.hal42.lang.StringX;
@@ -111,13 +111,13 @@ public class Fstring {
     return String.valueOf(buffer);
   }
 /**
- * @todo null s give null fstring. need to fix this. Til then use "".
+ * todo: null s give null fstring. need to fix this. Til then use "".
  */
-  public static final String fill(String s,int len,char fillChar){
+  public static String fill(String s,int len,char fillChar){
     return String.valueOf(new Fstring(len,fillChar,s));
   }
 
-  public static final String centered(String s,int len,char fillChar){
+  public static String centered(String s,int len,char fillChar){
     return String.valueOf(new Fstring(len,fillChar).centered(s));
   }
 
@@ -125,23 +125,23 @@ public class Fstring {
  * hook
  * someday will perhaps have mirror imaged chars automatically handled by fstring
  */
-  public static final String winged(String s,int len){
+  public static String winged(String s,int len){
     return String.valueOf(new Fstring(len,'>').centered(" "+s+" "));
   }
 
-  public static final String righted(String s,int len,char fillChar){
+  public static String righted(String s,int len,char fillChar){
     return String.valueOf(new Fstring(len,fillChar).righted(s));
   }
 
-  public static final String zpdecimal(int value,int length){
+  public static String zpdecimal(int value,int length){
     return righted(Integer.toString(value),length,'0');
   }
 
-  public static final String justified(int len,String lhs,String rhs,char fillChar){
+  public static String justified(int len,String lhs,String rhs,char fillChar){
     return String.valueOf(new Fstring(len,fillChar).setto(lhs,rhs));
   }
 
-  public static final String justified(int len,String lhs,String rhs){
+  public static String justified(int len,String lhs,String rhs){
     return justified(len, lhs, rhs, '.');
   }
 

@@ -1,5 +1,5 @@
 package pers.hal42.lang;
-/*
+/* usage pattern when ErrorLogStream and a Monitor are used together:
 void amethod() {
   try {
     yoreMon.getMonitor();
@@ -10,13 +10,11 @@ void amethod() {
     yoreMon.freeMonitor();
   }
 }
-
-also note that on construction you can supply your own debugger which has nice messages within getMon and freeMon.
-
+also note that on construction of a Monitor you can supply your own debugger which has nice messages within getMon and freeMon.
 */
 
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.util.TextList;
+import pers.hal42.text.TextList;
 
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
@@ -30,7 +28,7 @@ public final class Monitor implements Comparable {
   */
   protected int monitorCount = 0;
   public String name = "";
-  private Vector threads = new Vector();
+  private Vector<Thread> threads = new Vector<>();
 
   // to check to see if we even want to try to get it ...
   public int monitorCount() {
@@ -40,7 +38,7 @@ public final class Monitor implements Comparable {
   // this function fixes the loop / race condition which used to exist with this line:
   //  private static final ErrorLogStream DBG = ErrorLogStream.getForClass(Monitor.class);
   // eg: Monitor creates ErrorLogStream, which creates LogFile, which creates Monitor, whose "class" is not yet loaded, so results in an exception and subsequent null pointers.
-  private final ErrorLogStream dbg() {
+  private ErrorLogStream dbg() {
     synchronized(Monitor.class) { // sync on the CLASS !
       if(d1b2g3 == null) {
         d1b2g3 = ErrorLogStream.Null(); // --- this line used to say: d1b2g3 = D1B2G3();, which i believe worked.  This new line is suspect of causing the same problem as it was trying to fix!  Why did we change it?  We should document ANY changes in here!
@@ -77,13 +75,12 @@ public final class Monitor implements Comparable {
   public Monitor(String name) {
     this(name,null);
   }
+
 //getMonitor is called by debug code and infinite loops if you attempt dbg within it.
   public void getMonitor() {
     synchronized(this) {
       try {
-//      System.out.println("getMonitor about to lock:");
-//        dbg.Enter("locking "+name);
-        while (tryMonitor() == false) {
+        while (!tryMonitor()) {
           try {
             setState(true);
             wait();
@@ -93,11 +90,8 @@ public final class Monitor implements Comparable {
             setState(false); // +++ should this be in freeMonitor()?
           }
         }
-//        dbg.VERBOSE("got lock");
       } catch (Exception e2) {
-//        dbg().Caught(e2);  // +++++++++++++++++++ who uncommented this !?!?!?!?!?!
       } finally {
-//        dbg.Exit();
       }
     }
   }
@@ -175,7 +169,7 @@ public final class Monitor implements Comparable {
       try {
         for(int i = threads.size(); i-->0;) {
           try {
-            tl.add(String.valueOf((Thread)(threads.elementAt(i))));
+            tl.add(String.valueOf(threads.elementAt(i)));
           } catch(ArrayIndexOutOfBoundsException arf){
             //we modified the list while scanning it, start scan over:
             i = threads.size();
@@ -226,7 +220,7 @@ public final class Monitor implements Comparable {
       try {
         for(int i = threads.size(); i-->0;) {
           try {
-            sThread = (Thread) (threads.elementAt(i));
+            sThread = threads.elementAt(i);
           } catch(ArrayIndexOutOfBoundsException arf){
             //we modified the list while scanning it, start scan over:
             i = threads.size();

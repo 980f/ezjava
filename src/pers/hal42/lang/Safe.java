@@ -3,19 +3,21 @@ package pers.hal42.lang;
 
 /** Much of what is in here seems to have been later broken out to seperate classes. */
 
-import com.sun.xml.internal.ws.addressing.EPRSDDocumentFilter;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.util.Executor;
 import pers.hal42.util.LocalTimeFormat;
-import pers.hal42.util.Ticks;
 
-import java.beans.PersistenceDelegate;
 import java.io.*;
 import java.text.DecimalFormat;
 import java.text.FieldPosition;
 import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Vector;
+
+import static pers.hal42.stream.IOX.makeWritable;
+
+//import pers.hal42.util.LocalTimeFormat;
+//import pers.hal42.util.Ticks;
 
 public class Safe {
   // not a good idea to have a dbg in here --- see preLoadClass
@@ -30,6 +32,11 @@ public class Safe {
 
   public static String ObjectInfo(Object obj){
     return obj==null?" null!":" type: "+obj.getClass().getName();//+" "+obj.toString();
+  }
+
+  /** if 1st object is null return second else return it. Kotlin has an operator for this.*/
+  public static <T> T deNull(T nullish,T def){
+    return (nullish==null)?nullish:def;
   }
 
 //  public static File [] listFiles(File dir){
@@ -84,7 +91,7 @@ public class Safe {
   /**
    * @return true if stream closes Ok, or didn't need to.
    */
-  public static final boolean Close(OutputStream fos){
+  public static boolean Close(OutputStream fos){
     if(fos != null) {
       try {
         fos.flush(); //to make this like C
@@ -145,46 +152,46 @@ public class Safe {
 //    return insert(src, toinsert,0);
 //  }
 
-  public static  long utcNow(){
-    return System.currentTimeMillis();//+_+ wrapped to simplify use analysis
-  }
+//  public static  long utcNow(){
+//    return System.currentTimeMillis();//+_+ wrapped to simplify use analysis
+//  }
 
-  public static  long fileSize(String filename){
-    try {
-      return (new File(filename)).length();
-    } catch(Exception anything){
-      return -1;
-    }
-  }
+//  public static  long fileSize(String filename){
+//    try {
+//      return (new File(filename)).length();
+//    } catch(Exception anything){
+//      return -1;
+//    }
+//  }
+//
+//  public static long fileModTicks(String filename){
+//    try {
+//      return (new File(filename)).lastModified();
+//    } catch(Exception anything){
+//      return -1;
+//    }
+//  }
+//
+//  public static Date fileModTime(String filename){
+//    return new Date(fileModTicks(filename));
+//  }
 
-  public static final long fileModTicks(String filename){
-    try {
-      return (new File(filename)).lastModified();
-    } catch(Exception anything){
-      return -1;
-    }
-  }
+//  /**
+//   * returns true if dir now exists
+//   */
+//  public static boolean createDir(String filename) {
+//    return createDir(new File(filename));
+//  }
+//  public static boolean createDir(File file) {
+//    if(!file.exists()) {
+//      return file.mkdir();
+//    }
+//    return true;
+//  }
 
-  public static Date fileModTime(String filename){
-    return new Date(fileModTicks(filename));
-  }
-
-  /**
-   * returns true if dir now exists
-   */
-  public static boolean createDir(String filename) {
-    return createDir(new File(filename));
-  }
-  public static boolean createDir(File file) {
-    if(!file.exists()) {
-      return file.mkdir();
-    }
-    return true;
-  }
-
-  public static Date Now(){// got tired of looking this up.
-    return new Date();//default Date constructor returns "now"
-  }
+//  public static Date Now(){// got tired of looking this up.
+//    return new Date();//default Date constructor returns "now"
+//  }
 
   public static  String fromStream(ByteArrayInputStream bais,int len){
     byte [] chunk=new byte[len];
@@ -288,104 +295,78 @@ public class Safe {
 //    return new byte[0];
 //  }
 
-  /**
-   * I believe this either prepends or appends characters to extend a string to length
-   */
-  public static  String fill(String source, char filler, int length, boolean left) {
-    source.trim();
-    if(length == source.length()) {
-      return source;
-    }
-    int more = length - source.length();
-    if(more < 1) {
-      return source.substring(0, length); // +++ check
-    }
-    StringBuffer str = new StringBuffer(source);
-    if(left) {
-      for(int i = more; i-->0;) {
-        str.insert(0, filler);
-      }
-    } else {
-      for(int i = more; i-->0;) {
-        str.append(filler);
-      }
-    }
-    return str.toString();
-  }
+//  /**
+//   * I believe this either prepends or appends characters to extend a string to length
+//   */
+//  public static  String fill(String source, char filler, int length, boolean left) {
+//    source.trim();
+//    if(length == source.length()) {
+//      return source;
+//    }
+//    int more = length - source.length();
+//    if(more < 1) {
+//      return source.substring(0, length); // +++ check
+//    }
+//    StringBuffer str = new StringBuffer(source);
+//    if(left) {
+//      for(int i = more; i-->0;) {
+//        str.insert(0, filler);
+//      }
+//    } else {
+//      for(int i = more; i-->0;) {
+//        str.append(filler);
+//      }
+//    }
+//    return str.toString();
+//  }
 
-  public static String twoDigitFixed(long smallNumber){
-    return ((smallNumber <= 9) ? "0" : "") + smallNumber;
-  }
 
-  public static String twoDigitFixed(String smallNumber){
-    return twoDigitFixed(parseLong(smallNumber));
-  }
-
-  public static char hexDigit(int b){
-    return Character.forDigit(b&15,16);
-  }
-
-  public static String ox2(byte b){
-    char [] chars = new char[2];
-    chars[0] = hexDigit(b>>4);
-    chars[1] = hexDigit(b);
-    return new String(chars);
-  }
-
-  public static String ox2(int i){
-    return ox2((byte)(i&255));
-  }
-
-  public static String ox2(long l){
-    return ox2((byte)(l&255));
-  }
-
-  /** java.lang.Long.parseLong throws spurious exceptions,
-  *  and doesn't accept unsigned hex numbers that are otherwise acceptible to java.
-  */
-  public static long parseLong(String s,int radix){
-    long acc=0;
-    boolean hadSign=false;
-    if(NonTrivial(s)){
-      s=s.trim();
-      int numchars=lengthOf(s);
-
-      if( numchars<=0 || radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
-        return 0;
-      }
-
-      int nextChar=0;
-      if(s.charAt(nextChar)=='-'){
-        ++nextChar;
-        hadSign=true;
-      }
-
-      while(nextChar<numchars){
-        int digit = Character.digit(s.charAt(nextChar++),radix);
-        if(digit<0){
-          break; //give em what we got so far
-        }
-        acc*=radix;
-        acc+=digit;
-        /* could throw overflow:
-        if(acc<0){//marginal overflow)
-          if(!hadSign){
-            hadSign=true;
-            acc=80000...000 - acc;
-          } else {
-            real overflow...
-          }
-        }
-        */
-      }
-      return hadSign? -acc : acc;
-    }
-    return 0;
-  }
-
-  public static final long parseLong(String s){//default radix 10
-    return parseLong(s,10);
-  }
+//  /** java.lang.Long.parseLong throws spurious exceptions,
+//  *  and doesn't accept unsigned hex numbers that are otherwise acceptible to java.
+//  */
+//  public static long parseLong(String s,int radix){
+//    long acc=0;
+//    boolean hadSign=false;
+//    if(NonTrivial(s)){
+//      s=s.trim();
+//      int numchars=lengthOf(s);
+//
+//      if( numchars<=0 || radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
+//        return 0;
+//      }
+//
+//      int nextChar=0;
+//      if(s.charAt(nextChar)=='-'){
+//        ++nextChar;
+//        hadSign=true;
+//      }
+//
+//      while(nextChar<numchars){
+//        int digit = Character.digit(s.charAt(nextChar++),radix);
+//        if(digit<0){
+//          break; //give em what we got so far
+//        }
+//        acc*=radix;
+//        acc+=digit;
+//        /* could throw overflow:
+//        if(acc<0){//marginal overflow)
+//          if(!hadSign){
+//            hadSign=true;
+//            acc=80000...000 - acc;
+//          } else {
+//            real overflow...
+//          }
+//        }
+//        */
+//      }
+//      return hadSign? -acc : acc;
+//    }
+//    return 0;
+//  }
+//
+//  public static final long parseLong(String s){//default radix 10
+//    return parseLong(s,10);
+//  }
 
   public static final long littleEndian(byte [] msfirst,int offset,int length){
     long ell=0;
@@ -618,75 +599,75 @@ public class Safe {
 //  }
 //
 
-
-  //////////
-  public static  boolean FileExists(File f){
-    return f!=null && f.exists();
-  }
-
-  /** enhanced TrivialDefault
-  * @return a string that is not zero length
-  * @param s proposed string, usually from an untrusted variable
-  * @param defaultReplacement fallback string, usually a constant
-  */
-  public static String OnTrivial(String s, String defaultReplacement) {
-    //this would of course be an infinite loop if the constant below were changed to be trivial...
-    return NonTrivial(s) ? s : OnTrivial(defaultReplacement," ");
-  }
-
-  public static String unNull(String s) {
-    return TrivialDefault(s, ""); // kinda redundant
-  }
-
-  public static String TrivialDefault(String s, String defaultReplacement) {
-    return NonTrivial(s) ? s : defaultReplacement;
-  }
-
-  public static String clipEOL(String s, String EOL) {
-    //if final eol is undesirable clip it off.
-    String returner = unNull(s);
-    if(returner.length() > 0) {
-      int index = returner.lastIndexOf(EOL);
-      if(index == (returner.length()-EOL.length())) {
-        returner = returner.substring(0, index);
-      }
-    }
-    return returner;
-  }
-
-  public final static String removeAll(String badchars,String source){
-    if(!NonTrivial(badchars)) {
-      return source;
-    }
-    StringBuffer copy=new StringBuffer(source.length());
-    for(int i=0;i<source.length();i++){
-      char c=source.charAt(i);
-      if(badchars.indexOf(c)<0){
-        copy.append(c);
-      }
-    }
-    return copy.toString();
-  }
-
-  protected static final String [][] replacers = {
-      { "\\\\", "\\" },
-        { "\\b", "\b" },
-        { "\\t", "\t" },
-        { "\\n", "\n" },
-        { "\\f", "\f" },
-        { "\\\"", "\"" },
-        { "\\r", "\r" },
-      { "\\'", "\'" },
-  };
-
-  public static final String unescapeAll(String source) {
-    if(NonTrivial(source)) {
-      for(int i = replacers.length; i-->0;) {
-        source = Safe.replace(source, replacers[i][0], replacers[i][1]); // not really efficient, but a kludge anyway ---
-      }
-    }
-    return source;
-  }
+//
+//  //////////
+//  public static  boolean FileExists(File f){
+//    return f!=null && f.exists();
+//  }
+//
+//  /** enhanced TrivialDefault
+//  * @return a string that is not zero length
+//  * @param s proposed string, usually from an untrusted variable
+//  * @param defaultReplacement fallback string, usually a constant
+//  */
+//  public static String OnTrivial(String s, String defaultReplacement) {
+//    //this would of course be an infinite loop if the constant below were changed to be trivial...
+//    return NonTrivial(s) ? s : OnTrivial(defaultReplacement," ");
+//  }
+//
+//  public static String unNull(String s) {
+//    return TrivialDefault(s, ""); // kinda redundant
+//  }
+//
+//  public static String TrivialDefault(String s, String defaultReplacement) {
+//    return NonTrivial(s) ? s : defaultReplacement;
+//  }
+//
+//  public static String clipEOL(String s, String EOL) {
+//    //if final eol is undesirable clip it off.
+//    String returner = unNull(s);
+//    if(returner.length() > 0) {
+//      int index = returner.lastIndexOf(EOL);
+//      if(index == (returner.length()-EOL.length())) {
+//        returner = returner.substring(0, index);
+//      }
+//    }
+//    return returner;
+//  }
+//
+//  public final static String removeAll(String badchars,String source){
+//    if(!NonTrivial(badchars)) {
+//      return source;
+//    }
+//    StringBuffer copy=new StringBuffer(source.length());
+//    for(int i=0;i<source.length();i++){
+//      char c=source.charAt(i);
+//      if(badchars.indexOf(c)<0){
+//        copy.append(c);
+//      }
+//    }
+//    return copy.toString();
+//  }
+//
+//  protected static final String [][] replacers = {
+//      { "\\\\", "\\" },
+//        { "\\b", "\b" },
+//        { "\\t", "\t" },
+//        { "\\n", "\n" },
+//        { "\\f", "\f" },
+//        { "\\\"", "\"" },
+//        { "\\r", "\r" },
+//      { "\\'", "\'" },
+//  };
+//
+//  public static final String unescapeAll(String source) {
+//    if(NonTrivial(source)) {
+//      for(int i = replacers.length; i-->0;) {
+//        source = Safe.replace(source, replacers[i][0], replacers[i][1]); // not really efficient, but a kludge anyway ---
+//      }
+//    }
+//    return source;
+//  }
 
   // --- extremely inefficient.  improve!
   //alh has a state machine in some old C code, til then this is nicely compact source.
@@ -719,82 +700,46 @@ public class Safe {
     return source.toString();
   }
 
-  public static StringBuffer hexImage(byte []buffer,int offset,int length){
-    //+++ parameter checks needed.
-    StringBuffer hexy=new StringBuffer(2*length);
-    length+=offset; //now is end index
-    for(int i=offset;i<length;i++){
-      hexy.append(ox2(buffer[i]));
-    }
-    return hexy;
-  }
+//  // +++ why promote to only float, but then promote to double later?
+//  public static double ratio(int num, int denom){
+//    return (denom==0)?0:((float)num)/((float)denom);//+_+ crude, need to get spectro's spec
+//  }
+//
+//  public static double ratio(long num, long denom){
+//    return (denom==0)?0:((float)num)/((float)denom);//+_+ crude, need to get spectro's spec
+//  }
+////
+//  public static final long percent(long dividend, long divisor) {
+//    return Math.round(Safe.ratio(dividend * 100, divisor));
+//  }
+//
 
-  public static StringBuffer hexImage(byte []buffer,int offset){
-    return hexImage(buffer,offset,buffer.length-offset);
-  }
-
-  public static StringBuffer hexImage(byte []buffer){
-    return hexImage(buffer,0,buffer.length);
-  }
-
-  public static StringBuffer hexImage(String s){
-    return hexImage(s.getBytes());
-  }
-
-  // +++ why promote to only float, but then promote to double later?
-  public static double ratio(int num, int denom){
-    return (denom==0)?0:((float)num)/((float)denom);//+_+ crude, need to get spectro's spec
-  }
-
-  public static double ratio(long num, long denom){
-    return (denom==0)?0:((float)num)/((float)denom);//+_+ crude, need to get spectro's spec
-  }
-
-  public static final long percent(long dividend, long divisor) {
-    return Math.round(Safe.ratio(dividend * 100, divisor));
-  }
-
-  /**
-  * Takes an array of strings and makes one big string by putting ", " in between each.
-  * This function preserves the order of the items in the list.
-  */
-  public static final String commaDelimitedCat(String [] list) {
-    String all = ""; //+_+ use stringbuffer, mkaes less garbag
-    boolean first = true;
-    int len = list.length;
-    for(int i = 0; i < list.length; i++) {
-      all += ((first) ? "" : ", ") + list[i];
-      first = false;
-    }
-    return all;
-  }
-
-  /////////////////////////////////////////////////////////////////////////////
-  // date / time stuff
-  static final LocalTimeFormat stamper=LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS");
-
-  public static final String timeStampNow() {
-    return timeStamp(Now());
-  }
-
-  private static final Monitor timeMon = new Monitor("Safe.timeStamp");
-  public static  String timeStamp(Date today) {
-    String ret = "";
-    try {
-      timeMon.getMonitor();
-      ret = stamper.format(today);
-    } catch (Exception e) {
-      // +++ deal with this
-      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
-    } finally {
-      timeMon.freeMonitor();
-    }
-    return ret;
-  }
-
-  public static final String timeStamp(long millis) {
-    return timeStamp(new Date(millis));
-  }
+//  /////////////////////////////////////////////////////////////////////////////
+//  // date / time stuff
+//  static final LocalTimeFormat stamper= LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS");
+//
+//  public static String timeStampNow() {
+//    return timeStamp(Now());
+//  }
+//
+//  private static final Monitor timeMon = new Monitor("Safe.timeStamp");
+//  public static  String timeStamp(Date today) {
+//    String ret = "";
+//    try {
+//      timeMon.getMonitor();
+//      ret = stamper.format(today);
+//    } catch (Exception e) {
+//      // +++ deal with this
+//      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
+//    } finally {
+//      timeMon.freeMonitor();
+//    }
+//    return ret;
+//  }
+//
+//  public static final String timeStamp(long millis) {
+//    return timeStamp(new Date(millis));
+//  }
 
   /**
   * converts raw milliseconds into HH:mm:ss
