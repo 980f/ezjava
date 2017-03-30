@@ -1,4 +1,6 @@
-package pers.hal42.util;
+package pers.hal42.thread;
+
+import pers.hal42.lang.Monitor;
 
 public class Counter {
   private Monitor mon = new Monitor(Counter.class.getName());
@@ -97,13 +99,13 @@ public class Counter {
   /**
    * normalize
    */
-  private final long norm() {
+  private long norm() {
     if(count < min) {
       count = max; // ??? roll over ???
-      rollOverCount++;
+      ++rollOverCount;
     } else if(count > max) {
       count = min; // roll over
-      rollOverCount++;
+      ++rollOverCount;
     }
     return count;
   }

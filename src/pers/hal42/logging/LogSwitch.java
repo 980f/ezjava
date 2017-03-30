@@ -3,6 +3,7 @@ package pers.hal42.logging;
 import pers.hal42.lang.*;
 import pers.hal42.text.TextList;
 import pers.hal42.transport.EasyCursor;
+import pers.hal42.transport.EasyProperties;
 
 import java.util.Collections;
 import java.util.Vector;
@@ -10,24 +11,24 @@ import java.util.Vector;
 import static pers.hal42.logging.LogSwitchRegistry.registry;
 
 /**
+ * LogSwitches are contols for emitting messages through the two layes of the logging,
+ * ErrorLogStreams gate what they pass on to PrintForks, which gate what they pass along to the outside world.
+ *
 * comparable is just for sorting for user displays.
 */
 public class LogSwitch implements Comparable {
-  public LogLevelEnum level;
-  public static LogLevelEnum legacy(int level){
-    //set level to matching ordinal
-    try {
-      return LogLevelEnum.values()[level];
-    } catch(ArrayIndexOutOfBoundsException ignored){
-      return LogLevelEnum.ERROR;
-    }
-  }
+  /** a nickname to manipulate a logging control */
+  protected String guiName;
+  /** using arbitrary level value, for which LogLevelEnum holds typical ones*/
+  protected int level;
 
   public void setto(LogLevelEnum level){
+    this.level=level.ordinal();
+  }
+  public void setto(int level){
     this.level=level;
   }
 
-  protected String guiName;
   protected static LogLevelEnum DEFAULT_LEVEL = LogLevelEnum.VERBOSE;//set for server, which has a harder time configuring than the client
 
   private static final char [] lvlLtr = {'-','/','!'};
@@ -53,7 +54,7 @@ public class LogSwitch implements Comparable {
     }
   }
 
-  private static Vector All() {
+  private static Vector<LogSwitch> All() {
     return registry;
   }
 
@@ -78,7 +79,7 @@ public class LogSwitch implements Comparable {
    * +++ Create a separate LogSwitchList class that has an itemAt() function
    * that this class and other classes can use! +++
    */
-  public static Vector Sorted() {
+  public static Vector<LogSwitch> Sorted() {
     Vector<LogSwitch> copy;
     synchronized (registry) {
       copy=new Vector<>(registry.size());
@@ -88,10 +89,9 @@ public class LogSwitch implements Comparable {
     return copy;
   }
 
-  private static  LogSwitch find(String name) {
+  private static LogSwitch find(String name) {
     synchronized (registry){
-      for(int i = registry.size(); i-->0;){
-        LogSwitch test = (LogSwitch) registry.elementAt(i);
+      for(LogSwitch test :registry){
         if(test.Name().equals(name)) {
           return test;
         }
@@ -120,7 +120,7 @@ public class LogSwitch implements Comparable {
       LogSwitch forclass=find(guiname);
       if(forclass==null){
         forclass=new LogSwitch(guiname);
-        forclass.setto(legacy(oncreate));
+        forclass.setto(oncreate);
       }
       return forclass;
     }
@@ -163,13 +163,19 @@ public class LogSwitch implements Comparable {
     EasyCursor blob=new EasyCursor(/* presize to di*/);
     Vector<LogSwitch> debuggers = Sorted(); // get a second list copy to prevent exceptions
     for(LogSwitch bugger:debuggers){
-      blob.saveEnum(bugger.Name(),bugger);
+      try {
+        LogLevelEnum bugnum = LogLevelEnum.values()[bugger.Level()];
+        blob.saveEnum(bugger.Name(),bugnum);
+      } catch (ArrayIndexOutOfBoundsException ignored){
+        blob.setInt(bugger.Name(), bugger.Level());
+      }
     }
     return blob;
   }
 
+  /** todo:2 use text for known levels. Add method on LogLevelEnum for that.*/
   public String toSpam(){
-    return Name() + ": " + Image();
+    return Name() + ": " + Level();
   }
 
   public static void apply(EasyCursor preloads){
@@ -179,15 +185,17 @@ public class LogSwitch implements Comparable {
       debug("preloads:"+preloads.asParagraph(OS.EOL));
       String name;
       LogSwitch ls;
-      TextList names=preloads.branchKeys();
-      for(int i=names.size();i-->0;){
-        name=names.itemAt(i);
-        value.setto(preloads.getString(name));//#all constructors make copy of value.
-        ls=find(name);
+      TextList keys=preloads.branchKeys();
+      for(String key:keys.storage){
+        ls=find(key);
+        String value=preloads.getString(key);//#all constructors make copy of value.
+
+        LogLevelEnum knownlevel=LogLevelEnum.valueOf(value);
+        int level=(knownlevel!=null)?knownlevel.ordinal():StringX.parseInt(value);
         if(ls!=null){//if it exists change its setting
-          ls.setto(value.Value());
+          ls.setto(level);
         } else {//create a new one
-          ls=new LogSwitch(name,value);
+          ls=new LogSwitch(key,level);
         }
       }
     }
@@ -242,10 +250,7 @@ public class LogSwitch implements Comparable {
 
 
   private LogSwitch(String lookup,int spam) {
-    level=legacy(spam);
-//    if(!isLegal()){
-//      setto(DEFAULT_LEVEL);//truenum's leaves it more than verbose.
-//    }
+    level=spam;
     guiName=lookup;
     register();
   }
@@ -255,17 +260,17 @@ public class LogSwitch implements Comparable {
   }
   /////////////////////////////////////
 
-  public LogLevelEnum Level(){
+  public int Level(){
     return level;
   }
-
-  public LogSwitch setLevel(String fromenum){
-    level=LogLevelEnum.valueOf(fromenum);
-    return this;
-  }
+//
+//  public LogSwitch setLevel(String fromenum){
+//    level=LogLevelEnum.valueOf(fromenum);
+//    return this;
+//  }
 
   public LogSwitch setLevel(LogLevelEnum lle){
-    level=lle;
+    level=lle.ordinal();
     return this;
   }
 
@@ -278,11 +283,11 @@ public class LogSwitch implements Comparable {
   * if argument is the same or more severe than internal level we shall do something
   */
   public boolean passes(LogLevelEnum llev){
-    return (llev.ordinal()>=level.ordinal()) && (level!=LogLevelEnum.OFF);
+    return (llev.ordinal()>=level) && (level!=0);
   }
 
   public boolean is(LogLevelEnum llev){
-    return llev==level;
+    return llev.ordinal()==level;
   }
 
 }

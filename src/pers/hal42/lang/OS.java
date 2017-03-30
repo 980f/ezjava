@@ -1,6 +1,7 @@
 package pers.hal42.lang;
 
 import org.jetbrains.annotations.NotNull;
+import pers.hal42.text.TextList;
 
 import java.io.File;
 
@@ -27,7 +28,7 @@ public class OS {
   /**
    * gets best guess at OS from java properties.
    */
-  private static OsEnum os() {
+  public static OsEnum os() {
     if (os == null) {
       //os = new OsEnum();//class contains this one instance of itself
       String oser = System.getProperty("os.name", "");// let's not do this so we don't have to refer OUT of util -> StringX.replace(Main.props("os").getString("name"), " ", "");
@@ -45,9 +46,9 @@ public class OS {
     return os;
   }
 
-  public static int OsValue() {
-    return os().ordinal();
-  }
+//  public static int OsValue() {
+//    return os().ordinal();
+//  }
 
   public static String OsName() {
     return signature[os().ordinal()];
@@ -76,9 +77,9 @@ public class OS {
 //    return os().is(OsEnum.SunOS);
 //  }
 //
-//  public static boolean isUnish(){
-//    return isLinux()|| isSolaris();
-//  }
+  public static boolean isUnish(){
+    return isLinux();//|| isSolaris();
+  }
 //
 //  public static boolean isEmbedded(){
 //    return isLinux();//at present we are detecting only our own brand of linux
@@ -153,7 +154,8 @@ public class OS {
     return new File(TempRoot(), particular);
   }
 
-//  public static final int diskfree(String moreParams, TextList msgs) {
+  /** execute df -k and return its output*/
+  public static int diskfree(String moreParams, TextList msgs) {
 //    String filename = "C:\\CYGWIN\\BIN\\df.exe";//+_+ move to OS specific classes
 //    int timeout = 5;
 //    int displayrate = 1;
@@ -165,7 +167,8 @@ public class OS {
 //    filename = filename + " -k " + StringX.TrivialDefault(moreParams, "");
 //    int c = Executor.runProcess(filename, "", displayrate /* -1 */, timeout /* was never returning when set to -1 for my machine (not sure why) */, msgs);
 //    return c;
-//  }
+    return 0;
+  }
 
 }
 

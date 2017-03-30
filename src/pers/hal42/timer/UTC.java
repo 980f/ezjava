@@ -1,9 +1,10 @@
 package pers.hal42.timer;
 
-import pers.hal42.lang.MathX;
+import pers.hal42.lang.DateX;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.StringX;
-import pers.hal42.util.IntegralPower;
+import pers.hal42.math.IntegralPower;
+import pers.hal42.math.MathX;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -11,15 +12,15 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 /**
- * @todo Use a monitor for setting/getting? seems to be done
- * @todo <strike>Merge Ticks.java into this class? NO. ticks are intervals more often than absolute.</strike>
+ * todo:? Use a monitor for setting/getting? seems to be done
+ * todo:x <strike>Merge Ticks.java into this class? NO. ticks are intervals more often than absolute.</strike>
  */
 
 public class UTC implements Comparable {
   /**
    * h_uman r_eadable t_ime f_ormat ==
    */
-  private static final pers.hal42.util.LocalTimeFormat hrtf= pers.hal42.util.LocalTimeFormat.Utc();//"yyyyMMddHHmmssSSS"
+  private static final LocalTimeFormat hrtf= LocalTimeFormat.Utc();//"yyyyMMddHHmmssSSS"
   private static final Monitor formatting = new Monitor("UTCFormatter");
 
   public long utc=0;

@@ -1,10 +1,16 @@
-package pers.hal42.util.timer;
+package pers.hal42.timer;
 
-import java.util.*;
-import pers.hal42.util.*;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.transport.EasyProperties;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
 
 public class CronComputer {
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(CronComputer.class, ErrorLogStream.VERBOSE);
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(CronComputer.class, LogLevelEnum.VERBOSE);
 
   private GregorianCalendar zoned;
 
@@ -77,7 +83,7 @@ public class CronComputer {
 
   /**
    *
-   * @param next
+   * @param done
    * @param now
    * @return whether now is past the next scheduled time
    */

@@ -1,4 +1,6 @@
-package pers.hal42.util;
+package pers.hal42.service;
+
+import pers.hal42.transport.EasyCursor;
 
 /**
  * Title:        $Source: /cvs/src/net/paymate/util/ServiceConfigurator.java,v $

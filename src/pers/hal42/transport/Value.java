@@ -1,7 +1,10 @@
 package pers.hal42.transport;
 
-import pers.hal42.lang.ContentType;
-import pers.hal42.lang.ContentValid;
+//import pers.hal42.lang.ContentType;
+//import pers.hal42.lang.ContentValid;
+
+import pers.hal42.stream.ContentType;
+import pers.hal42.stream.ContentValid;
 
 /** an image of a union, kinda. */
 public class Value implements Comparable {

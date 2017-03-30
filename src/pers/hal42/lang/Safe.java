@@ -4,8 +4,9 @@ package pers.hal42.lang;
 /** Much of what is in here seems to have been later broken out to seperate classes. */
 
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.timer.LocalTimeFormat;
+import pers.hal42.timer.Ticks;
 import pers.hal42.util.Executor;
-import pers.hal42.util.LocalTimeFormat;
 
 import java.io.*;
 import java.text.DecimalFormat;
@@ -14,6 +15,7 @@ import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Vector;
 
+import static pers.hal42.lang.StringX.parseLong;
 import static pers.hal42.stream.IOX.makeWritable;
 
 //import pers.hal42.util.LocalTimeFormat;
@@ -389,15 +391,15 @@ public class Safe {
     return ell;
   }
 
-  public static final int parseInt(String s,int radix){
+  public static int parseInt(String s,int radix){
     return (int) (parseLong(s,radix) & 0xFFFFFFFF) ;
   }
 
-  public static final int parseInt(String s){//default radix 10
+  public static int parseInt(String s){//default radix 10
     return parseInt(s,10);
   }
 
-  public static final String subString(String s,int start,int end){
+  public static String subString(String s,int start,int end){
     int length;
     if(s!=null && start>=0 && end>start && start<(length=s.length())){
       return s.substring(start, Math.min(length, end));
@@ -406,7 +408,7 @@ public class Safe {
     }
   }
 
-  public static final String subString(StringBuffer s,int start,int end){
+  public static String subString(StringBuffer s,int start,int end){
     int length;
     if(s!=null && start>=0 && end>start && start<(length=s.length())){
       return s.substring(start, Math.min(length, end));
@@ -762,9 +764,9 @@ public class Safe {
     millis = millis % secondsDiv; // get the remainder
 
     return  ((days > 0) ? ("" + days + " ") : "") +
-      Safe.twoDigitFixed(hours) + ":" +
-      Safe.twoDigitFixed(minutes) + ":" +
-      Safe.twoDigitFixed(seconds);
+      StringX.twoDigitFixed(hours) + ":" +
+      StringX.twoDigitFixed(minutes) + ":" +
+      StringX.twoDigitFixed(seconds);
   }
 
   static final LocalTimeFormat LinuxDateCommand=LocalTimeFormat.Utc("MMddHHmmyyyy.ss");

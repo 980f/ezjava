@@ -1,6 +1,11 @@
+package pers.hal42.service;
 
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.logging.LogSwitch;
+import pers.hal42.thread.Counter;
+import pers.hal42.transport.EasyCursor;
 
-public class LogControlService /*extends Service */{
+public class LogControlService extends Service {
 
   // Singleton
   private static LogControlService logControl = null;
@@ -22,7 +27,7 @@ public class LogControlService /*extends Service */{
     up();
   }
   public String svcCnxns() {
-    return ""+LogSwitch.listLevels().size();
+    return ""+ LogSwitch.listLevels().size();
   }
   public String svcWrites() {
     return ""+writes.value();
@@ -61,8 +66,8 @@ public class LogControlService /*extends Service */{
     configger.setServiceParams(serviceName(), LogSwitch.asProperties());
   }
 
-  private void saveLevel(LogSwitch ls, LogLevelEnum lel) {
-    configger.setServiceParam(serviceName(), ls.Name(), lel.Image());
+  private void saveLevel(LogSwitch ls) {
+    configger.setServiceParam(serviceName(), ls.Name(), ls.toString());//todo:0 proper 3rd argument for logging level.
   }
 
   public void setAll(String to) {
@@ -70,10 +75,10 @@ public class LogControlService /*extends Service */{
     saveLevels();
   }
 
-  public LogLevelEnum set(LogSwitch ls, String to) {
-    LogLevelEnum lel = ls.setLevel(to).Level();
-    saveLevel(ls, lel);
-    return lel;
+  public int set(LogSwitch ls, String to) {
+    ls.setLevel(LogLevelEnum.valueOf(to)).Level();
+    saveLevel(ls);
+    return ls.Level();
   }
 
   public boolean selfConfiguring() {

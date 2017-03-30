@@ -1,10 +1,20 @@
-package pers.hal42.util;
+package pers.hal42.logging;
 
-import pers.hal42.lang.Monitor;
-import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.lang.*;
+import pers.hal42.math.Accumulator;
+import pers.hal42.stream.NullOutputStream;
+import pers.hal42.stream.StringFIFO;
+import pers.hal42.thread.Counter;
+import pers.hal42.timer.StopWatch;
+import pers.hal42.util.FileZipper;
+import pers.hal42.util.PrintFork;
 
 import java.io.*;
-import java.util.*;
+import java.util.Calendar;
+import java.util.ConcurrentModificationException;
+import java.util.Vector;
+
+import static java.util.Collections.sort;
 
 public class LogFile extends Thread implements AtExit, Comparable  {
 
@@ -40,38 +50,33 @@ public class LogFile extends Thread implements AtExit, Comparable  {
   }
 
   // static list stuff
-  private static final WeakSet lflist = new WeakSet();
+  private static final WeakSet<LogFile> lflist = new WeakSet<>();
   private static final Monitor listMonitor = new Monitor(LogFile.class.getName()+"List");
-  public static final LogFile [] listAll() {
-    Vector v = new Vector(); // for sorting
+  public static  LogFile [] listAll() {
+    Vector<LogFile> v = new Vector<>(); // for sorting
     LogFile [] sortedList = new LogFile[0];
     try {
       listMonitor.getMonitor();
-      for(Iterator i = lflist.iterator(); i.hasNext();) {
-        v.add(i.next());
-      }
-      Collections.sort(v);
+      v.addAll(lflist);
+      sort(v);
       sortedList = new LogFile[v.size()];
       v.toArray(sortedList);
     } catch (ConcurrentModificationException cme) {
-      ErrorLogStream.Debug.Caught(cme);
-      //dbg.Caught(cme);
+      ErrorLogStream.Global().Caught(cme);
     } catch (Exception e) {
-      ErrorLogStream.Debug.Caught(e);
-      //dbg.Caught(e);
+      ErrorLogStream.Global().Caught(e);
     } finally {
       listMonitor.freeMonitor();
       return sortedList;
     }
   }
 
-  private static final void register(LogFile logFile) {
+  private static void register(LogFile logFile) {
     try {
       listMonitor.getMonitor();
       lflist.add(logFile);
     } catch (Exception e) {
-      ErrorLogStream.Debug.Caught(e);
-      //dbg.Caught(e);
+      ErrorLogStream.Global().Caught(e);
     } finally {
       listMonitor.freeMonitor();
     }
@@ -107,7 +112,7 @@ public class LogFile extends Thread implements AtExit, Comparable  {
     reader = bafifo.getBufferedReader();
     register(this);
     setDaemon(true);
-    OnExit(this);
+    //todo:00 Main.OnExit(this);
     start();
   }
 
@@ -142,25 +147,25 @@ public class LogFile extends Thread implements AtExit, Comparable  {
   protected static final Monitor logFileMon = new Monitor(LogFile.class.getName() + "_PrintForkCreator");
   protected PrintFork pf = null;
   public PrintFork getPrintFork() {
-    return getPrintFork(ErrorLogStream.WARNING);
+    return getPrintFork(LogLevelEnum.WARNING);
   }
-  public PrintFork getPrintFork(int defaultLevel) {
+  public PrintFork getPrintFork(LogLevelEnum defaultLevel) {
     return getPrintFork(filename, defaultLevel);
   }
   public PrintFork getPrintFork(String name) {
-    return getPrintFork(name, ErrorLogStream.WARNING);
+    return getPrintFork(name, LogLevelEnum.WARNING);
   }
-  public PrintFork getPrintFork(String name, int defaultLevel) {
+  public PrintFork getPrintFork(String name, LogLevelEnum defaultLevel) {
     return getPrintFork(name, defaultLevel, false /* don't register! */);
   }
-  public PrintFork getPrintFork(int defaultLevel, boolean register) {
+  public PrintFork getPrintFork(LogLevelEnum defaultLevel, boolean register) {
     return getPrintFork(filename, defaultLevel, register);
   }
-  public PrintFork getPrintFork(String name, int defaultLevel, boolean register) {
+  public PrintFork getPrintFork(String name, LogLevelEnum defaultLevel, boolean register) {
     try {
       logFileMon.getMonitor();
       if(pf == null) {
-        pf = new LogFilePrintFork(name, getPrintStream(), defaultLevel, register);
+        pf = new LogFilePrintFork(name, getPrintStream(), defaultLevel.ordinal(), register);
       }
     } catch (Exception e) {
       // ??? +++
@@ -170,11 +175,11 @@ public class LogFile extends Thread implements AtExit, Comparable  {
     }
   }
 
-  public static final PrintFork makePrintFork(String filename, boolean compressed) {
-    return makePrintFork(filename, ErrorLogStream.WARNING, compressed);
+  public static PrintFork makePrintFork(String filename, boolean compressed) {
+    return makePrintFork(filename, LogLevelEnum.WARNING.ordinal(), compressed);
   }
 
-  public static final PrintFork makePrintFork(String filename, int defaultLevel, boolean compressed) {
+  public static PrintFork makePrintFork(String filename, int defaultLevel, boolean compressed) {
     LogFile fpf = null;
     PrintFork mypf=null;
     try {
@@ -284,7 +289,7 @@ public class LogFile extends Thread implements AtExit, Comparable  {
             if(!overwrite) {
               file = new File(longFilename);
               if(file.exists()) {
-                String newFilename = filename+Safe.timeStampNow()+".log"; // +++ put ".log" somewhere where we can set it per-log
+                String newFilename = filename+DateX.timeStampNow()+".log"; // +++ put ".log" somewhere where we can set it per-log
                 if(file.renameTo(new File(newFilename))) {
                   list.add(FileZipper.backgroundZipFile(newFilename));
                 }
@@ -403,14 +408,16 @@ public class LogFile extends Thread implements AtExit, Comparable  {
 
 }
 
-class FileZipperList extends Vector {
-  public void add(FileZipper fz) {
+class FileZipperList extends Vector<FileZipper> {
+  public boolean add(FileZipper fz) {
     // first, add it, then look for stale ones
     super.insertElementAt(fz,0);
     cleanup();
+    return true;
   }
+
   public FileZipper itemAt(int i) {
-    return (FileZipper)elementAt(i);
+    return elementAt(i);
   }
   public int cleanup() {
     for(int i = size(); i-->0;) {
@@ -439,7 +446,7 @@ class LogFilePrintFork extends PrintFork {
 
   public void println(String s, int printLevel){
     if(!registered) { //  if it is registered, it will be getting the header already.
-     String prefix = Safe.timeStampNow() + LogSwitch.letter(printLevel) + Thread.currentThread() + ":";
+     String prefix = DateX.timeStampNow() + LogSwitch.letter(printLevel) + Thread.currentThread() + ":";
       super.println(prefix + s, printLevel);
     } else {
       super.println(s, printLevel);

@@ -1,7 +1,6 @@
 package pers.hal42.math;
 
 import pers.hal42.lang.Bool;
-import pers.hal42.lang.MathX;
 
 public class IntegralPower {
   /** power = radix*exponent, if not overflowed*/

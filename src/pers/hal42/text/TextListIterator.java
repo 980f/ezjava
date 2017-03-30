@@ -1,8 +1,11 @@
-package pers.hal42.util;
+package pers.hal42.text;
+
+import pers.hal42.math.MathX;
+import pers.hal42.lang.StringX;
+
 
 import java.util.Enumeration;
-import pers.hal42.lang.MathX;
-import pers.hal42.lang.StringX;
+import java.util.NoSuchElementException;
 
 public class TextListIterator implements Enumeration {
   private TextList tl;
@@ -165,7 +168,7 @@ public class TextListIterator implements Enumeration {
      * object has at least one more element to provide.
      *
      * @return     the next element of this enumeration.
-     * @exception  NoSuchElementException  if no more elements exist.
+     * @exception NoSuchElementException  if no more elements exist.
      */
     public Object nextElement(){
       if(!stillHas(1)){

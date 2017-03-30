@@ -1,10 +1,15 @@
-package pers.hal42.util;
+package pers.hal42.timer;
+
+import pers.hal42.lang.StringX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.TextList;
+import pers.hal42.transport.EasyCursor;
+import pers.hal42.transport.isEasy;
 
 import java.text.SimpleDateFormat;
-import java.util.TimeZone;
 import java.util.Calendar;
 import java.util.Date;
-import pers.hal42.lang.StringX;
+import java.util.TimeZone;
 
 public class LocalTimeFormat implements isEasy {
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(LocalTimeFormat.class);
@@ -157,7 +162,7 @@ public class LocalTimeFormat implements isEasy {
   * Era:          G (eg: BC/AD)
   */
 
- public static final void main(String [] args) {
+ public static void main(String [] args) {
    // output the zone names
    String [] zones = TimeZone.getAvailableIDs();
    TextList tl = new TextList(zones);

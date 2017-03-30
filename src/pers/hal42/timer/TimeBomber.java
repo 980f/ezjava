@@ -1,4 +1,4 @@
-package pers.hal42.util.timer;
+package pers.hal42.timer;
 
 /**
 Intended use: timeout on background activity outside of Java
@@ -7,10 +7,12 @@ Intended use: timeout on background activity outside of Java
 *      int is used for timer so that we don't have to worry about non-atomicity
 *      of longs.
 */
-import pers.hal42.util.*;
+
+import pers.hal42.lang.ThreadX;
+import pers.hal42.logging.ErrorLogStream;
 
 public class TimeBomber implements Runnable {
-  static final ErrorLogStream dbg=new ErrorLogStream(TimeBomber.class.getName());
+  static final ErrorLogStream dbg=ErrorLogStream.getForClass(TimeBomber.class);
   protected TimeBomb dynamite=null;
 /**
  * while system timing is done with longs they are not atomic so we use ints

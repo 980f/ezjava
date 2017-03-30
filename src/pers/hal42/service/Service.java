@@ -1,15 +1,26 @@
+package pers.hal42.service;
 
-
-import java.util.*; // Vector
-import java.io.PrintStream;
+import pers.hal42.lang.Monitor;
+import pers.hal42.lang.OS;
+import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogFile;
+import pers.hal42.math.Accumulator;
+import pers.hal42.text.*;
+import pers.hal42.transport.EasyCursor;
+import pers.hal42.util.PrintFork;
+import pers.hal42.web.SendMailPanicStream;
+
+import java.util.Arrays;
+//import java.util.Formatter;
+import java.util.Vector;
 
 
 public abstract class Service implements Comparable {
 
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Service.class);
   private static final NullServiceConfigurator NULLER = new NullServiceConfigurator(dbg);
-
+  SendMailPanicStream panicker;
   // Don't overload a function if you don't want to output anything.  The base class will handle returning NOCOMMENT.
   protected static final String NOCOMMENT="-";
 
@@ -32,7 +43,7 @@ public abstract class Service implements Comparable {
   public Service(String enumer, ServiceConfigurator configger, boolean startLogfile) {
     this.enumer = enumer;
     panicker=SendMailPanicStream.Create(hostname()+"."+enumer,this.dbg);
-    panicker.sendTo(mailer);
+//    panicker.sendTo(mailer);
     if(startLogfile) {
       initLog();
     }
@@ -81,7 +92,7 @@ public abstract class Service implements Comparable {
   protected final void markStateChange(String otherThings) {
     String line = "service brought " + upText() + "! " + StringX.TrivialDefault(otherThings, "");
     println(line);
-    PANIC(line);
+//    PANIC(line);
   }
 
   public final String upText() {
@@ -119,7 +130,7 @@ public abstract class Service implements Comparable {
     try {
       pf.println(s);
     } catch (Exception e) {
-      LogFile.backupLogException("Service.println()", e);
+//      LogFile.backupLogException("Service.println()", e);
     }
   }
 

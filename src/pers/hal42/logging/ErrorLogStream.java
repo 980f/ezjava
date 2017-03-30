@@ -8,7 +8,7 @@ package pers.hal42.logging;
 
 import pers.hal42.lang.AtExit;
 import pers.hal42.lang.StringX;
-import pers.hal42.stream.LogFile;
+import pers.hal42.logging.LogFile;
 import pers.hal42.text.TextList;
 import pers.hal42.util.PrintFork;
 import pers.hal42.util.StringStack;

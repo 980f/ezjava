@@ -1,9 +1,16 @@
 package pers.hal42.util;
-import  java.util.zip.GZIPOutputStream;
-import  java.util.Vector;
-import  java.io.FileInputStream;
-import  java.io.FileOutputStream;
-import  java.io.File;
+
+import pers.hal42.lang.AtExit;
+import pers.hal42.lang.ThreadX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.stream.Streamer;
+import pers.hal42.text.TextList;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Vector;
+import java.util.zip.GZIPOutputStream;
 
 /**
  * To zip a file in the background, just call:
@@ -14,7 +21,7 @@ import  java.io.File;
  */
 public class FileZipper extends Thread implements AtExit {
 
-  private static final ErrorLogStream dbg = new ErrorLogStream(FileZipper.class.getName());
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FileZipper.class);
   private static final FileZipperRegistry registry = new FileZipperRegistry();
 
   // call these last so that they don't starve the other threads ???
@@ -85,7 +92,7 @@ public class FileZipper extends Thread implements AtExit {
 
   // it has its own main in case someone wants to use it,
   // but it just uses Tester
-  public static final void main(String[] args) {
+  public static void main(String[] args) {
     Tester.main(args);
   }
 

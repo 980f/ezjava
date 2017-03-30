@@ -1,4 +1,9 @@
-package pers.hal42.util;
+package pers.hal42.math;
+
+import pers.hal42.lang.Monitor;
+import pers.hal42.thread.Counter;
+import pers.hal42.transport.EasyCursor;
+import pers.hal42.transport.isEasy;
 
 public class Accumulator implements isEasy {
 
@@ -9,7 +14,7 @@ public class Accumulator implements isEasy {
   }
 
   public String toString(){
-    return String.valueOf(this.sum)+Ascii.bracket(count);
+    return String.valueOf(this.sum)+ pers.hal42.util.Ascii.bracket(count);
   }
 
   public String toSpam() {

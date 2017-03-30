@@ -1,23 +1,26 @@
 package pers.hal42.util;
 
-import java.io.PrintStream;
-import java.io.OutputStream;
-import pers.hal42.logging.*;
-import java.util.Vector;
 import pers.hal42.lang.StringX;
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.logging.LogSwitch;
+import pers.hal42.logging.LogSwitchRegistry;
+import pers.hal42.transport.EasyCursor;
+
+import java.io.PrintStream;
+import java.util.Vector;
 
 public class PrintFork {
-  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF;//set for server, which has a harder time configuring than the client
+  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF.ordinal();//set for server, which has a harder time configuring than the client
 
   protected PrintStream ps;
   public LogSwitch myLevel;
   protected boolean registered = false;
 
-  public static final PrintFork Fork(int i){
+  public static PrintFork Fork(int i){
     return LogSwitchRegistry.printForkRegistry.elementAt(i);
   }
 
-  protected static final boolean unFork(PrintFork pf) {
+  protected static boolean unFork(PrintFork pf) {
     if(pf != null) {
       LogSwitchRegistry.printForkRegistry.removeElement(pf);
     }
@@ -47,7 +50,7 @@ public class PrintFork {
   }
   /////////////////////////////////////////////
   public static final void SetAll(LogLevelEnum lle){
-    DEFAULT_LEVEL = lle.Value();
+    DEFAULT_LEVEL = lle.ordinal();
     for(int i = LogSwitchRegistry.printForkRegistry.size(); i-->0;) {
       Fork(i).myLevel.setto(DEFAULT_LEVEL);
     }
@@ -63,12 +66,12 @@ public class PrintFork {
     }
   }
 
-  protected PrintFork(String name, PrintStream primary, int startLevel) {
+  public PrintFork(String name, PrintStream primary, int startLevel) {
     this(name, primary, startLevel, true);
   }
 
-  protected PrintFork(String name, PrintStream primary) {
-    this(name, primary, LogSwitch.DEFAULT_LEVEL);
+  public PrintFork(String name, PrintStream primary) {
+    this(name, primary,0);//todo:0 access project default level
   }
 
   public void setPrintStream(PrintStream primary) {
@@ -96,13 +99,13 @@ public class PrintFork {
  * this stream's gated  print
  */
   public void VERBOSE(String s) {
-    println(s, LogLevelEnum.VERBOSE);
+    println(s, LogLevelEnum.VERBOSE.ordinal());
   }
   public void WARNING(String s) {
-    println(s, LogLevelEnum.WARNING);
+    println(s, LogLevelEnum.WARNING.ordinal());
   }
   public void ERROR(String s) {
-    println(s, LogLevelEnum.ERROR);
+    println(s, LogLevelEnum.ERROR.ordinal());
   }
   public void println(String s, int printLevel){
     if((s != null) && myLevel.passes(printLevel)) {

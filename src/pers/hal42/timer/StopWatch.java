@@ -8,8 +8,10 @@
  * @todo: add registry so that we can do the same adjustments done by Alarmer. (true for anything that uses DateX)
  */
 
-package pers.hal42.util.timer;
+package pers.hal42.timer;
 
+
+import pers.hal42.lang.DateX;
 
 public class StopWatch {
   long started;
@@ -25,7 +27,7 @@ public class StopWatch {
   }
 
   public double seconds(){ //can be read while running
-    return ((double)millis())/Ticks.perSecond;
+    return ((double)millis())/ Ticks.perSecond;
   }
 
   public long millis(){ //can be read while running

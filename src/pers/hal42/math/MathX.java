@@ -1,4 +1,4 @@
-package pers.hal42.lang;
+package pers.hal42.math;
 
 import java.lang.Math;
 
@@ -10,11 +10,11 @@ public class MathX {
   public static final int  INVALIDINTEGER=Integer.MIN_VALUE; //NOT the same as invalid index
   public static final long INVALIDLONG=Long.MIN_VALUE;
 
-  public static final int signum(int signed){
+  public static int signum(int signed){
     return signed>0? 1 : signed<0 ? -1 : 0;
   }
 
-  public static final int signum(long signed){
+  public static int signum(long signed){
     return signed>0? 1 : signed<0 ? -1 : 0;
   }
 
@@ -40,32 +40,32 @@ public class MathX {
    *  doesn't deal with end before start (field crossing boundary)
    * @todo: move into a byte package!
   */
-  public static final int getSignedField(int datum,int start,int end){
+  public static int getSignedField(int datum,int start,int end){
     return (datum<<(31-start)) & ~((1<<end)-1);
   }
 
   /** @todo: move into a byte package!
    * @return two nibbles from @param high and @param low ls digits in the ls byte of an int.
    */
-  public static final int packNibbles(int high,int low){
+  public static int packNibbles(int high,int low){
     return ((high&15)<<4) + (low&15);
   }
 
   // +++ why promote to only float, but then promote to double later?
-  public static final double ratio(int num, int denom){
+  public static double ratio(int num, int denom){
     return (denom==0)?0:((double)num)/((double)denom);
   }
 
-  public static final double ratio(long num, long denom){
+  public static double ratio(long num, long denom){
     return (denom==0)?0:((double)num)/((double)denom);
   }
 
-  public static final long percent(long dividend, long divisor) {
+  public static long percent(long dividend, long divisor) {
     return Math.round(ratio(dividend * 100, divisor));
   }
 
   // true of numerator.0 / denominator.0 is a whole number
-  public static final boolean /*whole*/multipleOf(int numerator, int denominator) {
+  public static boolean /*whole*/multipleOf(int numerator, int denominator) {
     return (numerator % denominator) == 0;
   }
 }
