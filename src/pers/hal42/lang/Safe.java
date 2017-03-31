@@ -44,15 +44,20 @@ public class Safe {
   }
 
 
-//  public static File [] listFiles(File dir){
-//    File [] list=dir.listFiles();
-//    return list!=null ? list: new File[0];
-//  }
-//
-//  public static File [] listFiles(File dir, FileFilter filter){
-//    File [] list=dir.listFiles(filter);
-//    return list!=null ? list: new File[0];
-//  }
+  public static int enumSize(Enum eg){
+    return eg.getClass().getEnumConstants().length;
+  }
+
+//todo:1 move these to IOx
+  public static File [] listFiles(File dir){
+    File [] list=dir.listFiles();
+    return list!=null ? list: new File[0];
+  }
+
+  public static File [] listFiles(File dir, FileFilter filter){
+    File [] list=dir.listFiles(filter);
+    return list!=null ? list: new File[0];
+  }
 
 ///**
 // * quickie DOSlike file attribute control
@@ -93,35 +98,6 @@ public class Safe {
     }
   }
 
-  /**
-   * @return true if stream closes Ok, or didn't need to.
-   */
-  public static boolean Close(OutputStream fos){
-    if(fos != null) {
-      try {
-        fos.flush(); //to make this like C
-        fos.close();
-      } catch (Exception tfos) {
-        pers.hal42.logging.ErrorLogStream.Global().Caught(tfos);
-        return false;
-      }
-    }
-    return true;
-  }
-
-  /**
-   * @return true if stream closes Ok, or didn't need to.
-   */
-  public static boolean Close(InputStream fos){
-    if(fos != null) {
-      try {
-        fos.close();
-      } catch (Exception tfos) {
-        return false;
-      }
-    }
-    return true;
-  }
 
   /**
    *

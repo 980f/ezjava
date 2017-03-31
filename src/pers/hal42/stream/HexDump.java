@@ -1,8 +1,9 @@
 package pers.hal42.stream;
 
-import pers.hal42.lang.Fstring;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.Fstring;
+import pers.hal42.text.TextColumn;
 
 import java.io.*;
 

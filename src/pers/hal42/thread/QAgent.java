@@ -7,13 +7,15 @@ package pers.hal42.thread;
  */
 
 import pers.hal42.lang.ReflectX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.timer.Ticks;
 
 import java.util.Comparator;
 
 public class QAgent implements Runnable {
   private static ErrorLogStream classdbg;
 
-  private static final long failsafeKeepAlive=Ticks.forSeconds(100);// a zero keepalive is heinous
+  private static final long failsafeKeepAlive= Ticks.forSeconds(100);// a zero keepalive is heinous
 
   private QActor actor;
   protected PrioritizedQueue fifo;//accessible for input filtering based upon present content

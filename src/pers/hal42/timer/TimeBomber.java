@@ -8,7 +8,7 @@ Intended use: timeout on background activity outside of Java
 *      of longs.
 */
 
-import pers.hal42.lang.ThreadX;
+import pers.hal42.thread.ThreadX;
 import pers.hal42.logging.ErrorLogStream;
 
 public class TimeBomber implements Runnable {
@@ -60,7 +60,7 @@ public class TimeBomber implements Runnable {
   }
 
   public boolean isTicking(){
-    return timer!=null?timer.isAlive():false;
+    return timer != null && timer.isAlive();
   }
 
   /**
@@ -87,9 +87,9 @@ public class TimeBomber implements Runnable {
       if(fuse>0){
         timer=new Thread(this /*as Runnable*/,"TimeBomb#"+dynamite.toString()+"#"+ idCounter++ +"#");
         //all uses are as timeouts, it doesn't matter if the timer takes extra time before firing
-//when the timeout got set by the callback that **it** calls, the priority racheted down
-//until it was MIN and never ran  timer.setPriority(Math.min(Thread.currentThread().getPriority(),Thread.NORM_PRIORITY)-1);
-        timer.setPriority(Thread.NORM_PRIORITY/*-1*/);//%%TimeoutPriority
+//#-- when the timeout got set by the callback that **it** calls, the priority racheted down ...
+//...until it was MIN and never ran  ---timer.setPriority(Math.min(Thread.currentThread().getPriority(),Thread.NORM_PRIORITY)-1);
+        timer.setPriority(Thread.NORM_PRIORITY);//%%TimeoutPriority
         timer.start();
       }
       defused=false;

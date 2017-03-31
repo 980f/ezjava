@@ -1,7 +1,8 @@
 package pers.hal42.lang;
 
-import pers.hal42.lang.Value;
-import pers.hal42.lang.ContentType;
+
+import pers.hal42.stream.ContentType;
+import pers.hal42.transport.Value;
 
 public class Bool extends Value implements Comparable {
 
@@ -52,7 +53,7 @@ public class Bool extends Value implements Comparable {
   }
 
   public ContentType charType(){//for Value hierarchy
-    return new ContentType(ContentType.alphanum);
+    return ContentType.alphanum;
   }
 
   public String Image(){
@@ -147,7 +148,7 @@ public class Bool extends Value implements Comparable {
     try {
       if(StringX.equalStrings(SHORTTRUE(), trueorfalse)) {
         ret = true;
-      } else if(Boolean.valueOf(trueorfalse).booleanValue()) {
+      } else if(Boolean.valueOf(trueorfalse)) {
         ret = true;
       } else if(StringX.equalStrings("t", trueorfalse)) { // the database returns "t" for true!
         ret = true;
@@ -179,8 +180,8 @@ public class Bool extends Value implements Comparable {
     return "N";
   }
 
-  public static final String TRUESTRING = (new Boolean(true)).toString();
-  public static final String FALSESTRING = (new Boolean(false)).toString();
+  public static final String TRUESTRING = Boolean.TRUE.toString();
+  public static final String FALSESTRING = Boolean.FALSE.toString();
   public static String toString(boolean isTrue) {
     return isTrue ? TRUESTRING : FALSESTRING;
   }
@@ -193,6 +194,7 @@ public class Bool extends Value implements Comparable {
     return FALSESTR;
   }
 
+  /** pack booleans into a 64 bit integer */
   public static long LongFromMap(boolean [] map){
     long ell=0;
     int i=0;
@@ -218,12 +220,9 @@ public class Bool extends Value implements Comparable {
 
   public boolean equals(Object obj) {
     if (obj instanceof Boolean) {
-      return amtrue == ((Boolean)obj).booleanValue();
+      return amtrue == (Boolean) obj;
     }
-    if (obj instanceof Bool) {
-      return amtrue == ((Bool)obj).amtrue;
-    }
-    return false;
+    return obj instanceof Bool && amtrue == ((Bool) obj).amtrue;
   }
 
   /**

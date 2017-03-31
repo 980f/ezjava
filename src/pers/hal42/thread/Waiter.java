@@ -1,20 +1,22 @@
 package pers.hal42.thread;
 
-/**
- * usage:
- * call waiter.prepare() BEFORE triggering behavior that will eventually notify you.
- * call waiter.Start(...) to wait for notification. It returns "state" or you can get
- * that same value from the state() function.
- * All parameters are set by prepare(...) variations, internal defaults used for ones omitted
- * Start(...) variations only modify the parameters passed, retaining ones set by the last prepare()
- *
- * see end of file for more extensive usage advice
- *
- * NOTE: JVM requires that we synch on the same object that is used for wait and notify!
+/*
+  usage:
+  call waiter.prepare() BEFORE triggering behavior that will eventually notify you.
+  call waiter.Start(...) to wait for notification. It returns "state" or you can get
+  that same value from the state() function.
+  All parameters are set by prepare(...) variations, internal defaults used for ones omitted
+  Start(...) variations only modify the parameters passed, retaining ones set by the last prepare()
+
+  see end of file for more extensive usage advice
+
+  NOTE: JVM requires that we synch on the same object that is used for wait and notify!
  */
 
-import pers.hal42.util.timer.*;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.Ascii;
 import pers.hal42.text.Formatter;
+import pers.hal42.timer.StopWatch;
 
 public class Waiter {
   ////////////////////
@@ -139,8 +141,7 @@ public class Waiter {
 
   /**
    *
-   * @note: the synch in prepare is now required. Clears any old notification or
-   *   problem so that we can see a new one.
+   * note: the synch in prepare is required. Clears any old notification or problem so that we can see a new one.
    * @return this
    */
   public Waiter prepare(){
@@ -154,7 +155,7 @@ public class Waiter {
   /**
    * waitOnMe, safe object to do actual thread wait's on.
    */
-  private Object waitOnMe = new Object();
+  private final Object waitOnMe = new Object();
 
   /** starts waiting
    * @return state when waiting is done.
@@ -180,7 +181,7 @@ public class Waiter {
               waitOnMe.wait(waitfor); //will throw IllegalArgumentException if sleep time is negative...
             }
             catch(InterruptedException ie){
-              Thread.currentThread().interrupted();//clear thread's interrupted flag
+              Thread.interrupted();//clear thread's interrupted flag
               if(allowInterrupt){
                 dbg.VERBOSE("interrupted,exiting");
                 state=Interrupted;
@@ -217,11 +218,9 @@ public class Waiter {
   /**
    * stretch a wait in progress, or set wait time for next wait.
    *
-   * @param milliseconds time to continue waiting starting from NOW, not
-   *   original start().
-   * @return the state, if not 'extending' then wasn't in a state legal to
-   *   extend
-   * @note is you use this you should always give an argument to prepare().
+   * @param milliseconds time to continue waiting starting from NOW, not original start().
+   * @return the state, if not 'extending' then wasn't in a state legal to extend
+   * note: if you use this you should always give an argument to prepare().
    */
   public int Extend(long milliseconds) {
     synchronized(waitOnMe) {
@@ -350,7 +349,7 @@ public class Waiter {
 
   /**
    * create a Waiter, with legal but useless configuration.
-   * @see Create(...)
+   * @ see Create(...)
    */
   public Waiter() {
     if(dbg==null){

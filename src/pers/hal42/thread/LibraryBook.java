@@ -1,5 +1,8 @@
 package pers.hal42.thread;
 
+import pers.hal42.lang.Monitor;
+import pers.hal42.logging.ErrorLogStream;
+
 public class LibraryBook {
 
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(LibraryBook.class);

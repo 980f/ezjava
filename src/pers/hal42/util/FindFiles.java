@@ -1,13 +1,19 @@
 package pers.hal42.util;
-import  java.io.File;
-import  java.io.FileFilter;
+
+import pers.hal42.lang.Safe;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.stream.TailFilter;
+import pers.hal42.text.TextList;
+
+import java.io.File;
+import java.io.FileFilter;
 
 // +++ This needs to use regular expressions!
 // +++ See: http://www.meurrens.org/ip-Links/java/regex/index.html
 
 public class FindFiles {
 
-  protected static final ErrorLogStream dbg = new ErrorLogStream(FindFiles.class.getName());
+  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(FindFiles.class);
 
 /**
  * filterStr is something like ".java" (JUST LOOKS FOR EXTENSIONS RIGHT NOW!)

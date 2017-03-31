@@ -1,6 +1,9 @@
 package pers.hal42.thread;
 
-import java.util.*;
+import pers.hal42.stream.ObjectFifo;
+
+import java.util.Collections;
+import java.util.Comparator;
 
 public class PrioritizedQueue extends ObjectFifo {
   private Comparator ordering;

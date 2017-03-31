@@ -1,10 +1,16 @@
 package pers.hal42.util;
 
 
-import  java.util.Vector;
-import  java.io.*;
-import pers.hal42.lang.ThreadX;
 import pers.hal42.lang.StringX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.TextList;
+import pers.hal42.thread.ThreadX;
+import pers.hal42.timer.Ticks;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 
 public class Executor {
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(Executor.class);
@@ -90,7 +96,7 @@ public class Executor {
     Process process = null;
     BufferedReader in;
     BufferedReader err;
-    PrintStream    out;
+    PrintStream out;
     boolean done;
     if(commandline==null){
       return -2;

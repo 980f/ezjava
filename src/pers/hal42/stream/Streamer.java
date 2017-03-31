@@ -1,9 +1,18 @@
 package pers.hal42.stream;
 
-import  java.io.*;//getReader & getInputStream use just about everything
+import pers.hal42.Main;
+import pers.hal42.lang.ObjectX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.text.Ascii;
+import pers.hal42.thread.ThreadX;
+import pers.hal42.util.InstanceNamer;
+
+import java.io.*;
+import java.util.EventObject;
 
 public class Streamer implements Runnable {
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Streamer.class, ErrorLogStream.WARNING);
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Streamer.class, LogLevelEnum.WARNING);
 //values for "status"   // +++ enumerate
   static final int NOTSTARTED = -1;
   static final int RUNNING = 0;
@@ -148,8 +157,8 @@ public class Streamer implements Runnable {
             break;
           }
         }
-        if(bytes>ObjectX.INVALIDINDEX){//other negative values will come in someday!
-          dbg.VERBOSE("piped:"+Ascii.bracket(bytes));
+        if(bytes> ObjectX.INVALIDINDEX){//other negative values will come in someday!
+          dbg.VERBOSE("piped:"+ Ascii.bracket(bytes));
           out.write(bytes);
           out.flush(); // ----- testing !!!
           spewed++;
@@ -238,7 +247,8 @@ public class Streamer implements Runnable {
         } else
         if(item instanceof File){//structured filename
           casted= new FileInputStream((File)item);
-        } else
+        }
+        else
         if(item instanceof String){//raw file name
           casted= new FileInputStream(Main.LocalFile((String)item));
         }
@@ -272,8 +282,8 @@ public class Streamer implements Runnable {
     return spewed;
   }
 
-  private static final int DEFAULTBUFFERSIZE = 10000;
-  private static final int MAXBUFFERSIZE = 100000;
+//  private static final int DEFAULTBUFFERSIZE = 10000;
+//  private static final int MAXBUFFERSIZE = 100000;
 
   public static long swapStreams(InputStream in, OutputStream out) throws IOException {
     return swapStreams(in, out, DEFAULTBUFFERSIZE);
@@ -331,26 +341,26 @@ public class Streamer implements Runnable {
     this.out = out;
   }
 
-  InputStream in = null;
-  OutputStream out = null;
-  // +++ enumerate
-  int status = NOTSTARTED;
-  long count = 0;
-  static final int NOTSTARTED = -1;
-  static final int RUNNING = 0;
-  static final int DONE = 1;
-  static final int ERRORED = 2;
+//  InputStream in = null;
+//  OutputStream out = null;
+//  // +++ enumerate
+//  int status = NOTSTARTED;
+//  long count = 0;
+//  static final int NOTSTARTED = -1;
+//  static final int RUNNING = 0;
+//  static final int DONE = 1;
+//  static final int ERRORED = 2;
 
-  public void run() {
-    status = RUNNING;
-    try {
-      // +++ add the ability to drop this to a lower priority.
-      count = swapStreams(in, out); // the read blocking can make this run at a lower priority, for now
-      status = DONE;
-    } catch (Exception e) {
-      status = ERRORED;
-// +++ bitch
-    }
-  }
+//  public void run() {
+//    status = RUNNING;
+//    try {
+//      // +++ add the ability to drop this to a lower priority.
+//      count = swapStreams(in, out); // the read blocking can make this run at a lower priority, for now
+//      status = DONE;
+//    } catch (Exception e) {
+//      status = ERRORED;
+//// +++ bitch
+//    }
+//  }
 
 }

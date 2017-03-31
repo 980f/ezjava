@@ -1,6 +1,6 @@
 package pers.hal42.text;
 
-import pers.hal42.text.Fstring;
+import pers.hal42.logging.ErrorLogStream;
 
 public class TextColumn extends TextList{//simple text one
 

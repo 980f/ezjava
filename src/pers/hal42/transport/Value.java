@@ -1,15 +1,12 @@
 package pers.hal42.transport;
 
-//import pers.hal42.lang.ContentType;
-//import pers.hal42.lang.ContentValid;
 
 import pers.hal42.stream.ContentType;
-import pers.hal42.stream.ContentValid;
 
 /** an image of a union, kinda. */
 public class Value implements Comparable {
   public ContentType charType(){
-    return new ContentType(ContentType.unknown);
+    return ContentType.unknown;
   }
 
   public String Image(){//stub
@@ -33,16 +30,17 @@ public class Value implements Comparable {
   }
 
   public void Clear(){//stub
-    return;
+
   }
 
   public boolean acceptChar(char keyStroke){
-    return ContentValid.legalChar( charType(), keyStroke);
+    return charType().legalChar(keyStroke);
   }
 
   public boolean acceptString(String proposed){
-    return ContentValid.legalChars(charType(), proposed) && setto(proposed);
+    return charType().legalChars( proposed) && setto(proposed);
   }
+
   /**
    * @param mask rules:A alpha N number S symbol X anything ucase==required lcase==optional
    * @return true if the value is compatible with the mask
@@ -59,7 +57,7 @@ public class Value implements Comparable {
     for(scanner=0;scanner<stop;scanner++){
       ch=value.charAt(scanner);
       type=mask.charAt(scanner);
-      if(!ContentValid.legalChar(ContentValid.typeForCode(type),ch)){
+      if(!ContentType.typecode(type).legalChar(ch)){
         return false;
       }
     }

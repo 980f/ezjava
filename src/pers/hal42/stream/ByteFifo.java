@@ -1,21 +1,25 @@
 /**
  *
- * This class implements an output stream in which the data is written into and read from a byte array. The buffer automatically grows as data is written to it.
+ * This class implements an output stream in which the data is written into and read from a byte array.
+ * The buffer automatically grows as data is written to it.
  *
- * This class implements an input stream which contains an internal buffer that contains bytes that may be read from the stream. An internal counter keeps track of the next byte to be supplied by the <code>read</code> method.
+ * This class implements an input stream which contains an internal buffer that contains bytes that may be read from the stream.
+ * An internal counter keeps track of the next byte to be supplied by the <code>read</code> method.
  *
- * @todo: use a circular buffer to reduce the copying overhead. Reference C code is available.
- * @todo: replace synchronized methods with synchronizing on some object, to refine scope.
- * @todo: make blocking read work. Users desiring unblocked reads can check size.
- * @todo: add refinements to 'ensureCapacity' mimicking ju.Vector class.
+ * todo:2 use a circular buffer to reduce the copying overhead. Reference C code is available.
+ * todo:0 replace synchronized methods with synchronizing on some object, to refine scope.
+ * todo:0 make blocking read work. Users desiring unblocked reads can check size.
+ * todo:1 add refinements to 'ensureCapacity' mimicking ju.Vector class.
  */
 
 
 package pers.hal42.stream;
-import  java.io.IOException;
-import  java.io.OutputStream;
-import  java.io.InputStream;
-import pers.hal42.stream.Streamer;
+
+import pers.hal42.thread.Waiter;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class ByteFifo {
 // !!! Can't use this here since the ByteFifo is used in one!  Causes infinite loop!
@@ -60,9 +64,7 @@ public class ByteFifo {
     buf = new byte[size];
     count = 0;
     bafos = new ByteFifoOutputStream(this);
-    bafis = blocking ?
-        (ByteFifoInputStream) new ByteFifoBlockingInputStream(this) :
-        (ByteFifoInputStream) new ByteFifoNonBlockingInputStream(this);
+    bafis = blocking ?new ByteFifoBlockingInputStream(this) : new ByteFifoNonBlockingInputStream(this);
   }
 
   /**

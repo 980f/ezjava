@@ -1,10 +1,10 @@
 package pers.hal42.thread;
 
-import pers.hal42.util.timer.*;
-import pers.hal42.util.ErrorLogStream;
-import pers.hal42.util.TextList;
-import pers.hal42.util.Ticks;
+import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.Formatter;
+import pers.hal42.text.TextList;
+import pers.hal42.timer.StopWatch;
+import pers.hal42.timer.Ticks;
 
 
 // +++ get rid of this class altogether, using Waiter instead.
