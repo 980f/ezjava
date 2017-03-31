@@ -1,8 +1,10 @@
 package pers.hal42.lang;
 
+import org.jetbrains.annotations.NotNull;
 import pers.hal42.text.TextList;
+import pers.hal42.util.Executor;
 
-import java.io.File; //logfile root
+import java.io.File;
 
 public class OS {
   /**
@@ -147,18 +149,10 @@ public class OS {
 
   /** execute df -k and return its output*/
   public static int diskfree(String moreParams, TextList msgs) {
-//    String filename = "C:\\CYGWIN\\BIN\\df.exe";//+_+ move to OS specific classes
-//    int timeout = 5;
-//    int displayrate = 1;
-//    if (StreamX.fileSize(filename) == 0) {
-//      filename = "df";
-//      timeout = -1;
-//      displayrate = -1;
-//    }
-//    filename = filename + " -k " + StringX.TrivialDefault(moreParams, "");
-//    int c = Executor.runProcess(filename, "", displayrate /* -1 */, timeout /* was never returning when set to -1 for my machine (not sure why) */, msgs);
-//    return c;
-    return 0;
+    int timeout = 5;
+    int displayrate = 1;
+    int c = Executor.runProcess("df -k "+ StringX.TrivialDefault(moreParams, ""), "", displayrate, timeout, msgs);
+    return c;
   }
 
 }

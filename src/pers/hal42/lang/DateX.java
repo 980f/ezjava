@@ -1,5 +1,6 @@
 package pers.hal42.lang;
 
+import pers.hal42.text.Formatter;
 import pers.hal42.timer.LocalTimeFormat;
 import pers.hal42.timer.Ticks;
 import pers.hal42.timer.UTC;
@@ -86,12 +87,10 @@ public class DateX {
     millis = millis % secondsDiv; // get the remainder
 
     return  ((days > 0) ? ("" + days + " ") : "") +
-      Safe.twoDigitFixed(hours) + ":" +
-      Safe.twoDigitFixed(minutes) + ":" +
-      Safe.twoDigitFixed(seconds);
+      Formatter.twoDigitFixed(hours) + ":" +
+      Formatter.twoDigitFixed(minutes) + ":" +
+      Formatter.twoDigitFixed(seconds);
   }
-
-  static final LocalTimeFormat LinuxDateCommand=LocalTimeFormat.Utc("MMddHHmmyyyy.ss");
 
   public static boolean NonTrivial(Date d){
     return d!=null && d.getTime()!=0;

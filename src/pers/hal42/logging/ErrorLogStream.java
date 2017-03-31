@@ -1,14 +1,18 @@
 package pers.hal42.logging;
 
-/** WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
+/**
+ * WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
  * this was done to improve efficiency the rest of the time.
+ *
  * @todo: finish applying logswitch
  */
 
 
 import pers.hal42.lang.AtExit;
+import pers.hal42.lang.DateX;
+import pers.hal42.lang.Safe;
 import pers.hal42.lang.StringX;
-import pers.hal42.logging.LogFile;
+import pers.hal42.stream.VirtualPrinter;
 import pers.hal42.text.TextList;
 import pers.hal42.util.PrintFork;
 import pers.hal42.util.StringStack;
@@ -20,6 +24,8 @@ import java.lang.reflect.Method;
 import java.sql.SQLException;
 import java.util.Vector;
 
+import static pers.hal42.logging.LogLevelEnum.*;
+
 // for the embedded exceptions
 
 class NullBugger extends ErrorLogStream {
@@ -28,7 +34,7 @@ class NullBugger extends ErrorLogStream {
   }
 
   public void rawMessage(int msgLevel, String message) {
-  //do nothing
+    //do nothing
   }
 }
 
@@ -43,7 +49,7 @@ public class ErrorLogStream implements AtExit {
   private static LogSwitch DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
 
   private static LogSwitch globalLeveller() {
-    if(DONTaccessMEuseINSTEADglobalLevellerFUNCTION == null) {
+    if (DONTaccessMEuseINSTEADglobalLevellerFUNCTION == null) {
       DONTaccessMEuseINSTEADglobalLevellerFUNCTION = LogSwitch.getFor(ErrorLogStream.class, "GLOBALGATE");
     }
     return DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
@@ -57,11 +63,11 @@ public class ErrorLogStream implements AtExit {
   private static Tracer Debug; // use Global() to get it!
 
   protected ErrorLogStream(LogSwitch ls) {
-    if(ls != null) {
+    if (ls != null) {
       myLevel = ls;
       context = new StringStack("els." + ls.Name()); //the stack for ActiveMethod
     } else {
-    //we are way screwed.
+      //we are way screwed.
     }
   }
 
@@ -78,7 +84,7 @@ public class ErrorLogStream implements AtExit {
   }
 
   private static synchronized ErrorLogStream getForName(String name) {
-    if(StringX.NonTrivial(name)) {
+    if (StringX.NonTrivial(name)) {
       return new ErrorLogStream(LogSwitch.getFor(name));
     } else { //bit bucket for trivial name
       return Null(); // +++ put an error into the Debug logstream about this.
@@ -98,7 +104,7 @@ public class ErrorLogStream implements AtExit {
   }
 
   public static ErrorLogStream getExtension(Class myclass, String suffix) {
-    return(myclass != null) ? getForName(LogSwitch.shortName(myclass, suffix)) : Null();
+    return (myclass != null) ? getForName(LogSwitch.shortName(myclass, suffix)) : Null();
   }
 
   public static ErrorLogStream getExtension(Class myclass, String suffix, int level) {
@@ -106,8 +112,9 @@ public class ErrorLogStream implements AtExit {
   }
 
   private static NullBugger bitbucket;
+
   public static ErrorLogStream Null() {
-    if(null == bitbucket) {
+    if (null == bitbucket) {
       bitbucket = new NullBugger();
     }
     return bitbucket;
@@ -121,11 +128,11 @@ public class ErrorLogStream implements AtExit {
   }
 
   public void AtExit() {
-  // stub
+    // stub
   }
 
   public static void endLogging() {
-    if(fpf != null) {
+    if (fpf != null) {
       fpf.AtExit();
     }
   }
@@ -145,12 +152,13 @@ public class ErrorLogStream implements AtExit {
 
   public String toSpam() {
     // just deal with THIS stream ...
-    return( (myLevel != null) ? (myLevel.Name() + ".level is " + myLevel.level) : "");
+    return ((myLevel != null) ? (myLevel.Name() + ".level is " + myLevel.level) : "");
   }
 
 
   //public
   protected LogSwitch myLevel = null;
+
   public ErrorLogStream setLevel(LogLevelEnum lle) {
     myLevel.setLevel(lle);
     return this;
@@ -183,14 +191,14 @@ public class ErrorLogStream implements AtExit {
   }
 
   public int myLevel() {
-    if(myLevel != null) {
-      return myLevel.Value();
+    if (myLevel != null) {
+      return myLevel.Level();
     }
-    return TrueEnum.Invalid();
+    return Safe.INVALIDINDEX;
   }
 
   public boolean levelIs(LogLevelEnum lle) {
-    if(myLevel != null) {
+    if (myLevel != null) {
       return myLevel.is(lle);
     }
     return false;
@@ -205,16 +213,16 @@ public class ErrorLogStream implements AtExit {
     return myLevel.passes(msgLevel) && globalLeveller().passes(msgLevel);
   }
 
-//////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
   public void rawMessage(int msgLevel, String message) {
-    if(willOutput(msgLevel)) {
+    if (willOutput(msgLevel)) {
       PrintFork.Println(message, msgLevel);
     }
   }
 
   public static ErrorLogStream Global() {
     // +_+ synchronize creation, if not may get more than one, which isn't a big deal.
-    if(Debug == null) {
+    if (Debug == null) {
       Debug = new Tracer(LogSwitch.getFor(ErrorLogStream.class, "Debug")); //used by printfork management.
     }
     return Debug;
@@ -226,7 +234,7 @@ public class ErrorLogStream implements AtExit {
     try {
       // broke this down to find the exact line that causes the error ...
       String prefix;
-      if(!bare) {
+      if (!bare) {
         prefix = DateX.timeStampNowYearless();
         prefix += LogSwitch.letter(msgLevel);
         prefix += Thread.currentThread();
@@ -236,11 +244,15 @@ public class ErrorLogStream implements AtExit {
         prefix = "";
       }
       rawMessage(msgLevel, prefix + message);
-    } catch(java.lang.NoClassDefFoundError e) {
+    } catch (java.lang.NoClassDefFoundError e) {
       systemOutCaught(e);
-    } catch(Exception e) {
+    } catch (Exception e) {
       systemOutCaught(e);
     }
+  }
+
+  protected void Message(LogLevelEnum msgLevel, String message) {
+    Message(msgLevel.ordinal(), message);
   }
 
   private void systemOutCaught(Throwable t) {
@@ -276,17 +288,21 @@ public class ErrorLogStream implements AtExit {
   }
 
   public void logArray(int msgLevel, String tag, Object[] clump) {
-    if(tag != null) { // just cleaner and easier to separate
+    if (tag != null) { // just cleaner and easier to separate
       rawMessage(msgLevel, "<ol name=" + tag + ">");
-      for(int i = 0; i < clump.length; i++) { //in ascending order for clarity
-        rawMessage(msgLevel, "<li> " + String.valueOf(clump[i]));
+      for (Object aClump : clump) { //#in ascending order for clarity
+        rawMessage(msgLevel, "<li> " + String.valueOf(aClump));
       }
       rawMessage(msgLevel, "</ol name=" + tag + ">");
     } else {
-      for(int i = 0; i < clump.length; i++) { //in ascending order for clarity
-        rawMessage(msgLevel, String.valueOf(clump[i]));
+      for (Object aClump : clump) { //#in ascending order for clarity
+        rawMessage(msgLevel, String.valueOf(aClump));
       }
     }
+  }
+
+  public void logArray(LogLevelEnum msgLevel, String tag, Object[] clump) {
+    logArray(msgLevel.ordinal(), tag, clump);
   }
 
   public void VERBOSE(String message, Vector clump) {
@@ -312,15 +328,15 @@ public class ErrorLogStream implements AtExit {
   }
 
   public void Caught(String title, Throwable caught) {
-    int localLevel = ERROR; //FUE
+    int localLevel = ERROR.ordinal(); //FUE
     TextList tl = Caught(title, caught, new TextList());
-    for(int i = 0; i < tl.size(); i++) {
+    for (int i = 0; i < tl.size(); i++) {//#in order
       Message(localLevel, tl.itemAt(i));
     }
   }
 
   public static TextList Caught(String title, Throwable caught, TextList tl) {
-    int localLevel = ERROR; //FUE
+    int localLevel = ERROR.ordinal(); //FUE
     tl.add("<Caught> " + StringX.TrivialDefault(title, ""));
     resolveExceptions(caught, tl);
     tl.add("</Caught>");
@@ -338,13 +354,13 @@ public class ErrorLogStream implements AtExit {
       String possibilities[] = {"getOrigException", "getNextException"};
       boolean isSql = false;
       // see if it is a JPosException or SQLException
-      for(int i = possibilities.length; i-- > 0 && (t2 == null); ) {
+      for (int i = possibilities.length; i-- > 0 && (t2 == null); ) {
         Method method = c.getMethod(possibilities[i], null);
-        if(method != null) {
+        if (method != null) {
           t2 = (Exception) method.invoke(t1, null);
         }
       }
-    } catch(Exception e) {
+    } catch (Exception e) {
     /* abandon all hope ye who enter here */
     }
     return t2;
@@ -352,7 +368,7 @@ public class ErrorLogStream implements AtExit {
 
   protected static String extendedInfo(Throwable t) {
     String ret = null;
-    if( (t != null) && (t instanceof SQLException)) {
+    if ((t != null) && (t instanceof SQLException)) {
       SQLException e = (SQLException) t;
       ret += "\n  SQLState:" + e.getSQLState();
       ret += "\n  SQLMessage:" + e.getMessage();
@@ -371,17 +387,17 @@ public class ErrorLogStream implements AtExit {
   public static TextList resolveExceptions(Throwable t, TextList tl) {
     tl.add("Error: " + t); // the trace doesn't always give enough detail!
     VirtualPrinter buffer = new VirtualPrinter();
-    if(t != null) {
+    if (t != null) {
       t.printStackTrace(buffer); //all that ar elistneing to errors...
     }
     tl.add(buffer.backTrace());
     String ei = extendedInfo(t);
-    if(ei != null) {
+    if (ei != null) {
       tl.add(ei);
     }
     // here, see if the exception CONTAINS an exception, and if so, do it too
     Throwable t2 = NextException(t);
-    if(t2 != null) {
+    if (t2 != null) {
       Caught("", t2, tl);
     }
     return tl;
@@ -392,17 +408,17 @@ public class ErrorLogStream implements AtExit {
     Throwable t = new Throwable();
     try {
       throw t;
-    } catch(Throwable t2) {
+    } catch (Throwable t2) {
       resolveExceptions(t2, tl);
     }
     return tl;
   }
 
   public final void showStack(int msgLevel) {
-    if(willOutput(msgLevel)) {
+    if (willOutput(msgLevel)) {
       try {
         throw new StackTracer();
-      } catch(StackTracer ex) {
+      } catch (StackTracer ex) {
         Caught(ex);
       }
     }
@@ -418,16 +434,16 @@ public class ErrorLogStream implements AtExit {
   public static void stdLogging(String logName, boolean background, boolean overwrite) {
     PrintFork pf = null;
 
-    if(StringX.NonTrivial(logName)) {
-      if(background) {
+    if (StringX.NonTrivial(logName)) {
+      if (background) {
         fpf = new LogFile(logName, overwrite);
-        pf = fpf.getPrintFork(true); // this creates it
+        pf = fpf.getPrintFork(); // this creates it
       } else {
         try {
           PrintFork.New("System.out", System.out);
           pf = PrintFork.New(logName, new PrintStream(new FileOutputStream(logName)));
-        } catch(Exception filennotfound) {
-        //??? who cares
+        } catch (Exception filennotfound) {
+          //??? who cares
         }
       }
     }
@@ -442,7 +458,7 @@ public class ErrorLogStream implements AtExit {
     stdLogging(logName, true); //defaulted for server.
   }
 
-// dumpage
+  // dumpage
   // path = the object's variable name
   public static void objectDump(Object o, String path) {
     objectDump(o, path, null);
@@ -455,7 +471,7 @@ public class ErrorLogStream implements AtExit {
   public void _objectDump(Object o, String path, TextList tl) {
     try {
       objectSubDump(o, o.getClass(), path, tl);
-    } catch(Exception e2) {
+    } catch (Exception e2) {
       Caught(e2);
     }
   }
@@ -469,33 +485,33 @@ public class ErrorLogStream implements AtExit {
       method = c.getMethod("toSpam", null);
       try {
         Object result = method.invoke(o, null);
-        if(result instanceof TextList) {
+        if (result instanceof TextList) {
           TextList tlResult = (TextList) result;
-          for(int i = 0; i < tlResult.size(); i++) {
+          for (int i = 0; i < tlResult.size(); i++) {
             tl.add(path + "." + tlResult.itemAt(i));
           }
         } else {
           String resultStr = String.valueOf(result);
-          if(resultStr.indexOf('=') > -1) {
+          if (resultStr.indexOf('=') > -1) {
             tl.add(path + "." + resultStr);
           } else {
             tl.add(path + "=" + resultStr);
           }
         }
-      } catch(Exception e) {
+      } catch (Exception e) {
         Caught(e);
       }
-    } catch(NoSuchMethodException e) {
+    } catch (NoSuchMethodException e) {
       WARNING(c.getName() + " does not have a method 'toSpam'");
       try {
         method = c.getMethod("objectDump", paramTypes);
         Object[] args = {c, path, tl};
         try {
           method.invoke(o, args);
-        } catch(Exception e31) {
+        } catch (Exception e31) {
           Caught(e31);
         }
-      } catch(NoSuchMethodException e45) {
+      } catch (NoSuchMethodException e45) {
         try {
           // if not, recurse through the class's supers and members
           Field[] fields1 = c.getFields();
@@ -506,10 +522,10 @@ public class ErrorLogStream implements AtExit {
           removeDuplicates(list1); // +++ need to remove duplicates
           Object[] fields = list1.toArray();
           Class[] classes = c.getClasses();
-          if( (fields.length == 0) && (classes.length == 0)) {
+          if ((fields.length == 0) && (classes.length == 0)) {
             // this is a primitive, I think
             String msg = path + "=" + o;
-            if(logit) {
+            if (logit) {
               VERBOSE(msg);
             } else {
               tl.add(msg);
@@ -517,23 +533,23 @@ public class ErrorLogStream implements AtExit {
           } else {
             dumpFields(o, c, path, tl, fields, logit);
             // then the classes
-            for(int i = 0; i < classes.length; i++) {
+            for (int i = 0; i < classes.length; i++) {
 //              objectSubDump(o, classes[i], path+"["+classes[i].getName()+"]",tl);
             }
           }
-        } catch(Exception e5) {
+        } catch (Exception e5) {
           Caught(e5);
         }
       }
-    } catch(Exception e4) {
+    } catch (Exception e4) {
       Caught(e4);
     }
   }
 
   private void removeDuplicates(java.util.ArrayList list) {
-    for(int i = list.size(); i-- > 1; ) {
-      for(int j = i; j-- > 0; ) {
-        if(list.get(i).equals(list.get(j))) {
+    for (int i = list.size(); i-- > 1; ) {
+      for (int j = i; j-- > 0; ) {
+        if (list.get(i).equals(list.get(j))) {
           Global().VERBOSE("removed[" + i + "]: " + list.get(i));
           list.remove(i);
           break;
@@ -543,37 +559,37 @@ public class ErrorLogStream implements AtExit {
   }
 
   void dumpFields(Object o, Class c, String path, TextList tl, /*Field[]*/ Object[] fields, boolean logit) {
-    if(tl == null) {
+    if (tl == null) {
       logit = true;
     }
     // first, do the fields
-    for(int i = 0; i < fields.length; i++) {
+    for (int i = 0; i < fields.length; i++) {
       Object fo = null;
       Field f = (Field) fields[i];
       String newPath = path + "." + f.getName();
       try {
         fo = f.get(o);
-      } catch(IllegalAccessException e2) {
+      } catch (IllegalAccessException e2) {
         String msg = newPath + "= <INACCESSIBLE!>";
 //        if(logit) {
         VERBOSE(msg);
 //        } else {
 //          tl.add(msg);
 //        }
-      } catch(IllegalArgumentException e3) {
+      } catch (IllegalArgumentException e3) {
         String msg = newPath + "= <NOT INSTANCE OF CLASS:" + c.getName() + "?>";
-        if(logit) {
+        if (logit) {
           VERBOSE(msg);
         } else {
           tl.add(msg);
         }
       }
-      if(fo != null) {
-        if( (fo instanceof Boolean) || (fo instanceof Character) ||
-            (fo instanceof Number) || //handles byte, double, float, integer, long, short
-            (fo instanceof String) || (fo instanceof StringBuffer)) {
+      if (fo != null) {
+        if ((fo instanceof Boolean) || (fo instanceof Character) ||
+          (fo instanceof Number) || //handles byte, double, float, integer, long, short
+          (fo instanceof String) || (fo instanceof StringBuffer)) {
           String msg = newPath + "=" + fo;
-          if(logit) {
+          if (logit) {
             VERBOSE(msg);
           } else {
             tl.add(msg);

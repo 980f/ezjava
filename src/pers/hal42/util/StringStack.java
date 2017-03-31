@@ -8,6 +8,8 @@ import pers.hal42.text.TextList;
 import java.util.EmptyStackException;
 import java.util.Stack;
 
+import static java.rmi.server.LogStream.VERBOSE;
+
 public class StringStack {
   private static LogSwitch dumpLevel;
 

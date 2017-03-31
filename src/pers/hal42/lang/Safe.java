@@ -1,15 +1,19 @@
 package pers.hal42.lang;
 
 
-/** Much of what is in here seems to have been later broken out to seperate classes. */
+/**
+ * Much of what is in here seems to have been later broken out to seperate classes.
+ */
 
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.text.Formatter;
 import pers.hal42.timer.LocalTimeFormat;
 import pers.hal42.timer.Ticks;
 import pers.hal42.util.Executor;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileOutputStream;
 import java.text.DecimalFormat;
 import java.text.FieldPosition;
 import java.text.NumberFormat;
@@ -25,38 +29,38 @@ import static pers.hal42.stream.IOX.makeWritable;
 
 public class Safe {
   // not a good idea to have a dbg in here --- see preLoadClass
-  public static final int INVALIDINDEX=-1;
-  public static final int INVALIDINTEGER=-1; //are likely to change this one
+  public static final int INVALIDINDEX = -1;
+  public static final int INVALIDINTEGER = -1; //are likely to change this one
 
-//extract a signed number from set of bits within an integer.
-  public static int getSignedField(int datum,int start,int end){
-    return (datum<<(31-start)) & ~((1<<end)-1);
+  //extract a signed number from set of bits within an integer.
+  public static int getSignedField(int datum, int start, int end) {
+    return (datum << (31 - start)) & ~((1 << end) - 1);
   }
 
 
-  public static String ObjectInfo(Object obj){
-    return obj==null?" null!":" type: "+obj.getClass().getName();//+" "+obj.toString();
+  public static String ObjectInfo(Object obj) {
+    return obj == null ? " null!" : " type: " + obj.getClass().getName();//+" "+obj.toString();
   }
 
   /** if 1st object is null return second else return it. Kotlin has an operator for this.*/
-  public static <T> T deNull(T nullish,T def){
-    return (nullish!=null)?nullish:def;
+  public static <T> T deNull(T nullish, T def) {
+    return (nullish != null) ? nullish : def;
   }
 
 
-  public static int enumSize(Enum eg){
+  public static int enumSize(Enum eg) {
     return eg.getClass().getEnumConstants().length;
   }
 
-//todo:1 move these to IOx
-  public static File [] listFiles(File dir){
-    File [] list=dir.listFiles();
-    return list!=null ? list: new File[0];
+  //todo:1 move these to IOx
+  public static File[] listFiles(File dir) {
+    File[] list = dir.listFiles();
+    return list != null ? list : new File[0];
   }
 
-  public static File [] listFiles(File dir, FileFilter filter){
-    File [] list=dir.listFiles(filter);
-    return list!=null ? list: new File[0];
+  public static File[] listFiles(File dir, FileFilter filter) {
+    File[] list = dir.listFiles(filter);
+    return list != null ? list : new File[0];
   }
 
 ///**
@@ -87,13 +91,13 @@ public class Safe {
 //    }
 //  }
 
-/**
- * returns true is something actively was deleted.
- */
-  public static boolean deleteFile(File f){
+  /**
+   * returns true is something actively was deleted.
+   */
+  public static boolean deleteFile(File f) {
     try {
-      return f!=null && f.exists()&& makeWritable(f) && f.delete();
-    } catch(Exception oops){
+      return f != null && f.exists() && makeWritable(f) && f.delete();
+    } catch (Exception oops) {
       return false; //errors get us here
     }
   }
@@ -102,8 +106,8 @@ public class Safe {
   /**
    *
    */
-  public static int packNibbles(int high, int low){
-    return ((high&15)<<4) + (low&15);
+  public static int packNibbles(int high, int low) {
+    return ((high & 15) << 4) + (low & 15);
   }
 
 ///**
@@ -174,13 +178,12 @@ public class Safe {
 //    return new Date();//default Date constructor returns "now"
 //  }
 
-  public static  String fromStream(ByteArrayInputStream bais,int len){
-    byte [] chunk=new byte[len];
-    bais.read(chunk,0,len);
-    String s=new String(chunk);
+  public static String fromStream(ByteArrayInputStream bais, int len) {
+    byte[] chunk = new byte[len];
+    bais.read(chunk, 0, len);
+    String s = new String(chunk);
     return s;
   }
-
 
 
 // NOT IN USE (when it is needed, extend Vector and put this in the extended class)
@@ -206,15 +209,15 @@ public class Safe {
   }
 */
 
-/**
- * debug was removed from the following function as it is called during the initialization
- * of the classes need by the debug stuff. Any debug will have to be raw stdout debugging.
- */
+  /**
+   * debug was removed from the following function as it is called during the initialization
+   * of the classes need by the debug stuff. Any debug will have to be raw stdout debugging.
+   */
   public static boolean preloadClass(String className, boolean loadObject) {
     boolean ret = false;
     try {
       Class c = Class.forName(className);
-      if(loadObject) {
+      if (loadObject) {
         c.newInstance(); // some drivers don't load completely until you do this
       }
       ret = true;
@@ -241,20 +244,20 @@ public class Safe {
     }
   }
 
-  public static int lengthOf(String s){
-    return (s!=null)?s.length(): -1;
+  public static int lengthOf(String s) {
+    return (s != null) ? s.length() : -1;
   }
 
   // some byte stuff
 
-  public static byte [] newBytes(int length, byte filler) {
-    byte [] bytes = new byte[length];
+  public static byte[] newBytes(int length, byte filler) {
+    byte[] bytes = new byte[length];
     return fillBytes(bytes, filler);
   }
 
   // great for erasing passwords
-  public static byte [] fillBytes(byte [] bytes, byte filler) {
-    for(int i = bytes.length; i-->0;) {
+  public static byte[] fillBytes(byte[] bytes, byte filler) {
+    for (int i = bytes.length; i-- > 0; ) {
       bytes[i] = filler;
     }
     return bytes;
@@ -349,47 +352,47 @@ public class Safe {
 //    return parseLong(s,10);
 //  }
 
-  public static long littleEndian(byte [] msfirst, int offset, int length){
-    long ell=0;
-    for(int i=length<8?length:8; i-->0;){
-      ell<<=8;
-      ell+= (msfirst[offset+i]&255);//
+  public static long littleEndian(byte[] msfirst, int offset, int length) {
+    long ell = 0;
+    for (int i = length < 8 ? length : 8; i-- > 0; ) {
+      ell <<= 8;
+      ell += (msfirst[offset + i] & 255);//
     }
     return ell;
   }
 
-  public static long bigEndian(byte [] msfirst, int offset, int length){
-    long ell=0;
-    if(length>8){
-      length=8;
+  public static long bigEndian(byte[] msfirst, int offset, int length) {
+    long ell = 0;
+    if (length > 8) {
+      length = 8;
     }
-    for(int i=0;i<length;i++){
-      ell<<=8;
-      ell+= (msfirst[offset+i]&255);//
+    for (int i = 0; i < length; i++) {
+      ell <<= 8;
+      ell += (msfirst[offset + i] & 255);//
     }
     return ell;
   }
 
-  public static int parseInt(String s,int radix){
-    return (int) (parseLong(s,radix) & 0xFFFFFFFF) ;
+  public static int parseInt(String s, int radix) {
+    return (int) (parseLong(s, radix) & 0xFFFFFFFF);
   }
 
-  public static int parseInt(String s){//default radix 10
-    return parseInt(s,10);
+  public static int parseInt(String s) {//default radix 10
+    return parseInt(s, 10);
   }
 
-  public static String subString(String s,int start,int end){
+  public static String subString(String s, int start, int end) {
     int length;
-    if(s!=null && start>=0 && end>start && start<(length=s.length())){
+    if (s != null && start >= 0 && end > start && start < (length = s.length())) {
       return s.substring(start, Math.min(length, end));
     } else {
       return "";
     }
   }
 
-  public static String subString(StringBuffer s,int start,int end){
+  public static String subString(StringBuffer s, int start, int end) {
     int length;
-    if(s!=null && start>=0 && end>start && start<(length=s.length())){
+    if (s != null && start >= 0 && end > start && start < (length = s.length())) {
       return s.substring(start, Math.min(length, end));
     } else {
       return "";
@@ -397,44 +400,44 @@ public class Safe {
   }
 
 
-  public static String restOfString(String s, int start){
-    if(s!=null && start>=0 && start<s.length()){
+  public static String restOfString(String s, int start) {
+    if (s != null && start >= 0 && start < s.length()) {
       return s.substring(start);
     } else {
       return "";
     }
   }
 
-  public static String tail(String s, int length){//need an Fstring variant...
-    int start=s.length()-length;
-    return start>0?restOfString(s,start):s;
+  public static String tail(String s, int length) {//need an Fstring variant...
+    int start = s.length() - length;
+    return start > 0 ? restOfString(s, start) : s;
   }
 
-  public static String trim(String dirty){
-    return trim(dirty,true,true);
+  public static String trim(String dirty) {
+    return trim(dirty, true, true);
   }
 
-  public static String trim(String dirty, boolean leading, boolean trailing){
-    if(NonTrivial(dirty)){
-      int start=0;
-      int end=dirty.length();
-      if(leading){
-        while(start<end){
-          if(Character.isWhitespace(dirty.charAt(start))){
+  public static String trim(String dirty, boolean leading, boolean trailing) {
+    if (NonTrivial(dirty)) {
+      int start = 0;
+      int end = dirty.length();
+      if (leading) {
+        while (start < end) {
+          if (Character.isWhitespace(dirty.charAt(start))) {
             ++start;
           } else {
             break;
           }
         }
       }
-      if(trailing){
-        while(end-->0){
-          if(!Character.isWhitespace(dirty.charAt(end))){
+      if (trailing) {
+        while (end-- > 0) {
+          if (!Character.isWhitespace(dirty.charAt(end))) {
             break;
           }
         }
       }
-      return Safe.subString(dirty,start,++end);
+      return Safe.subString(dirty, start, ++end);
     }
     return "";
   }
@@ -444,106 +447,106 @@ public class Safe {
   }
 
   /**
-  * @return an index safe for the second operand of string::subString, if the cutter
-  * char is not found then we will cut at the end of the string.
-  * @param s is a string that we wish to cut out a piece of
-  * @param cutter is the separator character
-  */
-  public static int cutPoint(String s, char cutter){
+   * @return an index safe for the second operand of string::subString, if the cutter
+   * char is not found then we will cut at the end of the string.
+   * @param s is a string that we wish to cut out a piece of
+   * @param cutter is the separator character
+   */
+  public static int cutPoint(String s, char cutter) {
     try {
-      int cutat=s.indexOf(cutter);
-      return cutat<0?s.length():cutat;
-    } catch(Exception any){
+      int cutat = s.indexOf(cutter);
+      return cutat < 0 ? s.length() : cutat;
+    } catch (Exception any) {
       return 0;
     }
   }
 
-  public static StringBuffer delete(StringBuffer sb, int start, int end){
-    if(sb!=null&&start>=0&&start<=end){
-      sb.delete(start,end);
+  public static StringBuffer delete(StringBuffer sb, int start, int end) {
+    if (sb != null && start >= 0 && start <= end) {
+      sb.delete(start, end);
     }
     return sb;
   }
 
   /** simple minded string parser
-  *  @param parsee words get removed from the front of this
-  *  @return the next contiguous non-white character grouping.
-  */
-  public static String cutWord(StringBuffer parsee){
-    String retval="";//so that we can easily read past the end without getting nulls
-    if(NonTrivial(parsee)){
-      int start=0;
-      int end=parsee.length();
-      while(start<end){
-        if(Character.isWhitespace(parsee.charAt(start))){
+   *  @param parsee words get removed from the front of this
+   *  @return the next contiguous non-white character grouping.
+   */
+  public static String cutWord(StringBuffer parsee) {
+    String retval = "";//so that we can easily read past the end without getting nulls
+    if (NonTrivial(parsee)) {
+      int start = 0;
+      int end = parsee.length();
+      while (start < end) {
+        if (Character.isWhitespace(parsee.charAt(start))) {
           ++start;
         } else {
           break;
         }
       }
-      int cut=start+1;
-      while(cut<end){
-        if(!Character.isWhitespace(parsee.charAt(cut))){
+      int cut = start + 1;
+      while (cut < end) {
+        if (!Character.isWhitespace(parsee.charAt(cut))) {
           ++cut;
         } else {
           break;
         }
       }
-      retval=Safe.subString(parsee,start,cut);
-      Safe.delete(parsee,0,cut);//removes initial separator too
+      retval = Safe.subString(parsee, start, cut);
+      Safe.delete(parsee, 0, cut);//removes initial separator too
     }
     return retval;
   }
 
   ///////////////////////////////////////////////
-  public static  boolean NonTrivial(String s){
-    return s!=null && s.length()>0;
+  public static boolean NonTrivial(String s) {
+    return s != null && s.length() > 0;
   }
 
-   public static  boolean hasSubstance(String s){
-    return s!=null && s.trim().length()>0;
+  public static boolean hasSubstance(String s) {
+    return s != null && s.trim().length() > 0;
   }
 
-  public static  boolean NonTrivial(Date d){
-    return d!=null && d.getTime()!=0;
+  public static boolean NonTrivial(Date d) {
+    return d != null && d.getTime() != 0;
   }
 
-  public static  boolean NonTrivial(StringBuffer sb){
-    return sb!=null && NonTrivial((String)sb.toString());
+  public static boolean NonTrivial(StringBuffer sb) {
+    return sb != null && NonTrivial((String) sb.toString());
   }
 
-  public static  boolean NonTrivial(byte []ba){//oh for templates ....
-    return ba!=null && ba.length>0;
+  public static boolean NonTrivial(byte[] ba) {//oh for templates ....
+    return ba != null && ba.length > 0;
   }
 
-  public static  boolean NonTrivial(Vector v){
-    return v!=null && v.size()>0;
+  public static boolean NonTrivial(Vector v) {
+    return v != null && v.size() > 0;
   }
 
-  public static  boolean NonTrivial(Object o){
-    if(o instanceof String){
-      return NonTrivial((String)o);
+  public static boolean NonTrivial(Object o) {
+    if (o instanceof String) {
+      return NonTrivial((String) o);
     }
-    if(o instanceof StringBuffer){
-      return NonTrivial((StringBuffer)o);
+    if (o instanceof StringBuffer) {
+      return NonTrivial((StringBuffer) o);
     }
-    if(o instanceof Date){
-      return NonTrivial((Date)o);
+    if (o instanceof Date) {
+      return NonTrivial((Date) o);
     }
-    if(o instanceof byte []){
-      return NonTrivial((byte [])o);
+    if (o instanceof byte[]) {
+      return NonTrivial((byte[]) o);
     }
-    if(o instanceof Vector){
-      return NonTrivial((Vector)o);
+    if (o instanceof Vector) {
+      return NonTrivial((Vector) o);
     }
-    return o!=null;
+    return o != null;
   }
 
-  public static  String TrivialDefault(Object o) {
+  public static String TrivialDefault(Object o) {
     return TrivialDefault(o, null);
   }
 
-  public static  String TrivialDefault(Object o, String def) {
+  public static String TrivialDefault(Object o, String def) {
     def = TrivialDefault(def, "");
     return NonTrivial(o) ? o.toString() : def;
   }
@@ -658,10 +661,10 @@ public class Safe {
 
   public static String replace(StringBuffer source, String toReplace, String with) {
     boolean recurse = false;  //todo: elevate to parameter
-    if(source == null) {
+    if (source == null) {
       return null;
     }
-    if(!NonTrivial(toReplace) || toReplace.equals(with)) {
+    if (!NonTrivial(toReplace) || toReplace.equals(with)) {
       return source.toString();
     }
     with = TrivialDefault(with, "");
@@ -669,13 +672,13 @@ public class Safe {
     int withLen = with.length();
     int searchFrom = 0;
     int foundAt = 0;
-    while((foundAt = source.substring(searchFrom).indexOf(toReplace)) > -1) {
+    while ((foundAt = source.substring(searchFrom).indexOf(toReplace)) > -1) {
       int reallyAt = foundAt + searchFrom;//foundat is relative to serachFrom
       // +_+ improve this by dealing with cases separately (srcLen == repLen, srcLen < repLen, srcLen > repLen)
 //      String old = source.toString();
-      source.delete(reallyAt, reallyAt+lookLen);
+      source.delete(reallyAt, reallyAt + lookLen);
       source.insert(reallyAt, with);
-      searchFrom  = recurse ? 0 : reallyAt + withLen; // would recurse==true go infinite?  maybe
+      searchFrom = recurse ? 0 : reallyAt + withLen; // would recurse==true go infinite?  maybe
       //would only be infinite if with contains toReplace. would exahust memory if so.
     }
     return source.toString();
@@ -722,49 +725,25 @@ public class Safe {
 //    return timeStamp(new Date(millis));
 //  }
 
-  /**
-  * converts raw milliseconds into HH:mm:ss
-  * this is special and only seems to work in a certain case
-  * Don't use SimpleDateFormat, as this function is using a dater DIFFERENCE, not an absolute Date
-  */
-  public static String millisToTime(long millis) {
-    long secondsDiv = Ticks.forSeconds(1);
-    long minutesDiv = secondsDiv * 60;
-    long hoursDiv   = minutesDiv * 60;
-    long daysDiv    = hoursDiv * 24;
 
-    long days = millis / daysDiv;
-    millis = millis % daysDiv; // get the remainder
-    long hours = millis / hoursDiv;
-    millis = millis % hoursDiv; // get the remainder
-    long minutes = millis / minutesDiv;
-    millis = millis % minutesDiv; // get the remainder
-    long seconds = millis / secondsDiv;
-    millis = millis % secondsDiv; // get the remainder
+  static final LocalTimeFormat LinuxDateCommand = LocalTimeFormat.Utc("MMddHHmmyyyy.ss");
 
-    return  ((days > 0) ? ("" + days + " ") : "") +
-      Formatter.twoDigitFixed(hours) + ":" +
-      Formatter.twoDigitFixed(minutes) + ":" +
-      Formatter.twoDigitFixed(seconds);
-  }
-
-  static final LocalTimeFormat LinuxDateCommand=LocalTimeFormat.Utc("MMddHHmmyyyy.ss");
-
-  public static void setSystemClock(long millsfromepoch){ //exec something to set the system clock
-    String forlinuxdateprogram=LinuxDateCommand.format(new Date(millsfromepoch));
-    ErrorLogStream.Global().ERROR("setting time to:"+forlinuxdateprogram);
-    String progname= pers.hal42.lang.OS.isUnish()?"setClock ":"setClock.bat ";
+  public static void setSystemClock(long millsfromepoch) { //exec something to set the system clock
+    String forlinuxdateprogram = LinuxDateCommand.format(new Date(millsfromepoch));   //todo:1 move this line into DateX
+    ErrorLogStream.Global().ERROR("setting time to:" + forlinuxdateprogram);
+    String progname = pers.hal42.lang.OS.isUnish() ? "setClock " : "setClock.bat ";
     // Executor.runProcess("date -s -u "+busybox.format(now),"fixing clock",0,0,null,false);
-    Executor.ezExec(progname+forlinuxdateprogram,0);
+    Executor.ezExec(progname + forlinuxdateprogram, 0);
   }
 
 ///////////////////////////////
 
-////////////////////
+  ////////////////////
 //  create a separate class for this ???
   private static final DecimalFormat secsNMillis = new DecimalFormat("#########0.000");
   private static final Monitor secsNMillisMonitor = new Monitor("secsNMillis");
   private static final StringBuffer sbsnm = new StringBuffer();
+
   public static String millisToSecsPlus(long millis) {
     String retval = "";
     try {
@@ -819,59 +798,31 @@ public class Safe {
 
   // feel free to optimize this
   private static final double K = 1024;
-  private static final double M = K*K;
-  private static final double G = M*K;
-  private static final double T = G*K;
+  private static final double M = K * K;
+  private static final double G = M * K;
+  private static final double T = G * K;
+
   public static String sizeLong(long size) {
     // size is always positive
     double fat = size;
     String ret = "";
-    switch(3) {
-      case 3:
-        if(fat > T) {
-          ret += Math.round(fat / T)+" T";
-          break;
-        }
-      case 2:
-        if(fat > G) {
-          ret += Math.round(fat / G)+" G";
-          break;
-        }
-      case 1:
-        if(fat > M) {
-          ret += Math.round(fat / M)+" M";
-          break;
-        }
-      case 0:
-        if(fat > K) {
-          ret += Math.round(fat / K)+" K";
-          break;
-        }
-      default: // leave it as size
-        ret += size;
+    if (fat > T) {
+      return ret + Math.round(fat / T) + " T";
     }
-    return ret;
+    if (fat > G) {
+      return ret + Math.round(fat / G) + " G";
+
+    }
+    if (fat > M) {
+      return ret + Math.round(fat / M) + " M";
+
+    }
+    if (fat > K) {
+      return ret + Math.round(fat / K) + " K";
+    }
+    return ret + size;
+
   }
-
-//  public static final int diskfree(String moreParams, TextList msgs) {
-//    String filename = "C:\\CYGWIN\\BIN\\df.exe";//+_+ move to OS specific classes
-//    int timeout = 5;
-//    int displayrate = 1;
-//    if(Safe.fileSize(filename)==0) {
-//      filename = "df";
-//      timeout = -1;
-//      displayrate = -1;
-//    }
-//    filename = filename+" -k "+TrivialDefault(moreParams, "");
-//    int c = Executor.runProcess(filename, "", displayrate /* -1 */, timeout /* was never returning when set to -1 for my machine (not sure why) */, msgs);
-//    return c;
-//  }
-
-//  public static final void main(String [] args) {
-//    TextList msgs = new TextList();
-//    System.out.println("diskfree = " + diskfree("", msgs));
-//    System.out.println(msgs.asParagraph());
-//  }
 
 }
 

@@ -1,13 +1,15 @@
 package pers.hal42.logging;
 
-import pers.hal42.lang.*;
+import pers.hal42.lang.OS;
+import pers.hal42.lang.ReflectX;
+import pers.hal42.lang.StringX;
 import pers.hal42.text.TextList;
 import pers.hal42.transport.EasyCursor;
-import pers.hal42.transport.EasyProperties;
 
 import java.util.Collections;
 import java.util.Vector;
 
+import static pers.hal42.logging.LogLevelEnum.VERBOSE;
 import static pers.hal42.logging.LogSwitchRegistry.registry;
 
 /**
@@ -29,7 +31,7 @@ public class LogSwitch implements Comparable {
     this.level=level;
   }
 
-  protected static LogLevelEnum DEFAULT_LEVEL = LogLevelEnum.VERBOSE;//set for server, which has a harder time configuring than the client
+  protected static int DEFAULT_LEVEL = VERBOSE.ordinal();//set for server, which has a harder time configuring than the client
 
   private static final char [] lvlLtr = {'-','/','!'};
   public static char letter(int msgLevel) {
@@ -133,7 +135,7 @@ public class LogSwitch implements Comparable {
         return item;
       }
     }
-    return new LogSwitch(guiname, Safe.deNull(oncreate,DEFAULT_LEVEL));
+    return new LogSwitch(guiname, oncreate);
   }
 
   public static LogSwitch getFor(String guiname) {
@@ -208,7 +210,7 @@ public class LogSwitch implements Comparable {
     if(ls==null) {
       return false;
     } else {
-      ls.setLevel(lle.Value());
+      ls.setLevel(lle.ordinal());
       return true;
     }
   }
@@ -224,11 +226,11 @@ public class LogSwitch implements Comparable {
   }
 
   public static void SetAll(LogLevelEnum lle){
-    SetAll(lle.Value());
+    SetAll(lle!=null?lle.ordinal():DEFAULT_LEVEL);
   }
 
   public static void SetAll(String lvl){
-    SetAll(new LogLevelEnum(lvl));
+    SetAll(LogLevelEnum.valueOf(lvl)); //migth pass a null to
   }
 
 
@@ -245,9 +247,8 @@ public class LogSwitch implements Comparable {
 
   //////////////////////////////////////////////////////
   private LogSwitch(String lookup,LogLevelEnum lle) {
-    this(lookup,lle.Value());
+    this(lookup,lle.ordinal());
   }
-
 
   private LogSwitch(String lookup,int spam) {
     level=spam;
@@ -263,15 +264,14 @@ public class LogSwitch implements Comparable {
   public int Level(){
     return level;
   }
-//
-//  public LogSwitch setLevel(String fromenum){
-//    level=LogLevelEnum.valueOf(fromenum);
-//    return this;
-//  }
+
+  public LogSwitch setLevel(int level){
+    this.level=level;
+    return this;
+  }
 
   public LogSwitch setLevel(LogLevelEnum lle){
-    level=lle.ordinal();
-    return this;
+    return setLevel(lle.ordinal());
   }
 
   public String Name(){
@@ -285,6 +285,11 @@ public class LogSwitch implements Comparable {
   public boolean passes(LogLevelEnum llev){
     return (llev.ordinal()>=level) && (level!=0);
   }
+
+  public boolean passes(int level){
+    return (level>=this.level) && (this.level!=0);
+  }
+
 
   public boolean is(LogLevelEnum llev){
     return llev.ordinal()==level;

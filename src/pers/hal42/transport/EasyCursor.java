@@ -185,12 +185,12 @@ public class EasyCursor extends EasyProperties {
         newone = act.newInstance();
         push(key);
         try {
-          return helper.helpload(this, newone);
+          return (T) helper.helpload(this, newone);
         } finally {
           pop();
         }
       } else {
-        return super.getObject(key, act);
+        return (T) super.getObject(key, act);
       }
     } catch (Exception ex) {
       dbg.Caught("EasyCursor.getObject:" + act.getName(), ex);

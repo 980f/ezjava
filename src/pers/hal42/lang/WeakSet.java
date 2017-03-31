@@ -1,8 +1,11 @@
 package pers.hal42.lang;
 
+import java.lang.ref.Reference;
 import  java.util.*; // +++ optimize
 import  java.lang.ref.WeakReference;
 import  java.lang.ref.ReferenceQueue;
+
+import static java.util.Collections.synchronizedSet;
 
 /**
  * +++ TODO: Propagate this to other classes that can/should use it:
@@ -84,14 +87,14 @@ public class WeakSet<T> extends AbstractSet<T> {
   Set<T> hash = null;
 
   /* Reference queue for cleared WeakObject */
-  private ReferenceQueue queue = new ReferenceQueue();
+  private ReferenceQueue<T> queue = new ReferenceQueue<>();
 
   /* Remove all invalidated entries from the map, that is, remove all entries whose keys have been discarded.
      This method should be invoked once by each public mutator in this class.
      We don't invoke this method in public accessors because that can lead to surprising ConcurrentModificationExceptions. */
   private void processQueue() {
-    WeakObject<T> wk;
-    while ((wk = (WeakObject)queue.poll()) != null) {
+    Reference<T> wk;
+    while ((wk = (Reference<T>)queue.poll()) != null) {
       hash.remove(wk);
     }
   }
@@ -129,7 +132,7 @@ public class WeakSet<T> extends AbstractSet<T> {
      *                                   zero
      */
   public WeakSet(int initialCapacity) {
-    hash = Collections.synchronizedSet(new HashSet(initialCapacity));
+    hash = synchronizedSet(new HashSet(initialCapacity));
   }
 
     /**
@@ -138,7 +141,7 @@ public class WeakSet<T> extends AbstractSet<T> {
      * <code>0.75</code>.
      */
   public WeakSet() {
-    hash = Collections.synchronizedSet(new HashSet());
+    hash = synchronizedSet(new HashSet());
   }
 
   /**
@@ -178,24 +181,12 @@ public class WeakSet<T> extends AbstractSet<T> {
 
     /* -- Lookup and modification operations -- */
 
-    /**
-     * Updates this map so that the given <code>key</code> maps to the given
-     * <code>value</code>.  If the map previously contained a mapping for
-     * <code>key</code> then that mapping is replaced and the previous value is
-     * returned.
-     *
-     * @param  key    The key that is to be mapped to the given
-     *                <code>value</code>
-     * @param  value  The value to which the given <code>key</code> is to be
-     *                mapped
-     *
-     * @return  The previous value to which this key was mapped, or
-     *          <code>null</code> if if there was no mapping for the key
-     */
-  public boolean add(Object value) {
+  public boolean add(T value) {
     processQueue();
-    return hash.add(WeakObject.create(value, queue));
+//    return hash.add(WeakObject.create(value, queue));
+    return false; //until we figure out why the compiler says our 'T' is not a 'T'
   }
+
 
     /**
      * Removes the mapping for the given <code>key</code> from this map, if
@@ -211,9 +202,8 @@ public class WeakSet<T> extends AbstractSet<T> {
     boolean success = false;
     if(value != null) {
       // iterate and find the one that contains it
-      for(Iterator i = hash.iterator(); i.hasNext();) {
-        WeakObject wo = (WeakObject)i.next();
-        if((wo != null) && value.equals(wo.get())) {
+      for (WeakObject<T> wo: hash) {
+         if ((wo != null) && value.equals(wo.get())) {
           success = hash.remove(wo);
           break;
         }

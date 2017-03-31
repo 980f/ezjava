@@ -1,6 +1,8 @@
 package pers.hal42.lang;
 // includes stringbuffer stuff.  Maybe can create a StringBufferX to put that stuff in.
 
+import pers.hal42.math.MathX;
+
 public class StringX {
   private StringX() {
     //#namespace
