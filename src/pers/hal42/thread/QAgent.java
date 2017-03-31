@@ -8,6 +8,7 @@ package pers.hal42.thread;
 
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.timer.Ticks;
 
 import java.util.Comparator;
@@ -162,7 +163,7 @@ public class QAgent implements Runnable {
   //one upon a time the "puts" were protected.
   //see new class 'OrderedVector' for intended cleanup of this class's public interface.
   protected synchronized int put(Object obj){
-    if(dbg.willOutput(dbg.VERBOSE)){
+    if(dbg.willOutput(LogLevelEnum.VERBOSE.ordinal())){
       dbg.VERBOSE("Posting:"+ReflectX.ObjectInfo(obj));
     }
     int size=fifo.put(obj);

@@ -37,7 +37,7 @@ public class tester implements TimeBomb {
       tester[i]=new tester("t"+i,i*1000);
     }
     while(Alarmer.alarmCount()>0){
-      Alarmer.dump(dbg,LogLevelEnum.VERBOSE);
+      Alarmer.dump(dbg,LogLevelEnum.VERBOSE.ordinal());
       Thread.currentThread().yield();
     }
   }

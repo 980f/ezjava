@@ -10,11 +10,11 @@ import pers.hal42.timer.Ticks;
 import pers.hal42.transport.EasyCursor;
 import pers.hal42.transport.EasyProperties;
 import pers.hal42.util.PrintFork;
-import pers.hal42.util.StringStack;
 
 import java.io.*;
 import java.util.Vector;
 
+import static pers.hal42.lang.SystemX.gcMessage;
 import static pers.hal42.stream.IOX.Close;
 
 public class Main {
@@ -225,15 +225,16 @@ public class Main {
   }
 
   public static void gc(ErrorLogStream doit) {
-    if (doit.willOutput(LogLevelEnum.VERBOSE.ordinal())) {
-//      PrintFork.Println(gcMessage(doit.myLevel.Name()), LogLevelEnum.ERROR);
-      PrintFork.Println("StringStack:{" + StringStack.dumpStackList().asParagraph(OS.EOL) + "}", LogLevelEnum.ERROR.ordinal());
+    if (doit.willOutput(LogLevelEnum.VERBOSE)) {
+//      gcMessage(doit.myName());
+      PrintFork.Println(gcMessage(doit.myName()), LogLevelEnum.ERROR.ordinal());
+//      PrintFork.Println("StringStack:{" + StringStack.dumpStackList().asParagraph(OS.EOL) + "}", LogLevelEnum.ERROR.ordinal());
     }
   }
 
   public static void gc(LogSwitch doit) {
     if (doit.is(LogLevelEnum.VERBOSE)) {
-      System.err.println(SystemX.gcMessage(doit.Name()));//# keep as system.err
+      System.err.println(gcMessage(doit.Name()));//# keep as system.err
     }
   }
 

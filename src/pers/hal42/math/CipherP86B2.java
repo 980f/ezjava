@@ -5,6 +5,8 @@ package pers.hal42.math;
 
 import pers.hal42.lang.Safe;
 import pers.hal42.stream.Streamer;
+import pers.hal42.stream.URLDecoderFilterInputStream;
+import pers.hal42.stream.URLEncoderFilterOutputStream;
 
 import java.io.*;
 
@@ -23,7 +25,7 @@ public final class CipherP86B2 {
 
   // internals
 
-  private final OutputStream getOutputStream(OutputStream toFilter) {
+  private OutputStream getOutputStream(OutputStream toFilter) {
     return new FilterOutputStream(toFilter) {
       public void write(int b) throws IOException {
         super.write(crypt(b));

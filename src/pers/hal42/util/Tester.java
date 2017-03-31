@@ -31,6 +31,7 @@
 package pers.hal42.util;
 
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
 
 import java.lang.reflect.Method;
 
@@ -66,9 +67,9 @@ public class Tester {
    */
   public static void main(String[] args) {
     int numArgs = args.length;
-    ErrorLogStream.Console(ErrorLogStream.VERBOSE);
+//    ErrorLogStream.Console(ErrorLogStream.VERBOSE);
     if(numArgs == 0) {
-      dbg.logArray(dbg.VERBOSE, null, USAGE);
+      dbg.logArray(LogLevelEnum.VERBOSE, null, USAGE);
     } else {
       if(usageMethodName.equalsIgnoreCase(args[0])) {
         if(numArgs > 1) {
@@ -79,7 +80,7 @@ public class Tester {
             System.out.println("----");
           }
         } else {
-          dbg.logArray(dbg.ERROR,null, USAGE);
+          dbg.logArray(LogLevelEnum.ERROR,null, USAGE);
         }
       } else {
         // test a class
@@ -148,7 +149,7 @@ public class Tester {
           Object oargs[] = {args};
           m.invoke(null, oargs);
         } else {
-          s = (String) m.invoke(null, null);
+          s = (String) m.invoke(null);
         }
       } else {
         s = className + " or " + className + "." + methodName + "()' not found!";

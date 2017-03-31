@@ -142,7 +142,7 @@ public class Streamer implements Runnable {
     long spewed = 0;
     dbg.VERBOSE( (forever ? "piping forever":("piping up to "+howMany)) + " in chunks of "+max);
     if(max == 1) {
-      int bytes = Receiver.EndOfInput;
+      int bytes ;//= Receiver.EndOfInput;
       while(enabled && (forever || (spewed < howMany))) {
         dbg.VERBOSE("waiting for "+max+ " byte(s)");
         bytes = in.read();

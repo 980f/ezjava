@@ -1,7 +1,9 @@
 package pers.hal42.stream;
 
-import java.util.*;
-import java.io.*;
+import pers.hal42.math.MathX;
+
+import java.io.File;
+import java.util.Comparator;
 
 public class TimeSortFile extends BaseSortFile implements Comparator {
 
@@ -36,6 +38,4 @@ public class TimeSortFile extends BaseSortFile implements Comparator {
     return chain(MathX.signum(descending? - compvalue:compvalue),o1,o2);
   }
 
-
 }
-//$Id: TimeSortFile.java,v 1.2 2004/03/08 22:54:14 andyh Exp $

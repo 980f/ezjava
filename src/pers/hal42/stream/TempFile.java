@@ -1,6 +1,5 @@
 package pers.hal42.stream;
 
-import com.sun.xml.internal.ws.util.xml.XMLStreamReaderToXMLStreamWriter;
 import pers.hal42.lang.DateX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.math.BaseConverter;
@@ -48,14 +47,7 @@ public class TempFile {
 
   public void close() {
     if(!closed) {
-      StreamX.close(fos);
-      if(fos != null) {
-        try {
-          fos.close();
-        } catch (Exception t) {
-          // who cares?  stub
-        }
-      }
+      IOX.Close(fos);
     }
   }
 

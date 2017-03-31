@@ -4,13 +4,14 @@ package pers.hal42.stream;
 import pers.hal42.lang.Safe;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
 
 import java.io.*;
 
 // +++ build a listener system that can get notified of progress
 
 public class BigFile {
-  private ErrorLogStream dbg = ErrorLogStream.getForClass(BigFile.class, ErrorLogStream.VERBOSE);
+  private ErrorLogStream dbg = ErrorLogStream.getForClass(BigFile.class, LogLevelEnum.VERBOSE);
   private String path = "";
   private long size = 0;
 

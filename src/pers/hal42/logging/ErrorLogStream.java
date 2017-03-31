@@ -198,10 +198,7 @@ public class ErrorLogStream implements AtExit {
   }
 
   public boolean levelIs(LogLevelEnum lle) {
-    if (myLevel != null) {
-      return myLevel.is(lle);
-    }
-    return false;
+    return myLevel != null && myLevel.is(lle);
   }
 
   /**
@@ -211,6 +208,10 @@ public class ErrorLogStream implements AtExit {
    */
   public boolean willOutput(int msgLevel) {
     return myLevel.passes(msgLevel) && globalLeveller().passes(msgLevel);
+  }
+
+  public boolean willOutput(LogLevelEnum msgLevel) {
+    return willOutput(msgLevel.ordinal());
   }
 
   //////////////////////////////////////////////////////////

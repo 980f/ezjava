@@ -1,5 +1,7 @@
 package pers.hal42.lang;
 
+import pers.hal42.text.Ascii;
+
 import java.util.Arrays;
 
 public class ByteArray {
