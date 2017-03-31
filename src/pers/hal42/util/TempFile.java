@@ -2,6 +2,7 @@ package pers.hal42.util;
 
 import pers.hal42.lang.DateX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.math.BaseConverter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,7 +34,7 @@ public class TempFile {
       while(file == null) {
         // give it a new name and try to create it again
         try {
-          file = File.createTempFile("paymate", pers.hal42.util.BaseConverter.itoa(DateX.Now().getTime())); // very random
+          file = File.createTempFile("paymate", BaseConverter.itoa(DateX.Now().getTime())); // very random
           fos = new FileOutputStream(file);
         } catch (Exception ignored) {
           if(--maxretries<=0){

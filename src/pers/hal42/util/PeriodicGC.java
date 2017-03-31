@@ -1,10 +1,11 @@
 package pers.hal42.util;
 
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.logging.LogSwitch;
 import pers.hal42.timer.Alarmer;
 import pers.hal42.timer.Alarmum;
 import pers.hal42.timer.TimeBomb;
+
+import static pers.hal42.logging.LogLevelEnum.*;
 
 public class PeriodicGC implements TimeBomb {
   Alarmum myperiod;
@@ -12,10 +13,10 @@ public class PeriodicGC implements TimeBomb {
 
   public boolean enabled(boolean beenabled){
     try {
-      return dbg.levelIs(LogSwitch.ERROR);
+      return dbg.levelIs(ERROR);
     }
     finally {
-      dbg.setLevel(beenabled?LogSwitch.VERBOSE:LogSwitch.ERROR);
+      dbg.setLevel(beenabled?VERBOSE: ERROR);
     }
   }
 

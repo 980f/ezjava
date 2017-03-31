@@ -92,7 +92,7 @@ public class FindFiles {
 
   // +++ give more options later!
   public static void Test(String args[]) {
-    ErrorLogStream.Console(ErrorLogStream.VERBOSE);
+//    ErrorLogStream.Console(LogLevelEnum.VERBOSE);
     if(args.length==2) {
       TextList files = FindFilesUnder(args[0], args[1], true);
       int len = files.size();

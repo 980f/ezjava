@@ -6,6 +6,8 @@ import pers.hal42.logging.ErrorLogStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
+import static pers.hal42.math.MathX.INVALIDINTEGER;
+
 public class NiceInputStream {
   private static ErrorLogStream dbg;//set to concrete class in constructor
 
@@ -96,7 +98,7 @@ public class NiceInputStream {
         return wrapped.available()>0? wrapped.read():0;
       }
     } catch (Exception ex) {
-      return MathX.INVALIDINTEGER;
+      return INVALIDINTEGER;
     }
   }
 
@@ -188,9 +190,9 @@ public class NiceInputStream {
    */
   public int u32(boolean bigendian) {
     int first=u16(bigendian);
-    if(first!=MathX.INVALIDINTEGER){
+    if(first!=INVALIDINTEGER){
       int second=u16(bigendian);
-      if(second!=MathX.INVALIDINTEGER){
+      if(second!=INVALIDINTEGER){
         if(bigendian){//overrides this's
           return (first<<16)+second;
         } else {
@@ -198,7 +200,7 @@ public class NiceInputStream {
         }
       }
     }
-    return MathX.INVALIDINTEGER;
+    return INVALIDINTEGER;
   }
 
 }

@@ -1,5 +1,7 @@
 package pers.hal42.stream;
 
+import pers.hal42.lang.StringX;
+
 /**
  *  Title: Description: Copyright: Copyright (c) 2001 Company:
  *

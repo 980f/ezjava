@@ -355,9 +355,9 @@ public class ErrorLogStream implements AtExit {
       boolean isSql = false;
       // see if it is a JPosException or SQLException
       for (int i = possibilities.length; i-- > 0 && (t2 == null); ) {
-        Method method = c.getMethod(possibilities[i], null);
+        Method method = c.getMethod(possibilities[i]);
         if (method != null) {
-          t2 = (Exception) method.invoke(t1, null);
+          t2 = (Exception) method.invoke(t1);
         }
       }
     } catch (Exception e) {
@@ -367,14 +367,15 @@ public class ErrorLogStream implements AtExit {
   }
 
   protected static String extendedInfo(Throwable t) {
-    String ret = null;
     if ((t != null) && (t instanceof SQLException)) {
       SQLException e = (SQLException) t;
-      ret += "\n  SQLState:" + e.getSQLState();
-      ret += "\n  SQLMessage:" + e.getMessage();
-      ret += "  SQLVendor:" + String.valueOf(e.getErrorCode());
+      StringBuilder ret = new StringBuilder();
+      ret.append("\n  SQLState:").append(e.getSQLState()).
+        append("\n  SQLMessage:").append(e.getMessage()).
+        append("  SQLVendor:").append(String.valueOf(e.getErrorCode()));
+      return ret.toString();
     }
-    return ret;
+    return null;
   }
 
   /**
@@ -482,9 +483,9 @@ public class ErrorLogStream implements AtExit {
     boolean logit = (tl == null);
     Class[] paramTypes = {Object.class, String.class, TextList.class};
     try {
-      method = c.getMethod("toSpam", null);
+      method = c.getMethod("toSpam");
       try {
-        Object result = method.invoke(o, null);
+        Object result = method.invoke(o);
         if (result instanceof TextList) {
           TextList tlResult = (TextList) result;
           for (int i = 0; i < tlResult.size(); i++) {

@@ -1,8 +1,8 @@
 package pers.hal42.text;
 
-import pers.hal42.lang.StringX;
+import pers.hal42.lang.ByteArray;
 import pers.hal42.lang.CharX;
-import pers.hal42.text.Formatter;
+import pers.hal42.lang.StringX;
 
 public class Ascii {
 
@@ -257,28 +257,37 @@ public class Ascii {
    */
   public static String cooked(byte []raw){
     if(ByteArray.NonTrivial(raw)){
-      StringBuffer clean=new StringBuffer(raw.length);
-      for(int i=0;i<raw.length;i++){
-        byte c= raw[i];
-        switch(c){
-          default:  clean.append(image(c)); break;
-            case NUL: continue; //simply omit nulls
-            case STX: clean.setLength(0);   break; //erase preceding stuff
-            case ETX:
-            case EOT: return clean.toString();//"clear to end of line"
+      StringBuilder clean=new StringBuilder(raw.length);
+      for (byte c : raw) {
+        switch (c) {
+          default:
+            clean.append(image(c));
+            break;
+          case NUL:
+            continue; //simply omit nulls
+          case STX:
+            clean.setLength(0);
+            break; //erase preceding stuff
+          case ETX:
+          case EOT:
+            return clean.toString();//"clear to end of line"
 
-            case ESC:
-              return ""; //common "oops" characters
+          case ESC: //common "oops" characters
+            return "";  //todo:1 this seems like not the best choice.
 
-            case CR: case LF: case BEL: case TAB: case FF:
-              clean.append(' ');
-              break; //whitespace
+          case CR:
+          case LF:
+          case BEL:
+          case TAB:
+          case FF:
+            clean.append(' ');
+            break; //whitespace
 
-            case BS:
-              if(clean.length()>0){
-                clean.setLength(clean.length()-1);
-              }
-              break;
+          case BS:
+            if (clean.length() > 0) {
+              clean.setLength(clean.length() - 1);
+            }
+            break;
         }
       }
       return clean.toString();//someone elses job to do any trimming.

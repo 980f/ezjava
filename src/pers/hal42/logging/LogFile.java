@@ -5,6 +5,7 @@ import pers.hal42.math.Accumulator;
 import pers.hal42.stream.NullOutputStream;
 import pers.hal42.stream.StringFIFO;
 import pers.hal42.thread.Counter;
+import pers.hal42.thread.ThreadX;
 import pers.hal42.timer.StopWatch;
 import pers.hal42.util.FileZipper;
 import pers.hal42.util.PrintFork;
@@ -152,20 +153,24 @@ public class LogFile extends Thread implements AtExit, Comparable  {
   public PrintFork getPrintFork(LogLevelEnum defaultLevel) {
     return getPrintFork(filename, defaultLevel);
   }
+  public PrintFork getPrintFork(int defaultLevel) {
+    return getPrintFork(filename, defaultLevel);
+  }
   public PrintFork getPrintFork(String name) {
     return getPrintFork(name, LogLevelEnum.WARNING);
   }
   public PrintFork getPrintFork(String name, LogLevelEnum defaultLevel) {
     return getPrintFork(name, defaultLevel, false /* don't register! */);
   }
-  public PrintFork getPrintFork(LogLevelEnum defaultLevel, boolean register) {
-    return getPrintFork(filename, defaultLevel, register);
+  public PrintFork getPrintFork(String name, int defaultLevel) {
+    return getPrintFork(name, defaultLevel, false /* don't register! */);
   }
-  public PrintFork getPrintFork(String name, LogLevelEnum defaultLevel, boolean register) {
+
+  public PrintFork getPrintFork(String name, int defaultLevel, boolean register) {
     try {
       logFileMon.getMonitor();
       if(pf == null) {
-        pf = new LogFilePrintFork(name, getPrintStream(), defaultLevel.ordinal(), register);
+        pf = new LogFilePrintFork(name, getPrintStream(), defaultLevel, register);
       }
     } catch (Exception e) {
       // ??? +++
@@ -174,8 +179,18 @@ public class LogFile extends Thread implements AtExit, Comparable  {
       return pf;
     }
   }
+  public PrintFork getPrintFork(String name, LogLevelEnum defaultLevel, boolean register) {
+    return getPrintFork(name,defaultLevel.ordinal(),register);
+  }
 
-  public static PrintFork makePrintFork(String filename, boolean compressed) {
+  public PrintFork getPrintFork(int defaultLevel, boolean register) {
+    return getPrintFork(filename, defaultLevel, register);
+  }
+  public PrintFork getPrintFork(LogLevelEnum defaultLevel, boolean register) {
+    return getPrintFork(filename, defaultLevel.ordinal(), register);
+  }
+
+    public static PrintFork makePrintFork(String filename, boolean compressed) {
     return makePrintFork(filename, LogLevelEnum.WARNING.ordinal(), compressed);
   }
 
@@ -277,7 +292,7 @@ public class LogFile extends Thread implements AtExit, Comparable  {
         Thread.yield();
         ThreadX.sleepFor(10);  // --- testing to be sure that we give the OS time to do its stuff
         // check to see if the hour just rolled over or if the file length is too long
-        compCal.setTime(Safe.Now());
+        compCal.setTime(DateX.Now());
         if((file != null) && ((file.length() > maxFileLength) || (perDay && (compCal.get(Calendar.DAY_OF_YEAR) != day)))) {
           close();
         }

@@ -3,7 +3,10 @@ package pers.hal42.math;
 // +++ turn this into a real cipher (javax.crypto.Cipher)!
 
 
-import  java.io.*;
+import pers.hal42.lang.Safe;
+import pers.hal42.stream.Streamer;
+
+import java.io.*;
 
 public final class CipherP86B2 {
 

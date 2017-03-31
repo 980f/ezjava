@@ -118,7 +118,7 @@ public class PrintFork {
   }
 
   public void println(String s){
-    println(s, myLevel.Value());
+    println(s, myLevel.Level());
   }
 
 /**
@@ -141,16 +141,16 @@ public class PrintFork {
     }
   }
 
-//  public static final void Println(int printLevel,String s){
-//    Println(s,printLevel);
-//  }
+  public static void Println(int printLevel,String s){
+    Println(s,printLevel);
+  }
 
   public static EasyCursor asProperties(){
     EasyCursor blob=new EasyCursor(/* presize to di*/);
     Vector debuggers = LogSwitchRegistry.printForkRegistry; // get a second list copy to prevent exceptions
     for(int i=0;i<debuggers.size();i++){
       PrintFork bugger = (PrintFork)debuggers.elementAt(i);
-      blob.setString(bugger.Name(), bugger.myLevel.Image());
+      blob.setString(bugger.Name(), bugger.myLevel.toString());//todo:0 proper enum vaue saving
     }
     return blob;
   }

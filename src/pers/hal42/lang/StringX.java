@@ -179,7 +179,7 @@ public class StringX {
   }
 
   public static int byteAt(String s, int at) {
-    return byteAt(s, at, pers.hal42.lang.MathX.INVALIDINTEGER);
+    return byteAt(s, at, MathX.INVALIDINTEGER);
   }
 
   public static int firstByte(String s) {
