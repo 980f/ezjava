@@ -1,10 +1,17 @@
 package pers.hal42.stream;
+
+import pers.hal42.lang.ReflectX;
+import pers.hal42.logging.ErrorLogStream;
+
 import java.io.FileInputStream;
+
+/** utility that will read a file and display on debug stream, and will follow a 'live' filelike thing such as a socket or a terminal */
+
 public class FileTextSnooper {
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FileTextSnooper.class);
   private static final String LF = System.getProperty("line.separator");
 
-  public static final void main(String [] args) {
+  public static void main(String [] args) {
     if(args.length < 1) {
       System.out.println("usage: ...FileTextSnooper filename");
     } else {
@@ -17,7 +24,7 @@ public class FileTextSnooper {
     this.filename = filename;
   }
 
-  public static final void snoop(String filename) {
+  public static void snoop(String filename) {
     FileTextSnooper snooper = new FileTextSnooper(filename);
     snooper.snoop();
   }

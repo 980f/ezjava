@@ -1,11 +1,11 @@
 package pers.hal42.transport;
 
 
-public interface EasyHelper {
+public interface EasyHelper<T> {
   /** * save object to cursor, might be null in which case save default values */
-  public void helpsave(EasyCursor ezc, Object uneasy);
+  void helpsave(EasyCursor ezc, T uneasy);
   /** * load guaranteed existing null constructed object from cursor */
-  public Object helpload(EasyCursor ezc,Object uneasy);
+  T helpload(EasyCursor ezc, T uneasy);
 
 }
 

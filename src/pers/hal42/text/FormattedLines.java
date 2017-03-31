@@ -1,15 +1,20 @@
-package pers.hal42.util;
+package pers.hal42.text;
 
-import  java.util.Vector;
-import pers.hal42.lang.ReflectX;
+import pers.hal42.lang.VectorX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.transport.EasyCursor;
+import pers.hal42.transport.isEasy;
+
+import java.util.Vector;
 
 public class FormattedLines implements isEasy {
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FormattedLines.class, ErrorLogStream.VERBOSE);
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FormattedLines.class, LogLevelEnum.VERBOSE);
   private static final String countKey = "count";
 
   protected char fillChar=' '; //for converting raw strings
 
-  Vector storage=new Vector();
+  Vector<FormattedLineItem> storage=new Vector<>();
   public int size(){
     return storage!=null ? storage.size(): 0;
   }
@@ -31,7 +36,7 @@ public class FormattedLines implements isEasy {
    * convert to strings now that we know the @param width of the presentation device
    * @param paragraph is added to if it exists, else a new one is created.
    */
-  public TextList formatted(int width,TextList paragraph){
+  public TextList formatted(int width, TextList paragraph){
     if(paragraph==null){
       paragraph=new TextList(storage.size());
     }
@@ -53,7 +58,7 @@ public class FormattedLines implements isEasy {
       return true;//successfully added nothing
     }
     if(arf instanceof FormattedLineItem){
-      return storage.add(arf);
+      return storage.add((FormattedLineItem)arf);
     }
     if(arf instanceof String){
       return storage.add(new FormattedLineItem((String)arf,fillChar));
@@ -83,11 +88,11 @@ public class FormattedLines implements isEasy {
   }
 
   public FormattedLineItem itemAt(int index) {
-    return (index < storage.size()) ? (FormattedLineItem)storage.elementAt(index) : (FormattedLineItem)null;
+    return (index < storage.size()) ? storage.elementAt(index) : null;
   }
 
   public FormattedLines(){
-    storage=new Vector();
+    storage=new Vector<>();
   }
 
   public FormattedLines(Object arf){
@@ -96,10 +101,10 @@ public class FormattedLines implements isEasy {
   }
 
   public FormattedLines(int initialCapacity) {
-    storage=new Vector(initialCapacity);
+    storage=new Vector<>(initialCapacity);
   }
 
-  public static final FormattedLines Empty() {
+  public static FormattedLines Empty() {
     return new FormattedLines();
   }
 ///////////////////////////////////////////////
@@ -107,20 +112,21 @@ public class FormattedLines implements isEasy {
 /**
  * @param te value will get destroyed! it is for getting to the underlying class
  */
-public static final FormattedLines menuListing(TrueEnum te,TrueEnum parent){
+public static <T extends Enum<T>> FormattedLines menuListing(T te,Class <? extends Enum> pool){
   if(te == null){
     return Empty();
   }
-  int size=te.numValues();
+  int size=//pool.getv();
+    0;
   FormattedLines newone=new FormattedLines(size+1);
-//this was ugly  newone.add(FormattedLineItem.pair("Menu Type:",ReflectX.justClassName(te)));
-  if(TrueEnum.IsLegal(parent)){
-    newone.add(  ReflectX.justClassName(parent),parent.menuImage());
-  }
-  for(int i=0;i<size;i++){
-    te.setto(i);
-    newone.add(te.menuImage());
-  }
+////this was ugly  newone.add(FormattedLineItem.pair("Menu Type:",ReflectX.justClassName(te)));
+//  if(TrueEnum.IsLegal(parent)){
+//    newone.add(  ReflectX.justClassName(parent),parent.menuImage());
+//  }
+//  for(int i=0;i<size;i++){
+//    te.setto(i);
+//    newone.add(te.menuImage());
+//  }
   return newone;
 }
 
@@ -131,7 +137,7 @@ public static final FormattedLines menuListing(TrueEnum te,TrueEnum parent){
     save(ezp);
     return ezp;
   }
-//new way, 1.003
+
   public void save(EasyCursor ezc){
     ezc.setVector(storage);
   }
@@ -139,14 +145,14 @@ public static final FormattedLines menuListing(TrueEnum te,TrueEnum parent){
     storage=ezc.getVector(FormattedLineItem.class);
   }
 
-// pre 1.003
-  private FormattedLines fromString(String from) {
-    EasyCursor ezp = new EasyCursor();
-    ezp.fromString(from, true);
-    dbg.VERBOSE("fromString() using: " + ezp);
-    load(ezp);
-    return this;
-  }
+//// pre 1.003
+//  private FormattedLines fromString(String from) {
+//    EasyCursor ezp = new EasyCursor();
+//    ezp.fromString(from, true);
+//    dbg.VERBOSE("fromString() using: " + ezp);
+//    load(ezp);
+//    return this;
+//  }
 
 }
 

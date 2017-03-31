@@ -88,14 +88,14 @@ public class Bool extends Value implements Comparable {
   public static final Bool TRUE = new Bool(true);
   public static final Bool FALSE = new Bool(false);
 
-  public static final int stuffMask(int pattern, int bitnum, boolean value){
+  public static int stuffMask(int pattern, int bitnum, boolean value){
     if(value){
       return pattern | (1<<bitnum);
     } else {
       return pattern &~(1<<bitnum);
     }
   }
-  public static final long stuffMask(long pattern, int bitnum, boolean value){
+  public static long stuffMask(long pattern, int bitnum, boolean value){
     if(value){
       return pattern | (1<<bitnum);
     } else {
@@ -103,46 +103,46 @@ public class Bool extends Value implements Comparable {
     }
   }
 
-  public static final boolean bitpick(int pattern, int bitnum){
+  public static boolean bitpick(int pattern, int bitnum){
     return (pattern & (1<<bitnum))!=0;
   }
 
-  public static final boolean bitpick(long pattern, int bitnum){
+  public static boolean bitpick(long pattern, int bitnum){
     return (pattern & (1L<<bitnum))!=0;
   }
 
 ////////////////////////////
 // a string as a sparse array with index encoded as a char
-  public static final boolean flagPresent(int ch,String flagset){
+  public static boolean flagPresent(int ch, String flagset){
     return StringX.NonTrivial(flagset) && flagset.indexOf(ch)>=0;
   }
 
-  public static final boolean flagPresent(char ch,String flagset){
+  public static boolean flagPresent(char ch, String flagset){
     return flagPresent((int)ch,flagset);
   }
 
-  public static final boolean flagPresent(String s,String flagset){
+  public static boolean flagPresent(String s, String flagset){
     return StringX.NonTrivial(s)&&flagPresent(s.charAt(0),flagset);
   }
 
-  public static final boolean For(int eye){
+  public static boolean For(int eye){
     return eye!=0;
   }
 
-  public static final boolean isEven(int eye){
+  public static boolean isEven(int eye){
     return (eye&1)==0;
   }
 
-  public static final boolean isOdd(int eye){
+  public static boolean isOdd(int eye){
     return (eye&1)!=0;
   }
 
-  public static final boolean For(long ell){
+  public static boolean For(long ell){
     return ell!=0;
   }
 
   // +++ write a tester for this!
-  public static final boolean For(String trueorfalse){
+  public static boolean For(String trueorfalse){
     boolean ret = false;
     try {
       if(StringX.equalStrings(SHORTTRUE(), trueorfalse)) {
@@ -163,7 +163,7 @@ public class Bool extends Value implements Comparable {
     }
   }
 
-  public static final boolean[] MapFromLong(long ell){
+  public static boolean[] MapFromLong(long ell){
     boolean[] map=new boolean[64];
     int i=0;
     for(long bitp=Long.MIN_VALUE;i<64;bitp>>>=1){
@@ -172,28 +172,28 @@ public class Bool extends Value implements Comparable {
     return map;
   }
 
-  private static final String SHORTTRUE() {
+  private static String SHORTTRUE() {
     return "Y";
   }
-  private static final String SHORTFALSE() {
+  private static String SHORTFALSE() {
     return "N";
   }
 
   public static final String TRUESTRING = (new Boolean(true)).toString();
   public static final String FALSESTRING = (new Boolean(false)).toString();
-  public static final String toString(boolean isTrue) {
+  public static String toString(boolean isTrue) {
     return isTrue ? TRUESTRING : FALSESTRING;
   }
   private static final String TRUESTR = toString(true);
   private static final String FALSESTR = toString(false);
-  public static final String TRUE() {
+  public static String TRUE() {
     return TRUESTR;
   }
-  public static final String FALSE() {
+  public static String FALSE() {
     return FALSESTR;
   }
 
-  public static final long LongFromMap(boolean [] map){
+  public static long LongFromMap(boolean [] map){
     long ell=0;
     int i=0;
     for(long bitp=Long.MIN_VALUE;i<64;bitp>>>=1){
@@ -204,15 +204,15 @@ public class Bool extends Value implements Comparable {
     return ell;
   }
 
-  public static final int signum(boolean positive){
+  public static int signum(boolean positive){
     return positive? 1: -1;
   }
 
-  public static final char signChar(boolean positive){
+  public static char signChar(boolean positive){
     return positive? '+': '-';
   }
 
-  public static final char dash(boolean dash){
+  public static char dash(boolean dash){
     return dash? '-': ' ';
   }
 

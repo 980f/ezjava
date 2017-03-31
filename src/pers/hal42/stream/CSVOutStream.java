@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.stream;
 
 import java.io.FilterOutputStream;
 

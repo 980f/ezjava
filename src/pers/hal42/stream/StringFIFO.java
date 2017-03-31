@@ -1,7 +1,6 @@
 package pers.hal42.stream;
 
 import pers.hal42.lang.DateX;
-import pers.hal42.util.ObjectFifo;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;

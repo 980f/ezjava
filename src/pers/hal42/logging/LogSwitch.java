@@ -203,7 +203,7 @@ public class LogSwitch implements Comparable {
     debug("LogSwitch.apply(EasyCursor) ends!");
   }
 
-  public static final boolean setOne(String name, LogLevelEnum lle) {
+  public static boolean setOne(String name, LogLevelEnum lle) {
     LogSwitch ls = find(name);
     if(ls==null) {
       return false;
@@ -223,16 +223,16 @@ public class LogSwitch implements Comparable {
     }
   }
 
-  public static final void SetAll(LogLevelEnum lle){
+  public static void SetAll(LogLevelEnum lle){
     SetAll(lle.Value());
   }
 
-  public static final void SetAll(String lvl){
+  public static void SetAll(String lvl){
     SetAll(new LogLevelEnum(lvl));
   }
 
 
-  public static final TextList listLevels() {
+  public static TextList listLevels() {
     Vector debuggers = Sorted();
     TextList responses = new TextList();
     int count = debuggers.size();

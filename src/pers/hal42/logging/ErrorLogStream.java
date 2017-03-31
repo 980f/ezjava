@@ -69,15 +69,15 @@ public class ErrorLogStream implements AtExit {
    * @warn use getForClass whenever possible. Use this for objects whose name is not
    * reasonably derived from some class's name
    */
-  public static final ErrorLogStream getForName(String name, LogLevelEnum level) {
+  public static ErrorLogStream getForName(String name, LogLevelEnum level) {
     return getForName(name).setLevel(level);
   }
 
-  public static final ErrorLogStream getForName(String name, int level) {
+  public static ErrorLogStream getForName(String name, int level) {
     return getForName(name).setLevel(level);
   }
 
-  private static synchronized final ErrorLogStream getForName(String name) {
+  private static synchronized ErrorLogStream getForName(String name) {
     if(StringX.NonTrivial(name)) {
       return new ErrorLogStream(LogSwitch.getFor(name));
     } else { //bit bucket for trivial name
@@ -85,23 +85,23 @@ public class ErrorLogStream implements AtExit {
     }
   }
 
-  public static final ErrorLogStream getForClass(Class myclass) {
+  public static ErrorLogStream getForClass(Class myclass) {
     return getExtension(myclass, null);
   }
 
-  public static final ErrorLogStream getForClass(Class myclass, LogLevelEnum level) {
+  public static ErrorLogStream getForClass(Class myclass, LogLevelEnum level) {
     return getForClass(myclass).setLevel(level);
   }
 
-  public static final ErrorLogStream getForClass(Class myclass, int level) {
+  public static ErrorLogStream getForClass(Class myclass, int level) {
     return getForClass(myclass).setLevel(level);
   }
 
-  public static final ErrorLogStream getExtension(Class myclass, String suffix) {
+  public static ErrorLogStream getExtension(Class myclass, String suffix) {
     return(myclass != null) ? getForName(LogSwitch.shortName(myclass, suffix)) : Null();
   }
 
-  public static final ErrorLogStream getExtension(Class myclass, String suffix, int level) {
+  public static ErrorLogStream getExtension(Class myclass, String suffix, int level) {
     return getExtension(myclass, suffix).setLevel(level);
   }
 
@@ -130,7 +130,7 @@ public class ErrorLogStream implements AtExit {
     }
   }
 
-  public static final void atExit() {
+  public static void atExit() {
     endLogging();
   }
 
@@ -174,7 +174,7 @@ public class ErrorLogStream implements AtExit {
   public boolean bare = false; //+_+ made a state to expedite big change.
 //bareness should be stacked in parallel with name
 
-  public static final boolean isGlobalVerbose() {
+  public static boolean isGlobalVerbose() {
     return globalLeveller().is(VERBOSE);
   }
 
@@ -319,7 +319,7 @@ public class ErrorLogStream implements AtExit {
     }
   }
 
-  public static final TextList Caught(String title, Throwable caught, TextList tl) {
+  public static TextList Caught(String title, Throwable caught, TextList tl) {
     int localLevel = ERROR; //FUE
     tl.add("<Caught> " + StringX.TrivialDefault(title, ""));
     resolveExceptions(caught, tl);
@@ -328,7 +328,7 @@ public class ErrorLogStream implements AtExit {
   }
 
   //uses refelction to seek first of any members of class exception
-  protected static final Throwable NextException(Throwable t1) {
+  protected static Throwable NextException(Throwable t1) {
     Throwable t2 = null;
     // look for an exception in the exception:
     // getOrigException()
@@ -350,7 +350,7 @@ public class ErrorLogStream implements AtExit {
     return t2;
   }
 
-  protected static final String extendedInfo(Throwable t) {
+  protected static String extendedInfo(Throwable t) {
     String ret = null;
     if( (t != null) && (t instanceof SQLException)) {
       SQLException e = (SQLException) t;
@@ -364,11 +364,11 @@ public class ErrorLogStream implements AtExit {
   /**
    * New Exception resolver stuff
    */
-  public static final TextList resolveExceptions(Throwable t) {
+  public static TextList resolveExceptions(Throwable t) {
     return resolveExceptions(t, new TextList());
   }
 
-  public static final TextList resolveExceptions(Throwable t, TextList tl) {
+  public static TextList resolveExceptions(Throwable t, TextList tl) {
     tl.add("Error: " + t); // the trace doesn't always give enough detail!
     VirtualPrinter buffer = new VirtualPrinter();
     if(t != null) {
@@ -387,7 +387,7 @@ public class ErrorLogStream implements AtExit {
     return tl;
   }
 
-  public static final TextList whereAmI() {
+  public static TextList whereAmI() {
     TextList tl = new TextList();
     Throwable t = new Throwable();
     try {
@@ -415,7 +415,7 @@ public class ErrorLogStream implements AtExit {
 
   public static LogFile fpf = null; //just  so that we can close the file explicitly on program exit.
 
-  public static final void stdLogging(String logName, boolean background, boolean overwrite) {
+  public static void stdLogging(String logName, boolean background, boolean overwrite) {
     PrintFork pf = null;
 
     if(StringX.NonTrivial(logName)) {
@@ -434,21 +434,21 @@ public class ErrorLogStream implements AtExit {
     Global().ERROR("stdLogging Started:" + logName + (background ? " buffered" : " straight") + (overwrite ? " overwrite" : " append"));
   }
 
-  public static final void stdLogging(String logName, boolean background) {
+  public static void stdLogging(String logName, boolean background) {
     stdLogging(logName, background, false); //defaulted for server.
   }
 
-  public static final void stdLogging(String logName) {
+  public static void stdLogging(String logName) {
     stdLogging(logName, true); //defaulted for server.
   }
 
 // dumpage
   // path = the object's variable name
-  public static final void objectDump(Object o, String path) {
+  public static void objectDump(Object o, String path) {
     objectDump(o, path, null);
   }
 
-  public static final void objectDump(Object o, String path, TextList tl) {
+  public static void objectDump(Object o, String path, TextList tl) {
     Global()._objectDump(o, path, tl);
   }
 

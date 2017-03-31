@@ -1,10 +1,8 @@
 package pers.hal42.lang;
 
-import org.jetbrains.annotations.NotNull;
 import pers.hal42.text.TextList;
 
-import java.io.File;
-
+import java.io.File; //logfile root
 
 public class OS {
   /**
@@ -30,10 +28,7 @@ public class OS {
    */
   public static OsEnum os() {
     if (os == null) {
-      //os = new OsEnum();//class contains this one instance of itself
-      String oser = System.getProperty("os.name", "");// let's not do this so we don't have to refer OUT of util -> StringX.replace(Main.props("os").getString("name"), " ", "");
-      //the above change hosed Andy's system's ability to use a keyspan. Thank you very much. If you can't stand the linkage then copy the code locally.
-      //what alh did was to uncouple the text of the enumeration from the recognition string. we can now change the ennum text to whatever we wish.
+      String oser = System.getProperty("os.name", "");
       for (OsEnum guess : OsEnum.values()) {
         if (signature[guess.ordinal()].equals(oser)) {
           os = guess;
@@ -45,10 +40,6 @@ public class OS {
     }
     return os;
   }
-
-//  public static int OsValue() {
-//    return os().ordinal();
-//  }
 
   public static String OsName() {
     return signature[os().ordinal()];
@@ -85,31 +76,31 @@ public class OS {
 //    return isLinux();//at present we are detecting only our own brand of linux
 //  }
 
-  ///////////////////////
-  // com port naming
-  public static String comPath(boolean isUsb, int portindex) {
-    if (isWin2K()) {//Andy has the only extant win2k server. Keyspan starts at com3
-      if (portindex < 0) {
-        return "NUL"; //may not work as a comport
-      }
-      if (isUsb) {
-        int usbBias = 3;      //really should read some property somewhere for this bias
-        return "COM" + (portindex + usbBias);
-      } else {
-        return "COM" + portindex;
-      }
-    } else {
-      if (portindex < 0) {
-        return "/dev/null"; //may not work as a comport
-      }
-      if (isUsb) {
-        return "/dev/ttyUSB" + portindex; //look into devfs +_+
-        //we could have made the above /dev/nodes in a uniform namespace with the regular ones, sigh.
-      } else {
-        return "/dev/ttyS" + portindex;
-      }
-    }
-  }
+//  ///////////////////////
+//  // com port naming
+//  public static String comPath(boolean isUsb, int portindex) {
+//    if (isWin2K()) {//Andy has the only extant win2k server. Keyspan starts at com3
+//      if (portindex < 0) {
+//        return "NUL"; //may not work as a comport
+//      }
+//      if (isUsb) {
+//        int usbBias = 3;      //really should read some property somewhere for this bias
+//        return "COM" + (portindex + usbBias);
+//      } else {
+//        return "COM" + portindex;
+//      }
+//    } else {
+//      if (portindex < 0) {
+//        return "/dev/null"; //may not work as a comport
+//      }
+//      if (isUsb) {
+//        return "/dev/ttyUSB" + portindex; //look into devfs +_+
+//        //we could have made the above /dev/nodes in a uniform namespace with the regular ones, sigh.
+//      } else {
+//        return "/dev/ttyS" + portindex;
+//      }
+//    }
+//  }
 
   ///////////////////////
   // extra crap

@@ -1,10 +1,9 @@
 package pers.hal42.lang;
 
 
-import java.util.Vector;
-import java.util.Comparator;
 import java.util.Collections;
-import pers.hal42.lang.ObjectX;
+import java.util.Comparator;
+import java.util.Vector;
 
 public class VectorX {
   private VectorX() {
@@ -35,7 +34,7 @@ public class VectorX {
     return v!=null?v.size():ObjectX.INVALIDINDEX;
   }
 
-  public static final boolean NonTrivial(Vector v){
+  public static boolean NonTrivial(Vector v){
     return v!=null && v.size()>0;
   }
 

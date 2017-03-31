@@ -1,3 +1,4 @@
+package pers.hal42.lang;
 
 import  java.util.Hashtable;
 

@@ -1,10 +1,10 @@
 package pers.hal42.util;
 
 import pers.hal42.lang.AtExit;
-import pers.hal42.lang.ThreadX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.stream.Streamer;
 import pers.hal42.text.TextList;
+import pers.hal42.thread.ThreadX;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,23 +35,23 @@ public class FileZipper extends Thread implements AtExit {
   /**
    * How to report errors?
    */
-  public static final FileZipper zipFile(String filename, int threadPriority) {
+  public static FileZipper zipFile(String filename, int threadPriority) {
     FileZipper fz = new FileZipper(filename, threadPriority);
     fz.start();
     return fz;
   }
 
-  public static final FileZipper zipFile(String filename) {
+  public static FileZipper zipFile(String filename) {
     FileZipper fz = new FileZipper(filename, Thread.currentThread().getPriority()); // defaults to current priority
     fz.start();
     return fz;
   }
 
-  public static final FileZipper backgroundZipFile(String filename) {
+  public static FileZipper backgroundZipFile(String filename) {
     return zipFile(filename, Thread.MIN_PRIORITY);
   }
 
-  public static final FileZipper zipFileNow(String filename) {
+  public static FileZipper zipFileNow(String filename) {
     FileZipper fz = new FileZipper(filename, 0); // defaults to current priority
     fz.run();
     return fz;

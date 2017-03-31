@@ -172,13 +172,13 @@ public class UTC implements Comparable {
   // Since there are roughly 365 days in a year, that allows us 68 years.
   // Since genesis of computers is roughly calculated at 19700101
   // if we use that, this scheme is good until 2038
-  public static final UTC fromSeconds(int seconds) {
+  public static UTC fromSeconds(int seconds) {
     return UTC.New(secondsToMillis(seconds));
   }
-  public static final int toSeconds(UTC when) {
+  public static int toSeconds(UTC when) {
     return (int)(when.getTime()/1000L);
   }
-  public static final long secondsToMillis(int seconds) {
+  public static long secondsToMillis(int seconds) {
     return 1000L * (long)seconds;
   }
   public final int toSeconds() {
@@ -214,7 +214,7 @@ public class UTC implements Comparable {
     return second.utc-first.utc;
   }
 
-  public static final UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
+  public static UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
     if(startdate == null) {
       return null;
     }
@@ -225,7 +225,7 @@ public class UTC implements Comparable {
     return UTC.New(date.getTime());
   }
 
-  public static final Date ChangeByDays(Date startdate, int days) { // can be positive or negative
+  public static Date ChangeByDays(Date startdate, int days) { // can be positive or negative
     if(startdate == null) {
       return null;
     }

@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.transport;
 
 import java.util.Properties;
 import java.util.Hashtable;

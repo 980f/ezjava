@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.thread;
 
 /**
  * usage:
@@ -25,7 +25,7 @@ public class Waiter {
   public static final int Excepted=4;
   public static final int Extending=5;
 
-  public static final String stateString(int state) {
+  public static String stateString(int state) {
     switch (state) {
       case Ready:       return "Ready";
       case Notified:    return "Notified";

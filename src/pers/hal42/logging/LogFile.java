@@ -196,7 +196,7 @@ public class LogFile extends Thread implements AtExit, Comparable  {
     }
   }
 
-  public static final void flushAll() {
+  public static void flushAll() {
     LogFile[] list = listAll();
     for(int i = list.length; i-->0;) {
       list[i].AtExit();
@@ -223,7 +223,7 @@ public class LogFile extends Thread implements AtExit, Comparable  {
 
   private Calendar compCal = Calendar.getInstance();
 
-  public static final long allPending() {
+  public static long allPending() {
     LogFile [] lfs = listAll();
     long counter = 0;
     for(int i = lfs.length; i-->0;) {

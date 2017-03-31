@@ -299,7 +299,7 @@ public class BigFile {
    *
    * @param args filename [blocksize [-lines]]
    */
-  public final static void main(String args[]) {
+  public static void main(String args[]) {
 // use the setall    ErrorLogStream.cpf.myLevel.setLevel(ErrorLogStream.VERBOSE);
     switch (args.length) {
       default:

@@ -8,13 +8,13 @@ public final class SoftObject extends SoftReference {
   private SoftObject(Object k) {
     super(k);
   }
-  private static final SoftObject create(Object k) {
+  private static SoftObject create(Object k) {
     return (k == null) ? null : new SoftObject(k);
   }
   private SoftObject(Object k, ReferenceQueue q) {
     super(k, q);
   }
-  public static final SoftObject create(Object k, ReferenceQueue q) {
+  public static SoftObject create(Object k, ReferenceQueue q) {
     return (k == null) ? null : new SoftObject(k, q);
   }
   /* A WeakObject is equal to another WeakObject iff they both refer to objects

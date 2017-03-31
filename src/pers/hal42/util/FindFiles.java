@@ -14,18 +14,18 @@ public class FindFiles {
  * it is case-sensitive
  * try to use these first:
  */
-  public static final TextList FindFilesUnder(String startDirStr, String filterStr, boolean recurse) {
+  public static TextList FindFilesUnder(String startDirStr, String filterStr, boolean recurse) {
     return FindFilesFrom(new File(startDirStr), new TailFilter(filterStr), recurse);
   }
 
-  public static final TextList FindDirsUnder(String startDirStr, boolean recurse) {
+  public static TextList FindDirsUnder(String startDirStr, boolean recurse) {
     return FindFilesFrom(new File(startDirStr), new DirFilter(), recurse);
   }
 
 /**
  * try to use the above ones first (protect these?)
  */
-  public static final TextList FindFilesFrom(File startDir, FileFilter filter, boolean recurse) {
+  public static TextList FindFilesFrom(File startDir, FileFilter filter, boolean recurse) {
     TextList v = new TextList(60, 20);
     FindFilesFrom(v, startDir, filter, recurse ? new DirFilter() : null);
     return v;
@@ -37,7 +37,7 @@ public class FindFiles {
    * @param stale leave out stale files and directories per this list
    */
 
-  public static final TextList ExcludeFilesFrom(TextList fileList, String stale[]){
+  public static TextList ExcludeFilesFrom(TextList fileList, String stale[]){
     TextList reduced=new TextList(fileList.size());
     for(int i = fileList.size(); i-->0;) {
       String filename = fileList.itemAt(i);
@@ -56,7 +56,7 @@ public class FindFiles {
     return reduced;
   }
 
-  public static final void FindFilesFrom(TextList files, File startDir, FileFilter filter, DirFilter df) {
+  public static void FindFilesFrom(TextList files, File startDir, FileFilter filter, DirFilter df) {
     /*
     // debugging
     String [] filenames = startDir.list();

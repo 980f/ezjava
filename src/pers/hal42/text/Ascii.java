@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.text;
 
 import pers.hal42.lang.StringX;
 import pers.hal42.lang.CharX;

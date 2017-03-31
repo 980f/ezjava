@@ -46,19 +46,19 @@ public class Streamer implements Runnable {
     }
   }
 
-  public static final Streamer Unbuffered(InputStream in, OutputStream out, boolean ignoreEOF) {
+  public static Streamer Unbuffered(InputStream in, OutputStream out, boolean ignoreEOF) {
     return Unbuffered(in, out, null, ignoreEOF);
   }
 
-  public static final Streamer Unbuffered(InputStream in, OutputStream out, StreamEventListener listener, boolean ignoreEOF) {
+  public static Streamer Unbuffered(InputStream in, OutputStream out, StreamEventListener listener, boolean ignoreEOF) {
     return Buffered(in, out, 1, StreamForever, listener, ignoreEOF);//"Buffered" used but args defeat buffering
   }
 
   // most common use:
-  public static final Streamer Buffered(InputStream in, OutputStream out) {
+  public static Streamer Buffered(InputStream in, OutputStream out) {
     return Buffered(in, out, DEFAULTBUFFERSIZE, StreamForever, null, false);//@@@
   }
-  public static final Streamer Buffered(InputStream in, OutputStream out, int buffsize, long howmany, StreamEventListener listener, boolean ignoreEOF) {
+  public static Streamer Buffered(InputStream in, OutputStream out, int buffsize, long howmany, StreamEventListener listener, boolean ignoreEOF) {
     return new Streamer(in, out, buffsize, howmany, listener, ignoreEOF);
   }
 
@@ -223,7 +223,7 @@ public class Streamer implements Runnable {
   }
 */
 
-  public static final InputStream getInputStream(Object item){
+  public static InputStream getInputStream(Object item){
     InputStream casted=null;
     try {
       if(item != null){
@@ -255,7 +255,7 @@ public class Streamer implements Runnable {
   }
 
 // blocks if reader or writer block; mostly meant for files and strings
-  public static final int swapCharacters(Reader in, Writer out) throws IOException {
+  public static int swapCharacters(Reader in, Writer out) throws IOException {
     if(in == null) {
       throw(new IOException("Streamer.swapCharacters: IN is null."));
     }
@@ -275,18 +275,18 @@ public class Streamer implements Runnable {
   private static final int DEFAULTBUFFERSIZE = 10000;
   private static final int MAXBUFFERSIZE = 100000;
 
-  public static final long swapStreams(InputStream in, OutputStream out) throws IOException {
+  public static long swapStreams(InputStream in, OutputStream out) throws IOException {
     return swapStreams(in, out, DEFAULTBUFFERSIZE);
   }
 
-  public static final long swapStreams(InputStream in, OutputStream out, int buffsize) throws IOException {
+  public static long swapStreams(InputStream in, OutputStream out, int buffsize) throws IOException {
     return swapStreams(in, out, buffsize, -1);
   }
 
   /**
    * @param howMany - how many bytes to move; -1 means all
    */
-  public static final long swapStreams(InputStream in, OutputStream out, int buffsize, long howMany) throws IOException {
+  public static long swapStreams(InputStream in, OutputStream out, int buffsize, long howMany) throws IOException {
     if(in == null) {
       throw(new IOException("Streamer.swapStreams: IN is null."));
     }
@@ -319,7 +319,7 @@ public class Streamer implements Runnable {
     return spewed;
   }
 
-  public static final Streamer backgroudSwapStreams(InputStream in, OutputStream out) {
+  public static Streamer backgroudSwapStreams(InputStream in, OutputStream out) {
     Streamer streamer = new Streamer(in, out);
     Thread thread = new Thread(streamer);
     thread.start();

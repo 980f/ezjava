@@ -1,6 +1,10 @@
 package pers.hal42.stream;
 
 
+import pers.hal42.lang.DateX;
+import pers.hal42.text.TextList;
+import pers.hal42.timer.UTC;
+
 import java.io.*;
 
 
@@ -9,146 +13,127 @@ public class IOX {
     // don't construct me; I am for static functions
   }
 
-  public static File [] listFiles(File dir){
-    File [] list=dir.listFiles();
-    return list!=null ? list: new File[0];
+  public static File[] listFiles(File dir) {
+    File[] list = dir.listFiles();
+    return list != null ? list : new File[0];
   }
 
-  public static File [] listFiles(File dir, FileFilter filter){
-    File [] list=dir.listFiles(filter);
-    return list!=null ? list: new File[0];
+  public static File[] listFiles(File dir, FileFilter filter) {
+    File[] list = dir.listFiles(filter);
+    return list != null ? list : new File[0];
   }
 
   /**
    * quickie DOSlike file attribute control
+   *
    * @return true if file was made read/write.
    * just CREATING a FilePermission object modifies the underlying file,
    * that is really bogus syntax. Need to wrap all of that in a FileAttr class.
    */
-    public static boolean makeWritable(File f){
-      try {
-        FilePermission attr=new FilePermission(f.getAbsolutePath(),"read,write,delete");
-        return true;
-      } catch(Exception oops){
-        return false; //errors get us here
-      }
+  public static boolean makeWritable(File f) {
+    try {
+      FilePermission attr = new FilePermission(f.getAbsolutePath(), "read,write,delete");
+      return true;
+    } catch (Exception oops) {
+      return false; //errors get us here
     }
+  }
+
   /**
-   * @see makeWritable for complaints about java implementation.
    * @return true if file was made readonly.
+   * see makeWritable for complaints about java implementation.
    */
-    public static boolean makeReadonly(File f){
-      try {
-        FilePermission attr=new FilePermission(f.getAbsolutePath(),"read");
-        return true;
-      } catch(Exception oops){
-        return false; //errors get us here
-      }
+  public static boolean makeReadonly(File f) {
+    try {
+      FilePermission attr = new FilePermission(f.getAbsolutePath(), "read");
+      return true;
+    } catch (Exception oops) {
+      return false; //errors get us here
     }
+  }
+
   /**
    * returns true is something actively was deleted.
    */
-    public static final boolean deleteFile(File f){
-      try {
-        return f!=null && f.exists()&& makeWritable(f) && f.delete();
-      } catch(Exception oops){
-        return false; //errors get us here
-      }
+  public static boolean deleteFile(File f) {
+    try {
+      return f != null && f.exists() && makeWritable(f) && f.delete();
+    } catch (Exception oops) {
+      return false; //errors get us here
     }
+  }
 
 
-  public static Exception Flush(OutputStream os){
+  public static Exception Flush(OutputStream os) {
     try {
       os.flush();
       return null;
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       return ex;
     }
   }
-  /**
-   * @return true if stream closes Ok, or didn't need to.
-   */
-  public static final boolean Close(OutputStream fos){
-    if(fos != null) {
-      try {
-        fos.flush(); //to make this like C
-        fos.close();
+
+  /** close, stifle all errors. Flush first is object supports flushing */
+  public static <T extends Closeable> void Close(T closeable){
+    try {
+      if(closeable instanceof Flushable){
+        ((Flushable) closeable).flush();
       }
-      catch(IOException ioex){
-        ErrorLogStream.Global().WARNING("IOX.Close(OutputStream):"+ioex);
-        return true;
-      }
-      catch (Exception tfos) {
-        ErrorLogStream.Global().Caught("IOX.Close(OutputStream):",tfos);
-        return false;
-      }
+      closeable.close();
+    } catch (IOException | NullPointerException ignored) {
+      //just plain don't care.
     }
-    return true;
   }
 
-  /**
-   * @return true if stream closes Ok, or didn't need to.
-   */
-  public static final boolean Close(InputStream fos){
-    if(fos != null) {
-      try {
-        fos.close();
-      }
-      catch(IOException ioex){
-        ErrorLogStream.Global().WARNING("IOX.Close(OutputStream):"+ioex);
-        return true;
-      }
-      catch (Exception tfos) {
-        return false;
-      }
-    }
-    return true;
-  }
 
   /**
    * returns true if dir now exists
    */
-  public static final boolean createDir(String filename) {
+  public static boolean createDir(String filename) {
     return createDir(new File(filename));
   }
-  public static final boolean createDir(File file) {
-    if(!file.exists()) {
+
+  public static boolean createDir(File file) {
+    if (!file.exists()) {
       return file.mkdir();
     }
     return true;
   }
-  public static final void createDirs(File file) {
+
+  public static void createDirs(File file) {
     try {
       file.mkdirs();
     } catch (Exception ex) {
       // gulp
     }
   }
-  public static final void createParentDirs(File file) {
+
+  public static void createParentDirs(File file) {
     String parent = file.getParent();
     createDirs(new File(parent));
   }
-  public static final void createParentDirs(String filename) {
+
+  public static void createParentDirs(String filename) {
     createParentDirs(new File(filename));
   }
 
-  public static final String fromStream(ByteArrayInputStream bais,int len){
-    byte [] chunk=new byte[len];
-    bais.read(chunk,0,len);
-    String s=new String(chunk);
+  public static String fromStream(ByteArrayInputStream bais, int len) {
+    byte[] chunk = new byte[len];
+    bais.read(chunk, 0, len);
+    String s = new String(chunk);
     return s;
   }
 
   //////////
-  public static final boolean FileExists(File f){
-    return f!=null && f.exists();
+  public static boolean FileExists(File f) {
+    return f != null && f.exists();
   }
-  public static final boolean FileExists(String fname){
+
+  public static boolean FileExists(String fname) {
     return FileExists(new File(fname));
   }
 
-  public static final FileOutputStream fileOutputStream(String filename) {
+  public static FileOutputStream fileOutputStream(String filename) {
     FileOutputStream fos = null;
     try {
       fos = new FileOutputStream(filename);
@@ -158,11 +143,11 @@ public class IOX {
     return fos;
   }
 
-  public static final String FileToString(String filename) {
+  public static String FileToString(String filename) {
     String ret = "";
     try {
       FileInputStream filein = new FileInputStream(filename);
-      ByteArrayOutputStream baos = new ByteArrayOutputStream((int)fileSize(filename));
+      ByteArrayOutputStream baos = new ByteArrayOutputStream((int) fileSize(filename));
       Streamer.Buffered(filein, baos);
       ret = new String(baos.toByteArray());
     } catch (Exception ex) {
@@ -176,13 +161,13 @@ public class IOX {
    * Creates a unique filename given a particular pattern
    *
    * @param pathedPrefix - the path (just directory) where the file will be located + the first part of the filename
-   * @param suffix - the last part of the filename
-   *
-   * ie: filename = path + datetimestamp + suffix
-   *
-   * eg: createUniqueFilename("c:\temp", "myfile", ".txt") = c:\temp\myfile987654321.txt"
+   * @param suffix       - the last part of the filename
+   *                     <p>
+   *                     ie: filename = path + datetimestamp + suffix
+   *                     <p>
+   *                     eg: createUniqueFilename("c:\temp", "myfile", ".txt") = c:\temp\myfile987654321.txt"
    */
-  public static final String createUniqueFilename(String pathedPrefix, String suffix) {
+  public static String createUniqueFilename(String pathedPrefix, String suffix) {
     File file = null;
     String filename = null;
     int attempts = 0;
@@ -197,22 +182,22 @@ public class IOX {
     return filename;
   }
 
-  public static final long fileModTicks(String filename){
+  public static long fileModTicks(String filename) {
     try {
       return (new File(filename)).lastModified();
-    } catch(Exception anything){
+    } catch (Exception anything) {
       return -1;
     }
   }
 
-  public static final UTC fileModTime(String filename){
+  public static UTC fileModTime(String filename) {
     return UTC.New(fileModTicks(filename));
   }
 
-  public static final long fileSize(String filename){
+  public static long fileSize(String filename) {
     try {
       return (new File(filename)).length();
-    } catch(Exception anything){
+    } catch (Exception anything) {
       return -1;
     }
   }
@@ -229,10 +214,10 @@ public class IOX {
     }
   }
 
-  public static int [ ] asciiProfile(InputStream in) throws IOException {
-    int [ ] profile = new int[256];
+  public static int[] asciiProfile(InputStream in) throws IOException {
+    int[] profile = new int[256];
     int one;
-    while((one=in.read()) != -1) {
+    while ((one = in.read()) != -1) {
       profile[one]++;
     }
     return profile;
@@ -240,10 +225,10 @@ public class IOX {
 
   public static TextList showAsciiProfile(InputStream in) {
     TextList ret = new TextList();
-    int [ ] profile = null;
+    int[] profile = null;
     try {
       profile = asciiProfile(in);
-      for(int i = 0; i < profile.length; i++) {
+      for (int i = 0; i < profile.length; i++) {
         ret.add("Value " + i + " had " + profile[i] + " occurrences.");
       }
     } catch (Exception ex) {
@@ -253,29 +238,26 @@ public class IOX {
     }
   }
 
-  public static BufferedReader StreamLineReader(InputStream stream){
+  public static BufferedReader StreamLineReader(InputStream stream) {
     try {
-      if (stream!=null) {//what other stream state should we check?
+      if (stream != null) {//what other stream state should we check?
         return new BufferedReader(new InputStreamReader(stream));
       } else {
         return null;
       }
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       return null;
     }
   }
 
   /**
-   * @param fname name of file to read lines from
    * @return reader that can read whole lines from a file
-   * @todo return a reader that passes back error messages instead of returning null.
+   * todo: return a reader that passes back error messages instead of returning null.
    */
-  public static BufferedReader FileLineReader(File file){
+  public static BufferedReader FileLineReader(File file) {
     try {
       return StreamLineReader(new FileInputStream(file));
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       return null;
     }
   }
@@ -285,56 +267,55 @@ public class IOX {
    * @return reader that can read whole lines from a file
    * @todo return a reader that passes back error messages instead of returning null.
    */
-  public static BufferedReader FileLineReader(String fname){
+  public static BufferedReader FileLineReader(String fname) {
     try {
       return StreamLineReader(new FileInputStream(fname));
-    }
-    catch (Exception ex) {
+    } catch (Exception ex) {
       return null;
     }
   }
 
-  public static final PrintStream FilePrinter(String fname){
+  public static PrintStream FilePrinter(String fname) {
     try {
       return new PrintStream(new FileOutputStream(new File(fname)));
-    }
-    catch (Exception ex) {
-      System.err.print("Making a FilePrinter got:"+ex);
-      System.err.println("...output will go to this stream instead of file ["+fname+"]");
+    } catch (Exception ex) {
+      System.err.print("Making a FilePrinter got:" + ex);
+      System.err.println("...output will go to this stream instead of file [" + fname + "]");
       return System.err;
     }
   }
+
   /**
    * read contents of a regular file into an array of strings
+   *
    * @param file
    * @return textlist with each item one line from file
    */
-  public static TextList TextFileContent(File file){
-    TextList content=new TextList();
-    BufferedReader reader=FileLineReader(file);
+  public static TextList TextFileContent(File file) {
+    TextList content = new TextList();
+    BufferedReader reader = FileLineReader(file);
     try {
-      while(reader.ready()){
+      while (reader.ready()) {
         content.add(reader.readLine());
       }
-    }
-    catch (Exception ex) {
-    //on exception break while and keep what we got, adding note:
+    } catch (Exception ex) {
+      //on exception break while and keep what we got, adding note:
       content.add("Exception while reading file");
       content.add(ex.getLocalizedMessage());
     }
 
     return content;
   }
+
   /**
-   *
    * @param fname
    * @return see TextFileContent(File file)
    */
-  public static TextList TextFileContent(String fname){
+  public static TextList TextFileContent(String fname) {
     return TextFileContent(new File(fname));
   }
 
-  public static final void main(String [] args) {
+  public static void main(String[] args) {
     System.out.println(showAsciiProfile(args[0]));
   }
 }

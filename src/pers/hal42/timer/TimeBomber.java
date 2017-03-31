@@ -53,7 +53,7 @@ public class TimeBomber implements Runnable {
   /**
    * turn off a possibly ticking timebomb
    */
-  public static final void Defuse(TimeBomber thisone){
+  public static void Defuse(TimeBomber thisone){
     if(thisone!=null){
       thisone.defuse();
     }
@@ -114,7 +114,7 @@ public class TimeBomber implements Runnable {
     startFuse();
   }
 
-  public static final TimeBomber New(int fuse,TimeBomb dynamite) {
+  public static TimeBomber New(int fuse, TimeBomb dynamite) {
     return new TimeBomber(fuse,dynamite) ;
   }
 

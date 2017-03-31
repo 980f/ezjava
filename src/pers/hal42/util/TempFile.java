@@ -1,11 +1,17 @@
 package pers.hal42.util;
-import  java.io.*;
+
+import pers.hal42.lang.DateX;
+import pers.hal42.logging.ErrorLogStream;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
 
 // !!!! NOTE: the temporary file will be deleted from storage when this object is destroyed!
 
 public class TempFile {
 
-  private static final ErrorLogStream dbg = new ErrorLogStream(TempFile.class.getName());
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(TempFile.class);
 //+++ where is the contructor?  Can we use this anywhere?
 // +++ you need to create a constructor and pass it a path.  This class has never been tested.
   protected File file = null;
@@ -19,22 +25,24 @@ public class TempFile {
 
   public OutputStream outputStream() {
     if(closed) {
-      dbg.VERBOSE("Attempting to reaccess closed stream: " + filename());
+      dbg.VERBOSE("Attempted to reaccess closed stream: " + filename());
       return null;
     }
+    int maxretries=10;
     while(fos == null) {
       while(file == null) {
         // give it a new name and try to create it again
         try {
-          file = File.createTempFile("paymate", BaseConverter.itoa(Safe.Now().getTime())); // very random
-          if(file!=null) {
-            fos = new FileOutputStream(file);
+          file = File.createTempFile("paymate", pers.hal42.util.BaseConverter.itoa(DateX.Now().getTime())); // very random
+          fos = new FileOutputStream(file);
+        } catch (Exception ignored) {
+          if(--maxretries<=0){
+            dbg.ERROR("Abandoned trying to create a temporary file.");
+            return null;
           }
-        } catch (Exception t) {
           dbg.ERROR("Exception trying to create a temporary file.  Trying again ...");
-          dbg.Caught(t);
+          dbg.Caught(ignored);
         }
-        // +++ make this try several times but not forever
       }
       fname = file.getPath();
       file.deleteOnExit(); // in case we miss it for some reason (crash?)
@@ -57,7 +65,8 @@ public class TempFile {
   public void finalize() {
     close();
     if(file != null) {
-      file.delete(); // ignore return value for now
+      //noinspection ResultOfMethodCallIgnored
+      file.delete();
     }
   }
 

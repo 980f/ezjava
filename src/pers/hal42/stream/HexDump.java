@@ -1,7 +1,10 @@
-package pers.hal42.util;
-import  java.io.*;
-import pers.hal42.lang.StringX;
+package pers.hal42.stream;
+
 import pers.hal42.lang.Fstring;
+import pers.hal42.lang.StringX;
+import pers.hal42.logging.ErrorLogStream;
+
+import java.io.*;
 
 public class HexDump {
 
@@ -24,11 +27,11 @@ public class HexDump {
   }
 */
 
-  public static final void dump(String header, String content, OutputStream os) {
+  public static void dump(String header, String content, OutputStream os) {
     dump(header, content, os, System.getProperty("line.separator"));
   }
 
-  public static final void dump(String header, String content, OutputStream os, String eol) {
+  public static void dump(String header, String content, OutputStream os, String eol) {
     try {
       byte [] bytes = StringX.TrivialDefault(content, "").getBytes();
       dump(header, new ByteArrayInputStream(bytes), os, eol);
@@ -37,11 +40,11 @@ public class HexDump {
     }
   }
 
-  public static final void dump(String header, InputStream is, OutputStream os) {
+  public static void dump(String header, InputStream is, OutputStream os) {
     dump(header, is, os, System.getProperty("line.separator"));
   }
 
-  public static final void dump(String header, InputStream is, OutputStream os, String eol) {
+  public static void dump(String header, InputStream is, OutputStream os, String eol) {
     if(os == null) {
       dbg.VERBOSE("dump(): OutputStream == null!");
     } else {
@@ -84,7 +87,7 @@ public class HexDump {
     }
   }
 
-  private static final void headline(String headerTxt, OutputStreamWriter osw, String eol) {
+  private static void headline(String headerTxt, OutputStreamWriter osw, String eol) {
     try {
       osw.write(headerWing);
       osw.write(headerTxt);
@@ -98,7 +101,7 @@ public class HexDump {
   /**
    * content should be <= 16 bytes
    */
-  private static final void contentline(long start, byte [] content, int size, OutputStreamWriter osw, String eol) {
+  private static void contentline(long start, byte [] content, int size, OutputStreamWriter osw, String eol) {
     try {
       Fstring hexMarkerFmt = new Fstring(8, '0');
       Fstring hexFormatter = new Fstring(hexWidth-1, '0');
@@ -133,7 +136,7 @@ public class HexDump {
     }
   }
 
-  public static final void main(String[] args) {
+  public static void main(String[] args) {
     if(args.length < 1) {
       System.out.println("takes a filename for input; outputs to stdout");
     } else {

@@ -1,6 +1,4 @@
-package pers.hal42.util;
-
-import pers.hal42.lang.MathX;
+package pers.hal42.math;
 
 public class BaseConverter {
 
@@ -10,13 +8,13 @@ public class BaseConverter {
   //american convention, needs internationalization: +_+
   protected static final char radixChar='.';
 
-  public static final String dtoa(double d) {
+  public static String dtoa(double d) {
     return dtoa(d, 0);
   }
-  public static final String dtoa(double d, int mindigits) {
+  public static String dtoa(double d, int mindigits) {
     return dtoa(d, mindigits, true);
   }
-  public static final String dtoa(double d, int mindigits, boolean doRounding) {
+  public static String dtoa(double d, int mindigits, boolean doRounding) {
     return dtoa(d, mindigits, doRounding, 10);
   }
 
@@ -29,7 +27,7 @@ public class BaseConverter {
   protected static final int digitsafter   = 5;
   protected static final int trailingspace = 6;
   /* print with minimum precision: */
-  public static final String dtoa(double value,int mindigits, boolean doRounding, int base)
+  public static String dtoa(double value, int mindigits, boolean doRounding, int base)
   {
     if(!dtoaBaseOk(base)) {
       return "0#NaN"; //really need to find the official NaN's
@@ -138,10 +136,10 @@ public class BaseConverter {
 
 
   //for numbers that are really an integer, but were using double to get more than 32 bits:
-  public static final String itoa(double d) {
+  public static String itoa(double d) {
     return itoa(d, 10);
   }
-  public static final String itoa(double value, int base) {
+  public static String itoa(double value, int base) {
     if(value<1.0){ //or take sign then fabs then still do this.
       return "0";
     }
@@ -149,14 +147,14 @@ public class BaseConverter {
   }
 
   //dtoa co-functions:
-  protected static final boolean dtoaBaseOk(int base) { //compare to max and min args
+  protected static boolean dtoaBaseOk(int base) { //compare to max and min args
     return (base >1) && (base <= symbolList.length());
   }
 
-  protected static final int dtoaDigits(double value) {
+  protected static int dtoaDigits(double value) {
     return dtoaDigits(value, 10.0);
   }
-  protected static final int dtoaDigits(double value, double radix) {
+  protected static int dtoaDigits(double value, double radix) {
     double logBased=Math.log(Math.abs(value))/Math.log(radix); //any log function will do
     //value== radix^power is a problem. if logbased is exactly an integer add one
     //  logBased+=.0000000000001; //cheap fix, not perfect but pretty good
@@ -181,7 +179,7 @@ public class BaseConverter {
     return DigitCount(value,10);
   }
 
-  public static final double cvtBased(char ascii[],int base){
+  public static double cvtBased(char ascii[], int base){
     if(ascii!=null){
       boolean sawdp=false; //haven't seen a decimal point yet
       boolean isnegative=false;
@@ -240,7 +238,7 @@ public class BaseConverter {
 * ABSTRACT....:	converts a text-string number from an old base to a new base.
 ******************************************************************************
 */
-  public static final String strBaseCvt(String oldvalue, int oldbase, int newbase) {
+  public static String strBaseCvt(String oldvalue, int oldbase, int newbase) {
     if((oldbase < 2) || (oldbase > 36)) {
       return null;
       //return "Old base [" + oldbase + "] must be between 2 and 36.";

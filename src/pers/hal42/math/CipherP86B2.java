@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.math;
 
 // +++ turn this into a real cipher (javax.crypto.Cipher)!
 
@@ -9,11 +9,11 @@ public final class CipherP86B2 {
 
   // use these!
 
-  public static final OutputStream getOutputStream(OutputStream toFilter, String key, int primerNot95X) {
+  public static OutputStream getOutputStream(OutputStream toFilter, String key, int primerNot95X) {
     return new CipherP86B2(key, primerNot95X).getOutputStream(toFilter);
   }
 
-  public static final InputStream getInputStream(InputStream toFilter, String key, int primerNot95X) {
+  public static InputStream getInputStream(InputStream toFilter, String key, int primerNot95X) {
     return new CipherP86B2(key, primerNot95X).getInputStream(toFilter);
   }
 
@@ -57,7 +57,7 @@ public final class CipherP86B2 {
   private int key;
   private int salt;
 
-  private static final int mod95(int val) {
+  private static int mod95(int val) {
     // The mathematical MOD does not match the computer MOD. (this was from C; don't know what is the case for Java)
     // This may look strange, but it gets the job done, and portably at that.
     while (val >= 9500) val -= 9500;
@@ -198,13 +198,13 @@ public final class CipherP86B2 {
   }
 
   // --- for testing
-  public static final void main(String [] args) {
+  public static void main(String [] args) {
     String key = "THIS is a GREAT big test !!+ 0123456789AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz,./;'[]`-=\\<>?:\"{}~!()_+|\n\r\t";
     int primer = (int)Math.sqrt(System.currentTimeMillis());
     test(primer, key, (args.length == 0) ? key : args[0], true);
   }
 
-  private static final void test(int primer, String key, String toTest, boolean URLed) {
+  private static void test(int primer, String key, String toTest, boolean URLed) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     ByteArrayInputStream bais = new ByteArrayInputStream(toTest.getBytes());
     try {

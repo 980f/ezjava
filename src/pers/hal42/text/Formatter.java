@@ -12,7 +12,7 @@ public class Formatter {
    * @param b 8 bit number
    * @return human readable rendition of that number in base 16
    */
-  public static final String ox2(byte b) {
+  public static String ox2(byte b) {
     char[] chars = new char[2]; //char rather than byte because that is what we can make a String from.
     chars[0] = hexDigit(b >> 4);
     chars[1] = hexDigit(b);
@@ -22,19 +22,19 @@ public class Formatter {
   /**
    * @return hex representation of lsbyte.
    */
-  public static final String ox2(int i) {
+  public static String ox2(int i) {
     return ox2( (byte) (i & 255));
   }
 
-  public static final String ox2(long l) {
+  public static String ox2(long l) {
     return ox2( (byte) (l & 255));
   }
 
-  public static final char hexDigit(int b) {
+  public static char hexDigit(int b) {
     return Character.forDigit(b & 15, 16);
   }
 
-  public static final StringBuffer hexImage(byte[] buffer, int offset, int length) {
+  public static StringBuffer hexImage(byte[] buffer, int offset, int length) {
     //+++ parameter checks needed.
     StringBuffer hexy = new StringBuffer(2 * length);
     length += offset; //now is end index
@@ -44,19 +44,19 @@ public class Formatter {
     return hexy;
   }
 
-  public static final StringBuffer hexImage(byte[] buffer, int offset) {
+  public static StringBuffer hexImage(byte[] buffer, int offset) {
     return hexImage(buffer, offset, buffer.length - offset);
   }
 
-  public static final StringBuffer hexImage(byte[] buffer) {
+  public static StringBuffer hexImage(byte[] buffer) {
     return hexImage(buffer, 0, buffer.length);
   }
 
-  public static final StringBuffer hexImage(String s) {
+  public static StringBuffer hexImage(String s) {
     return hexImage(s.getBytes());
   }
 
-  public static final String twoDigitFixed(long smallNumber) {
+  public static String twoDigitFixed(long smallNumber) {
     return new String( ( (smallNumber <= 9) ? "0" : "") + smallNumber);
   }
 

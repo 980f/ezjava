@@ -1,9 +1,9 @@
-package pers.hal42.util;
+package pers.hal42.stream;
 
-import java.io.PrintStream;
+import pers.hal42.text.TextList;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import pers.hal42.util.TextList;
 
 public class VirtualPrinter extends PrintStream {
   protected ByteArrayOutputStream sbos ;

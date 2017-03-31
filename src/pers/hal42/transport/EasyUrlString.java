@@ -3,8 +3,8 @@ package pers.hal42.transport;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
-import pers.hal42.util.Ascii;
-import pers.hal42.util.Base64Codec;
+import pers.hal42.text.Ascii;
+import pers.hal42.math.Base64Codec;
 
 public class EasyUrlString implements isEasy {
 

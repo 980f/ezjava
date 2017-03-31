@@ -30,7 +30,7 @@ public class FileName {
     return StringX.TrivialDefault(extension(fullname), "");
   }
 
-  public static final String extension(String fullname) {
+  public static String extension(String fullname) {
     return StringX.afterLastDot(fullname);
   }
 }

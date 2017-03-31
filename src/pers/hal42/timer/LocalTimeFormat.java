@@ -32,7 +32,7 @@ public class LocalTimeFormat implements isEasy {
     return this;
   }
 
-  public static final Date dateFromInts(int year, int month, int day) {
+  public static Date dateFromInts(int year, int month, int day) {
     Calendar cal = Calendar.getInstance();
     cal.set(year, month, day);
     return cal.getTime();
@@ -51,11 +51,11 @@ public class LocalTimeFormat implements isEasy {
     setFormat(StringX.OnTrivial(format,"z"));
   }
 
-  public static final LocalTimeFormat copy(LocalTimeFormat rhs){
+  public static LocalTimeFormat copy(LocalTimeFormat rhs){
     return new LocalTimeFormat(rhs.wrapped.getTimeZone(),rhs.internalFormat);
   }
 
-  public static final LocalTimeFormat cousin(LocalTimeFormat rhs,String otherformat){
+  public static LocalTimeFormat cousin(LocalTimeFormat rhs, String otherformat){
     return new LocalTimeFormat(rhs.wrapped.getTimeZone(),otherformat);
   }
 
@@ -78,25 +78,25 @@ public class LocalTimeFormat implements isEasy {
    * quite often the format is constant for the life of the object,
    * and known at the point of creations
    */
-  public static final LocalTimeFormat New(TimeZone fromServer,String format) {
+  public static LocalTimeFormat New(TimeZone fromServer, String format) {
     return new LocalTimeFormat(fromServer,format);
   }
 
-  public static final LocalTimeFormat New(String tz, String format) {
+  public static LocalTimeFormat New(String tz, String format) {
     return New(TimeZone.getTimeZone(tz),format);
   }
 
-  public static final LocalTimeFormat New(TimeZone fromServer) {
+  public static LocalTimeFormat New(TimeZone fromServer) {
     return New(fromServer,"");
   }
 
-  public static final LocalTimeFormat Utc(String format) {
+  public static LocalTimeFormat Utc(String format) {
     return New(TimeZone.getTimeZone("UTC"),format);
   }
 
   public static final String DESCENDINGTIMEFORMAT = "yyyyMMddHHmmssSSS";
 
-  public static final LocalTimeFormat Utc() {
+  public static LocalTimeFormat Utc() {
     return Utc(DESCENDINGTIMEFORMAT);//decimalized but covers full span
   }
 

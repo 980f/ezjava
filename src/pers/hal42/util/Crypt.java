@@ -111,7 +111,7 @@ public class Crypt {
     }
   }
 
-  public static final void main (String[] args) throws Exception {
+  public static void main (String[] args) throws Exception {
     if (args.length < 3) {
       System.out.println("Usage: Crypt -e|-d plaintext ciphertext");
       return;

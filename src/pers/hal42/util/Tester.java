@@ -138,7 +138,7 @@ public class Tester {
     }
     return m;
   }
-  private static final String runMethod(String className, String methodName, Class[] classargs, String[] args, boolean debugArgsNoReturn) {
+  private static String runMethod(String className, String methodName, Class[] classargs, String[] args, boolean debugArgsNoReturn) {
     String s = null;
     try {
       Class c = Class.forName(className);

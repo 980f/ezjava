@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.stream;
 
 public interface PanicStream {
   public void PANIC(String re);

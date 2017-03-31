@@ -1,8 +1,8 @@
-package pers.hal42.util;
+package pers.hal42.math;
 
 public class Primer {
 
-  public static final long firstPrimeGreaterThan(long thisNumber) {
+  public static long firstPrimeGreaterThan(long thisNumber) {
     long orig = thisNumber;
     thisNumber|=1;//ensure arg is odd
     if(thisNumber <= orig) {
@@ -14,7 +14,7 @@ public class Primer {
     return thisNumber;
   }
 
-  public static final boolean isPrime(long candidate) {
+  public static boolean isPrime(long candidate) {
     // Try dividing the number by all odd numbers between 3 and its sqrt
     long sqrt = Math.round(Math.sqrt(candidate));
     for (long i = 3; i <= sqrt; i += 2) {
@@ -24,7 +24,7 @@ public class Primer {
     return true;
   }
 
-  public static final void main(String [] args) {
+  public static void main(String [] args) {
     int primer = 0;
     for(int i = 0; i < 27; i++) {
       primer = (int)Primer.firstPrimeGreaterThan((long)primer);

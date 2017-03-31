@@ -1,4 +1,4 @@
-package pers.hal42.util.timer;
+package pers.hal42.timer;
 /**
 *  the actions execute from the Alarmer thread, so if they do work that takes
 *  a significant amount of time they screw up the other time delayed actions.
@@ -7,8 +7,15 @@ package pers.hal42.util.timer;
 *  The active alarm list is mutexed. Please keep it that way!
 */
 
-import java.util.*;
-import pers.hal42.lang.ThreadX;
+import pers.hal42.lang.DateX;
+import pers.hal42.lang.Monitor;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.text.TextList;
+import pers.hal42.thread.ThreadX;
+import pers.hal42.transport.EasyProperties;
+
+import java.util.Vector;
 
 class AlarmList {
   ErrorLogStream dbg;
@@ -193,7 +200,7 @@ class AlarmList {
 // the following is a singleton ONLY
 
 public class Alarmer implements Runnable {
-  private static final ErrorLogStream dbg=ErrorLogStream.getForClass(Alarmer.class,ErrorLogStream.OFF);
+  private static final ErrorLogStream dbg=ErrorLogStream.getForClass(Alarmer.class, LogLevelEnum.OFF);
   static Alarmer my;//the default Alarm manager
   Thread thread;
   int priority;
@@ -229,7 +236,7 @@ public class Alarmer implements Runnable {
           dbg.WARNING("no alarms, sleeping for along time");
           ThreadX.sleepFor(100000);//just a little safer than 'forever'
         } else {
-          long interval=nexttime-DateX.utcNow();//convert to timedifference
+          long interval=nexttime- DateX.utcNow();//convert to timedifference
           if(interval>0){
             dbg.WARNING("next check at "+DateX.timeStamp(nexttime)+" Sleeping for "+interval);
             ThreadX.sleepFor(interval);
@@ -280,7 +287,7 @@ public class Alarmer implements Runnable {
     }
   }
 
-  public static final int alarmCount() {
+  public static int alarmCount() {
     return (my!=null && my.active !=null) ? my.active.size():0;
   }
 
@@ -300,7 +307,7 @@ public class Alarmer implements Runnable {
   }
 
   public static boolean isTicking(Alarmum alarm){
-    return (alarm!=null)?alarm.isTicking():false;
+    return (alarm != null) && alarm.isTicking();
   }
 
   private static Alarmum Set(Alarmum newone){

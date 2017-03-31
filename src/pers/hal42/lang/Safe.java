@@ -4,6 +4,7 @@ package pers.hal42.lang;
 /** Much of what is in here seems to have been later broken out to seperate classes. */
 
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.Formatter;
 import pers.hal42.timer.LocalTimeFormat;
 import pers.hal42.timer.Ticks;
 import pers.hal42.util.Executor;
@@ -15,6 +16,7 @@ import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Vector;
 
+import static pers.hal42.lang.DateX.timeStampNow;
 import static pers.hal42.lang.StringX.parseLong;
 import static pers.hal42.stream.IOX.makeWritable;
 
@@ -38,8 +40,9 @@ public class Safe {
 
   /** if 1st object is null return second else return it. Kotlin has an operator for this.*/
   public static <T> T deNull(T nullish,T def){
-    return (nullish==null)?nullish:def;
+    return (nullish!=null)?nullish:def;
   }
+
 
 //  public static File [] listFiles(File dir){
 //    File [] list=dir.listFiles();
@@ -109,7 +112,7 @@ public class Safe {
   /**
    * @return true if stream closes Ok, or didn't need to.
    */
-  public static final boolean Close(InputStream fos){
+  public static boolean Close(InputStream fos){
     if(fos != null) {
       try {
         fos.close();
@@ -123,7 +126,7 @@ public class Safe {
   /**
    *
    */
-  public static final int packNibbles(int high,int low){
+  public static int packNibbles(int high, int low){
     return ((high&15)<<4) + (low&15);
   }
 
@@ -231,7 +234,7 @@ public class Safe {
  * debug was removed from the following function as it is called during the initialization
  * of the classes need by the debug stuff. Any debug will have to be raw stdout debugging.
  */
-  public static final boolean preloadClass(String className, boolean loadObject) {
+  public static boolean preloadClass(String className, boolean loadObject) {
     boolean ret = false;
     try {
       Class c = Class.forName(className);
@@ -246,11 +249,11 @@ public class Safe {
     }
   }
 
-  public static final boolean preloadClass(String className) {
+  public static boolean preloadClass(String className) {
     return preloadClass(className, false);
   }
 
-  public static final Object loadClass(String className) {
+  public static Object loadClass(String className) {
     Object ret = null;
     try {
       Class c = Class.forName(className);
@@ -262,7 +265,7 @@ public class Safe {
     }
   }
 
-  public static final int lengthOf(String s){
+  public static int lengthOf(String s){
     return (s!=null)?s.length(): -1;
   }
 
@@ -370,7 +373,7 @@ public class Safe {
 //    return parseLong(s,10);
 //  }
 
-  public static final long littleEndian(byte [] msfirst,int offset,int length){
+  public static long littleEndian(byte [] msfirst, int offset, int length){
     long ell=0;
     for(int i=length<8?length:8; i-->0;){
       ell<<=8;
@@ -379,7 +382,7 @@ public class Safe {
     return ell;
   }
 
-  public static final long bigEndian(byte [] msfirst,int offset,int length){
+  public static long bigEndian(byte [] msfirst, int offset, int length){
     long ell=0;
     if(length>8){
       length=8;
@@ -418,7 +421,7 @@ public class Safe {
   }
 
 
-  public static final String restOfString(String s,int start){
+  public static String restOfString(String s, int start){
     if(s!=null && start>=0 && start<s.length()){
       return s.substring(start);
     } else {
@@ -426,16 +429,16 @@ public class Safe {
     }
   }
 
-  public static final String tail(String s,int length){//need an Fstring variant...
+  public static String tail(String s, int length){//need an Fstring variant...
     int start=s.length()-length;
     return start>0?restOfString(s,start):s;
   }
 
-  public static final String trim(String dirty){
+  public static String trim(String dirty){
     return trim(dirty,true,true);
   }
 
-  public static final String trim(String dirty,boolean leading,boolean trailing){
+  public static String trim(String dirty, boolean leading, boolean trailing){
     if(NonTrivial(dirty)){
       int start=0;
       int end=dirty.length();
@@ -460,7 +463,7 @@ public class Safe {
     return "";
   }
 
-  public static final String proper(String toChange) {
+  public static String proper(String toChange) {
     return Safe.subString(toChange, 0, 1).toUpperCase() + Safe.restOfString(toChange, 1).toLowerCase();
   }
 
@@ -470,7 +473,7 @@ public class Safe {
   * @param s is a string that we wish to cut out a piece of
   * @param cutter is the separator character
   */
-  public static final int cutPoint(String s,char cutter){
+  public static int cutPoint(String s, char cutter){
     try {
       int cutat=s.indexOf(cutter);
       return cutat<0?s.length():cutat;
@@ -479,7 +482,7 @@ public class Safe {
     }
   }
 
-  public static final StringBuffer delete(StringBuffer sb,int start,int end){
+  public static StringBuffer delete(StringBuffer sb, int start, int end){
     if(sb!=null&&start>=0&&start<=end){
       sb.delete(start,end);
     }
@@ -490,7 +493,7 @@ public class Safe {
   *  @param parsee words get removed from the front of this
   *  @return the next contiguous non-white character grouping.
   */
-  public static final String cutWord(StringBuffer parsee){
+  public static String cutWord(StringBuffer parsee){
     String retval="";//so that we can easily read past the end without getting nulls
     if(NonTrivial(parsee)){
       int start=0;
@@ -748,7 +751,7 @@ public class Safe {
   * this is special and only seems to work in a certain case
   * Don't use SimpleDateFormat, as this function is using a dater DIFFERENCE, not an absolute Date
   */
-  public static final String millisToTime(long millis) {
+  public static String millisToTime(long millis) {
     long secondsDiv = Ticks.forSeconds(1);
     long minutesDiv = secondsDiv * 60;
     long hoursDiv   = minutesDiv * 60;
@@ -764,9 +767,9 @@ public class Safe {
     millis = millis % secondsDiv; // get the remainder
 
     return  ((days > 0) ? ("" + days + " ") : "") +
-      StringX.twoDigitFixed(hours) + ":" +
-      StringX.twoDigitFixed(minutes) + ":" +
-      StringX.twoDigitFixed(seconds);
+      Formatter.twoDigitFixed(hours) + ":" +
+      Formatter.twoDigitFixed(minutes) + ":" +
+      Formatter.twoDigitFixed(seconds);
   }
 
   static final LocalTimeFormat LinuxDateCommand=LocalTimeFormat.Utc("MMddHHmmyyyy.ss");
@@ -786,7 +789,7 @@ public class Safe {
   private static final DecimalFormat secsNMillis = new DecimalFormat("#########0.000");
   private static final Monitor secsNMillisMonitor = new Monitor("secsNMillis");
   private static final StringBuffer sbsnm = new StringBuffer();
-  public static final String millisToSecsPlus(long millis) {
+  public static String millisToSecsPlus(long millis) {
     String retval = "";
     try {
       secsNMillisMonitor.getMonitor();
@@ -801,7 +804,7 @@ public class Safe {
     }
   }
 
-  public static final FileOutputStream fileOutputStream(String filename) {
+  public static FileOutputStream fileOutputStream(String filename) {
     FileOutputStream fos = null;
     try {
       fos = new FileOutputStream(filename);
@@ -820,8 +823,10 @@ public class Safe {
    * ie: filename = path + datetimestamp + suffix
    *
    * eg: createUniqueFilename("c:\temp", "myfile", ".txt") = c:\temp\myfile987654321.txt"
+   *
+   * todo:0 reconcile with TempFile, share at least the opening stuff.
    */
-  public static final String createUniqueFilename(String pathedPrefix, String suffix) {
+  public static String createUniqueFilename(String pathedPrefix, String suffix) {
     File file = null;
     String filename = null;
     int attempts = 0;
@@ -841,7 +846,7 @@ public class Safe {
   private static final double M = K*K;
   private static final double G = M*K;
   private static final double T = G*K;
-  public static final String sizeLong(long size) {
+  public static String sizeLong(long size) {
     // size is always positive
     double fat = size;
     String ret = "";
@@ -872,25 +877,25 @@ public class Safe {
     return ret;
   }
 
-  public static final int diskfree(String moreParams, TextList msgs) {
-    String filename = "C:\\CYGWIN\\BIN\\df.exe";//+_+ move to OS specific classes
-    int timeout = 5;
-    int displayrate = 1;
-    if(Safe.fileSize(filename)==0) {
-      filename = "df";
-      timeout = -1;
-      displayrate = -1;
-    }
-    filename = filename+" -k "+TrivialDefault(moreParams, "");
-    int c = Executor.runProcess(filename, "", displayrate /* -1 */, timeout /* was never returning when set to -1 for my machine (not sure why) */, msgs);
-    return c;
-  }
+//  public static final int diskfree(String moreParams, TextList msgs) {
+//    String filename = "C:\\CYGWIN\\BIN\\df.exe";//+_+ move to OS specific classes
+//    int timeout = 5;
+//    int displayrate = 1;
+//    if(Safe.fileSize(filename)==0) {
+//      filename = "df";
+//      timeout = -1;
+//      displayrate = -1;
+//    }
+//    filename = filename+" -k "+TrivialDefault(moreParams, "");
+//    int c = Executor.runProcess(filename, "", displayrate /* -1 */, timeout /* was never returning when set to -1 for my machine (not sure why) */, msgs);
+//    return c;
+//  }
 
-  public static final void main(String [] args) {
-    TextList msgs = new TextList();
-    System.out.println("diskfree = " + diskfree("", msgs));
-    System.out.println(msgs.asParagraph());
-  }
+//  public static final void main(String [] args) {
+//    TextList msgs = new TextList();
+//    System.out.println("diskfree = " + diskfree("", msgs));
+//    System.out.println(msgs.asParagraph());
+//  }
 
 }
 

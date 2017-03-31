@@ -23,7 +23,7 @@ public class ByteArray {
   /**
    * create new array inserting byte @param toinsert into @param src byte array at @param offset location
    */
-  public static final byte[] insert(byte[] src, int toinsert, int offset) {
+  public static byte[] insert(byte[] src, int toinsert, int offset) {
     byte[] target;
     if (src != null) {
       if (offset <= src.length) {
@@ -45,18 +45,18 @@ public class ByteArray {
     return target;
   }
 
-  public static final byte[] insert(byte[] src, int toinsert) {
+  public static byte[] insert(byte[] src, int toinsert) {
     return insert(src, toinsert, 0);
   }
 
   // some byte stuff
-  public static final byte [] newBytes(int length, byte filler) {
+  public static byte [] newBytes(int length, byte filler) {
     byte [] bytes = new byte[length];
     return fillBytes(bytes, filler);
   }
 
   // great for erasing passwords
-  public static final byte [] fillBytes(byte [] bytes, byte filler) {
+  public static byte [] fillBytes(byte [] bytes, byte filler) {
     for(int i = bytes.length; i-->0;) {
       bytes[i] = filler;
     }
@@ -66,7 +66,7 @@ public class ByteArray {
   /**
    * @param end not included. end=length+start, start is a position.
    */
-  public static final byte [] subString(byte [] s,int start,int end){
+  public static byte [] subString(byte [] s, int start, int end){
     int length;
     if(s!=null && start>=0 && end>start && start<(length=s.length)){
       if(end>start+length){
@@ -82,7 +82,7 @@ public class ByteArray {
     return new byte[0];
   }
 
-  public static final byte [] subString(byte [] s,int start){
+  public static byte [] subString(byte [] s, int start){
     if(s!=null){
       return subString(s,start,s.length);
     } else {
@@ -96,7 +96,7 @@ public class ByteArray {
    * if the byte array @param hitolow exceeds @see bytesperlong then
    * the LEADING bytes are skipped.
    */
-  public static final long unpackLong(byte []hitolow){ 
+  public static long unpackLong(byte []hitolow){
     long newone=0L;
     int numbytes=hitolow.length;
     int i=numbytes-bytesperlong;
@@ -111,7 +111,7 @@ public class ByteArray {
     return newone;
   }
 
-  public static final long littleEndian(byte [] msfirst,int offset,int length){
+  public static long littleEndian(byte [] msfirst, int offset, int length){
     long ell=0;
     for(int i=length<8?length:8; i-->0;){
       ell<<=8;
@@ -120,7 +120,7 @@ public class ByteArray {
     return ell;
   }
 
-  public static final long bigEndian(byte [] msfirst,int offset,int length){
+  public static long bigEndian(byte [] msfirst, int offset, int length){
     long ell=0;
     if(length>8){
       length=8;
@@ -132,15 +132,15 @@ public class ByteArray {
     return ell;
   }
 
-  public static final boolean NonTrivial(byte []ba){//oh for templates ....
+  public static boolean NonTrivial(byte []ba){//oh for templates ....
     return ba!=null && ba.length>0;
   }
 
-  public static final byte [] replaceNulWithSpace(byte [] source) {
+  public static byte [] replaceNulWithSpace(byte [] source) {
     return replace(source, Ascii.NUL, Ascii.SP);
   }
 
-  public static final byte [] replace(byte [] source, byte toReplace, byte with) {
+  public static byte [] replace(byte [] source, byte toReplace, byte with) {
     if(toReplace != with) {
       for(int i = source.length; i-->0;) {
         if(source[i] == toReplace) {
@@ -153,7 +153,7 @@ public class ByteArray {
 
   // NOTE: "toReplace" MUST be the same length as "with"
   // NOTE: "toReplace" and "with" must be smaller in length than "source"
-  public static final byte [] replace(byte [] source, byte [ ] toReplace, byte [ ] with) {
+  public static byte [] replace(byte [] source, byte [ ] toReplace, byte [ ] with) {
     if((source != null) &&
        (toReplace != null) &&
        (with != null) &&
@@ -170,7 +170,7 @@ public class ByteArray {
     return source;
   }
 
-  public static final int indexOf(byte [ ] source, byte [ ] searchFor) {
+  public static int indexOf(byte [ ] source, byte [ ] searchFor) {
     return indexOf(source, searchFor, 0);
   }
 
@@ -190,7 +190,7 @@ public class ByteArray {
    * @exception java.lang.NullPointerException if <code>str</code> is
    *            <code>null</code>.
    */
-  public static final int indexOf(byte [ ] source, byte [ ] str, int fromIndex) {
+  public static int indexOf(byte [ ] source, byte [ ] str, int fromIndex) {
       return indexOf(source, 0, source.length, str, 0, str.length, fromIndex);
   }
 
@@ -207,7 +207,7 @@ public class ByteArray {
    * @param   targetCount  count of the target string.
    * @param   fromIndex    the index to begin searching from.
    */
-  public static final int indexOf(byte [ ] source, int sourceOffset, int sourceCount, byte [ ] target, int targetOffset, int targetCount, int fromIndex) {
+  public static int indexOf(byte [ ] source, int sourceOffset, int sourceCount, byte [ ] target, int targetOffset, int targetCount, int fromIndex) {
     if(fromIndex >= sourceCount) {
       return(targetCount == 0 ? sourceCount : -1);
     }

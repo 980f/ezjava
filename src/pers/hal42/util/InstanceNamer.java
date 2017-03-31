@@ -1,6 +1,9 @@
 package pers.hal42.util;
 
 import pers.hal42.lang.StringX;
+import pers.hal42.thread.Counter;
+
+import static pers.hal42.text.Ascii.bracket;
 
 public class InstanceNamer {
 
@@ -8,7 +11,7 @@ public class InstanceNamer {
   private Counter count = new Counter(); // Counter already has mutexing/synchronizing
 
   public String Next(){
-    return prefix+Ascii.bracket(count.incr());
+    return prefix+ bracket(count.incr());
   }
 
   public InstanceNamer(String prefix) {

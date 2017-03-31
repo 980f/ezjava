@@ -1,16 +1,9 @@
-/**
- * Title:        TempFile<p>
- * Description:  Handles termporary files<p>
- * Copyright:    2000<p>
- * Company:      PayMate.net<p>
- * @author       PayMate.net
- * @version      $Id: TempFile.java,v 1.1 2003/07/27 19:36:56 mattm Exp $
- */
 package pers.hal42.stream;
 
+import com.sun.xml.internal.ws.util.xml.XMLStreamReaderToXMLStreamWriter;
 import pers.hal42.lang.DateX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.util.BaseConverter;
+import pers.hal42.math.BaseConverter;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -19,12 +12,12 @@ import java.io.OutputStream;
 public class TempFile {
 
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(TempFile.class);
-//+++ where is the contructor?  Can we use this anywhere?
-// +++ you need to create a constructor and pass it a path.  This class has never been tested.
+
+  protected String fname = "";
   protected File file = null;
   protected FileOutputStream fos = null;
+
   private boolean closed = false;
-  protected String fname = "";
 
   public String filename() {
     return fname;
@@ -55,6 +48,7 @@ public class TempFile {
 
   public void close() {
     if(!closed) {
+      StreamX.close(fos);
       if(fos != null) {
         try {
           fos.close();

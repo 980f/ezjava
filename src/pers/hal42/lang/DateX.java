@@ -19,16 +19,16 @@ public class DateX {
   static final LocalTimeFormat stamper=LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS");
   static final LocalTimeFormat yearlessstamper=LocalTimeFormat.Utc("MMdd.HHmmss.SSS");
 
-  public static final String timeStampNow() {
+  public static String timeStampNow() {
     return timeStamp(Now());
   }
 
-  public static final String timeStampNowYearless() {
+  public static String timeStampNowYearless() {
     return timeStampYearless(Now());
   }
 
   private static final Monitor timeMon = new Monitor("DateX.timeStamp");
-  private static final String timeStamp(Date today) {
+  private static String timeStamp(Date today) {
     String ret = "";
     try {
       timeMon.getMonitor();
@@ -43,7 +43,7 @@ public class DateX {
   }
 
   private static final Monitor yearlesstimeMon = new Monitor("DateX.timeStampYearless");
-  public static final String timeStampYearless(Date today) {
+  public static String timeStampYearless(Date today) {
     String ret = "";
     try {
       yearlesstimeMon.getMonitor();
@@ -57,11 +57,11 @@ public class DateX {
     return ret;
   }
 
-  public static final String timeStamp(long millis) {
+  public static String timeStamp(long millis) {
     return timeStamp(new Date(millis));
   }
 
-  public static final String timeStamp(UTC utc) {
+  public static String timeStamp(UTC utc) {
     return timeStamp(utc.getTime());
   }
 
@@ -70,7 +70,7 @@ public class DateX {
   * this is special and only seems to work in a certain case (what case is that?)
   * Don't use SimpleDateFormat, as this function is using a dater DIFFERENCE, not an absolute Date
   */
-  public static final String millisToTime(long millis) {
+  public static String millisToTime(long millis) {
     long secondsDiv = Ticks.forSeconds(1);
     long minutesDiv = secondsDiv * 60;
     long hoursDiv   = minutesDiv * 60;
@@ -93,7 +93,7 @@ public class DateX {
 
   static final LocalTimeFormat LinuxDateCommand=LocalTimeFormat.Utc("MMddHHmmyyyy.ss");
 
-  public static final boolean NonTrivial(Date d){
+  public static boolean NonTrivial(Date d){
     return d!=null && d.getTime()!=0;
   }
 
@@ -102,7 +102,7 @@ public class DateX {
   private static final DecimalFormat secsNMillis = new DecimalFormat("#########0.000");
   private static final Monitor secsNMillisMonitor = new Monitor("secsNMillis");
   private static final StringBuffer sbsnm = new StringBuffer();
-  public static final String millisToSecsPlus(long millis) {
+  public static String millisToSecsPlus(long millis) {
     String retval = "";
     try {
       secsNMillisMonitor.getMonitor();
@@ -139,11 +139,11 @@ public class DateX {
     clockSkew= utcd.skew(UTC.Now());
   }
 
-  public static final long utcNow(){
+  public static long utcNow(){
     return System.currentTimeMillis();//+_+ wrapped to simplify use analysis
   }
 
-  public static final Date Now(){// got tired of looking this up.
+  public static Date Now(){// got tired of looking this up.
     return new Date();//default Date constructor returns "now"
   }
 

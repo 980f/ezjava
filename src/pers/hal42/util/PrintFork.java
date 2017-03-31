@@ -33,7 +33,7 @@ public class PrintFork {
     // +++ report !
   }
 
-  protected static final boolean Fork(PrintFork ps) {
+  protected static boolean Fork(PrintFork ps) {
     if(ps==null) { // don't do this
       //      Debug.rawMessage(LogSwitch.WARNING, "Can't print to a null fork!");
       return false;
@@ -49,7 +49,7 @@ public class PrintFork {
     registered = Fork(this);
   }
   /////////////////////////////////////////////
-  public static final void SetAll(LogLevelEnum lle){
+  public static void SetAll(LogLevelEnum lle){
     DEFAULT_LEVEL = lle.ordinal();
     for(int i = LogSwitchRegistry.printForkRegistry.size(); i-->0;) {
       Fork(i).myLevel.setto(DEFAULT_LEVEL);
@@ -125,7 +125,7 @@ public class PrintFork {
  *  print to all PrintStreams
  *  not synched as it is not critical if we lose a stream for a while
  */
-  public static final void Println(String s, int printLevel){
+  public static void Println(String s, int printLevel){
     for(int i = LogSwitchRegistry.printForkRegistry.size(); i-->0;) {
       try {
         PrintFork pf = Fork(i);
@@ -145,7 +145,7 @@ public class PrintFork {
 //    Println(s,printLevel);
 //  }
 
-  public static final EasyCursor asProperties(){
+  public static EasyCursor asProperties(){
     EasyCursor blob=new EasyCursor(/* presize to di*/);
     Vector debuggers = LogSwitchRegistry.printForkRegistry; // get a second list copy to prevent exceptions
     for(int i=0;i<debuggers.size();i++){
@@ -155,7 +155,7 @@ public class PrintFork {
     return blob;
   }
 
-  public static final void DUMPDEBUG() {
+  public static void DUMPDEBUG() {
     System.out.println(PrintFork.asProperties().toString());
   }
 }

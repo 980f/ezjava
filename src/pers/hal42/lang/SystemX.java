@@ -1,3 +1,4 @@
+package pers.hal42.lang;
 
 public class SystemX {
   public static String gcMessage(String instigator){

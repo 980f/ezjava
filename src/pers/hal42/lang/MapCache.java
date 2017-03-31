@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.lang;
 
 import java.util.Hashtable;
 import java.util.Map;
@@ -59,10 +59,10 @@ public class MapCache {
     return ret;
   }
 
-  public static final MapCache HashtableCache(TrueEnum values) {
+  public static MapCache HashtableCache(TrueEnum values) {
     return new HashtableCache(values);
   }
-  public static final MapCache SoftHashtableCache(TrueEnum values) {
+  public static MapCache SoftHashtableCache(TrueEnum values) {
     return new SoftHashtableCache(values);
   }
 }

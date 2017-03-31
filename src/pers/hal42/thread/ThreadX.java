@@ -1,4 +1,4 @@
-package pers.hal42.lang;
+package pers.hal42.thread;
 
 import pers.hal42.util.timer.*;
 import pers.hal42.util.ErrorLogStream;
@@ -24,7 +24,7 @@ public class ThreadX {
  *
  * change this to return a void! WHy? just document what it does return.
  */
-  public static final boolean waitOn(Object obj,long millisecs,boolean allowInterrupt,ErrorLogStream dbg){
+  public static boolean waitOn(Object obj, long millisecs, boolean allowInterrupt, ErrorLogStream dbg){
     dbg=ErrorLogStream.NonNull(dbg);//avert NPE
     synchronized(obj){ // +++ in order to make code run faster, this synchronized *might* ought to be placed just around the obj.wait() line.
       dbg.Enter("waitOn");
@@ -60,10 +60,10 @@ public class ThreadX {
     }
   }
 
-  public static final boolean waitOn(Object obj,long millisecs,ErrorLogStream somedbg){
+  public static boolean waitOn(Object obj, long millisecs, ErrorLogStream somedbg){
     return waitOn(obj, millisecs, false,ErrorLogStream.NonNull(somedbg));
   }
-  public static final boolean waitOn(Object obj,long millisecs){
+  public static boolean waitOn(Object obj, long millisecs){
     return waitOn(obj, millisecs, false,ErrorLogStream.Null());
   }
 
@@ -71,7 +71,7 @@ public class ThreadX {
  * polite and properly synch'd version of Object.notify()
  * @return true if notify did NOT happen
  */
-   public static final boolean notify(Object obj){
+   public static boolean notify(Object obj){
     synchronized (obj){
       try {
         obj.notify();
@@ -86,7 +86,7 @@ public class ThreadX {
   /**
   * returns true if it completed its sleep (was NOT interrupted)
   */
-  public static final boolean sleepFor(long millisecs,boolean debugit) {
+  public static boolean sleepFor(long millisecs, boolean debugit) {
     StopWatch arf= new StopWatch();
     boolean interrupted = false;
     try {
@@ -109,23 +109,23 @@ public class ThreadX {
     }
   }
 
-  public static final boolean sleepFor(long millisecs) {
+  public static boolean sleepFor(long millisecs) {
     return sleepFor(millisecs,false);
   }
 
-  public static final boolean sleepFor(double seconds) {
+  public static boolean sleepFor(double seconds) {
     return sleepFor(Ticks.forSeconds(seconds));
   }
 
   // WARNING!  You will never see this thread again.
-  public static final void sleepForever() {
+  public static void sleepForever() {
     sleepFor(Long.MAX_VALUE);
   }
 
   /**
    * caller is responsible for trying to make the thread stop()
    */
-  public static final boolean waitOnStopped(Thread mortal,long maxwait){
+  public static boolean waitOnStopped(Thread mortal, long maxwait){
     mortal.interrupt();
     try {
       mortal.join(maxwait);
@@ -136,7 +136,7 @@ public class ThreadX {
     }
   }
 
-  public static final boolean wait(Thread me, long maxwait) {
+  public static boolean wait(Thread me, long maxwait) {
     try {
       me.wait(maxwait);
       return false;
@@ -145,7 +145,7 @@ public class ThreadX {
     }
   }
 
-  public static final boolean join(Thread it, long maxwait) {
+  public static boolean join(Thread it, long maxwait) {
     try {
       it.join(maxwait);
       return false;
@@ -154,7 +154,7 @@ public class ThreadX {
     }
   }
 
-  public static final ThreadGroup RootThread(){
+  public static ThreadGroup RootThread(){
     ThreadGroup treeTop = Thread.currentThread().getThreadGroup();
     ThreadGroup tmp = null;
     while((tmp = treeTop.getParent()) != null) {
@@ -163,15 +163,15 @@ public class ThreadX {
     return treeTop;
   }
 
-  public static final int ThreadCount() {
+  public static int ThreadCount() {
     return ThreadDump(null).size();
   }
 
-  public static final TextList fullThreadDump(){
+  public static TextList fullThreadDump(){
     return ThreadDump(null);
   }
 
-  public static final TextList ThreadDump(ThreadGroup tg){
+  public static TextList ThreadDump(ThreadGroup tg){
     if(tg==null){
       tg=RootThread();
     }

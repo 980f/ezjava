@@ -84,13 +84,13 @@ public class StringStack {
    * Since the StringStacks shouldn't get created over and over, for now we can make references in a list instead of using WeakSet.
    */
   protected static WeakSet<StringStack> registry = null;
-  private static final void register(StringStack thisone) {
+  private static void register(StringStack thisone) {
     if(registry == null) {
       registry = new WeakSet(100, 10);
     }
     registry.add(thisone);
   }
-  public static final TextList dumpStackList() {
+  public static TextList dumpStackList() {
     TextList ret = new TextList();
 
     try {

@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.thread;
 
 public interface QActor {
   public void runone(Object fromq);//called each time an object is pulled from a q for processing.

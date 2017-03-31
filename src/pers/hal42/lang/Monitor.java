@@ -243,7 +243,7 @@ public final class Monitor implements Comparable {
   // static list stuff
   private static final WeakSet list = new WeakSet();
 
-  public static final Vector dumpall() {
+  public static Vector dumpall() {
     Vector v = new Vector(); // for sorting
     synchronized(list) {
       try {
@@ -261,7 +261,7 @@ public final class Monitor implements Comparable {
     return v;
   }
 
-  protected static final void addMonitor(Monitor monitor) {
+  protected static void addMonitor(Monitor monitor) {
     synchronized(list) {
       try {
         list.add(monitor);

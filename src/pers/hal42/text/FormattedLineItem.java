@@ -1,3 +1,5 @@
+package pers.hal42.text;
+
 /**
  * TODO:
  * +++ ColumnJustification and/or TextColumn rework to:
@@ -8,39 +10,34 @@
  *        and not yet implemented:
  *      Justification.Full spread the fill between words where word is defined by Character.isWhitespace().
  */
-package pers.hal42.util;
 
 import pers.hal42.lang.StringX;
-import pers.hal42.lang.Fstring;
+import pers.hal42.transport.EasyCursor;
+import pers.hal42.transport.isEasy;
 
 public class FormattedLineItem implements isEasy {//carries info, doesn't actually DO any formatting
   // data
   public String              name          = "";
   public String              value         = "";
   public char                filler        = ' ';
-  public ColumnJustification justification = new ColumnJustification(ColumnJustification.PLAIN);
+  public ColumnJustification justification = ColumnJustification.PLAIN;
   // keys
   private static final String nameKey          = "name";
   private static final String valueKey         = "value";
   private static final String fillerKey        = "fill";
   private static final String justificationKey = "just";
-  // quickies
-  public static final ColumnJustification justified  = new ColumnJustification(ColumnJustification.JUSTIFIED);
-  public static final ColumnJustification centered   = new ColumnJustification(ColumnJustification.CENTERED);
-  public static final ColumnJustification plain      = new ColumnJustification(ColumnJustification.PLAIN);
-  public static final ColumnJustification winged     = new ColumnJustification(ColumnJustification.WINGED);
 
   //raison d'etre
   /**
    * convert to string now that we know the width of the presentation device
    */
   public String formatted(int width){
-    switch(justification.Value()) {
+    switch(justification) {
       default:
-      case ColumnJustification.PLAIN:     return name + StringX.TrivialDefault(value , "");
-      case ColumnJustification.JUSTIFIED: return Fstring.justified(width, name,value, (filler == 0) ? '.' : filler);
-      case ColumnJustification.CENTERED:  return Fstring.centered(name, width, filler);
-      case ColumnJustification.WINGED:    return Fstring.winged(name, width);
+      case PLAIN:     return name + StringX.TrivialDefault(value , "");
+      case JUSTIFIED: return Fstring.justified(width, name,value, (filler == 0) ? '.' : filler);
+      case CENTERED:  return Fstring.centered(name, width, filler);
+      case WINGED:    return Fstring.winged(name, width);
     }
   }
 
@@ -48,14 +45,14 @@ public class FormattedLineItem implements isEasy {//carries info, doesn't actual
    * @return number of interesting chars.
    */
   public int meat(){
-    switch(justification.Value()) {
+    switch(justification) {
       default:
-//      case ColumnJustification.CENTERED:
-//      case ColumnJustification.PLAIN:
+      case CENTERED:
+      case PLAIN:
         return name.length();
-      case ColumnJustification.JUSTIFIED:
+      case JUSTIFIED:
         return name.length()+value.length();
-      case ColumnJustification.WINGED:
+      case WINGED:
         return name.length()+2+2;//wings include spaces around centered text/
     }
   }
@@ -108,36 +105,36 @@ public class FormattedLineItem implements isEasy {//carries info, doesn't actual
   }
 
   public FormattedLineItem(String name, char filler) {
-    this(name,"",filler,centered);
+    this(name,"",filler,ColumnJustification.CENTERED);
   }
 
   public FormattedLineItem(String name, String value, char filler) {
-    this(name, value, filler, justified);
+    this(name, value, filler, ColumnJustification.JUSTIFIED);
   }
 
   // default filler = '.', default just = justified
   public FormattedLineItem(String name, String value) {
-    this(name, value, '.', justified);
+    this(name, value, '.', ColumnJustification.JUSTIFIED);
   }
 
   public FormattedLineItem(String name) {
-    this(name, "", '.', plain);
+    this(name, "", '.', ColumnJustification.PLAIN);
   }
 
-  public static final FormattedLineItem winger(String name) {
-    return new FormattedLineItem(name, "", ' ', winged);
+  public static FormattedLineItem winger(String name) {
+    return new FormattedLineItem(name, "", ' ', ColumnJustification.WINGED);
   }
 
-  public static final FormattedLineItem blankline() {
-    return new FormattedLineItem("", "", ' ', plain);
+  public static FormattedLineItem blankline() {
+    return new FormattedLineItem("", "", ' ', ColumnJustification.PLAIN);
   }
 
-  public static final FormattedLineItem pair(String name,String value) {
+  public static FormattedLineItem pair(String name,String value) {
     return new FormattedLineItem(name, value);
   }
 
   public String toSpam(){//4debug
-    return this.justification.Image()+":"+this.name+", *["+this.filler+"],"+this.value;
+    return this.justification.toString()+":"+this.name+", *["+this.filler+"],"+this.value;
   }
 
 }

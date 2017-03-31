@@ -1,11 +1,13 @@
-package pers.hal42.util.timer;
+package pers.hal42.util;
 
 
-import pers.hal42.util.*;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.logging.LogLevelEnum;
+import pers.hal42.timer.*;
 
 public class tester implements TimeBomb {
 
-  static ErrorLogStream dbg=new ErrorLogStream("tester",ErrorLogStream.VERBOSE);
+  static ErrorLogStream dbg=ErrorLogStream.getForName("tester", LogLevelEnum.VERBOSE);
 
 
   String id="";
@@ -35,7 +37,7 @@ public class tester implements TimeBomb {
       tester[i]=new tester("t"+i,i*1000);
     }
     while(Alarmer.alarmCount()>0){
-      Alarmer.dump(dbg,dbg.VERBOSE);
+      Alarmer.dump(dbg,LogLevelEnum.VERBOSE);
       Thread.currentThread().yield();
     }
   }

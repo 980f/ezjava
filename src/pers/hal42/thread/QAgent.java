@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.thread;
 
 /**
  * @todo syncronized methods should be changed to synch on fifo.

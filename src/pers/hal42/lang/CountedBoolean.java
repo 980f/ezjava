@@ -1,4 +1,4 @@
-package pers.hal42.util;
+package pers.hal42.lang;
 
 public class CountedBoolean {
   protected int count=0;

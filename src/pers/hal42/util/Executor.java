@@ -56,17 +56,17 @@ public class Executor {
   *
   */
 
-  public static final int runProcess(String commandline, String startMsg,
-      int displayUpdateSeconds, int timeoutSeconds, TextList msgs) {
+  public static int runProcess(String commandline, String startMsg,
+                               int displayUpdateSeconds, int timeoutSeconds, TextList msgs) {
     return runProcess(commandline, startMsg,displayUpdateSeconds, timeoutSeconds, msgs, false, null);
   }
 
-  public static final int runProcessSilently(String commandline, int timeoutSeconds, TextList msgs) {
+  public static int runProcessSilently(String commandline, int timeoutSeconds, TextList msgs) {
     dbg.WARNING("runProcessSilently:"+commandline);
     return runProcess(commandline, commandline ,0, timeoutSeconds, msgs, false, null);
   }
 
-  public static final int ezExec(String commandline, int timeoutSeconds) {
+  public static int ezExec(String commandline, int timeoutSeconds) {
     dbg.WARNING("ezExec:"+commandline);
     return runProcess(commandline, "timeout:"+timeoutSeconds ,0, timeoutSeconds, null, false, null);
   }
@@ -80,7 +80,7 @@ public class Executor {
   // for display purposes, it's best to make displayUpdateSeconds == 1
   // it's also best if they are both even, or if displayUpdateSeconds == 1
 
-  public static final int runProcess(String commandline, String startMsg, int displayUpdateSeconds, int timeoutSeconds, TextList msgs, boolean verbose, String primer) {
+  public static int runProcess(String commandline, String startMsg, int displayUpdateSeconds, int timeoutSeconds, TextList msgs, boolean verbose, String primer) {
     Executor legacy=new Executor(displayUpdateSeconds, timeoutSeconds, msgs, verbose);
     return legacy.runProcess(commandline, startMsg, primer);
   }

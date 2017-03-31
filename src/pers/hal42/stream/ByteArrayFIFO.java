@@ -1,5 +1,4 @@
-package pers.hal42.util;
-import pers.hal42.stream.ByteFifo;
+package pers.hal42.stream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;

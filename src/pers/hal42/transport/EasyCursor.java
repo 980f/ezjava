@@ -71,7 +71,7 @@ public class EasyCursor extends EasyProperties {
     return context != null ? context : "";
   }
 
-  public static final EasyCursor New(InputStream is) {
+  public static EasyCursor New(InputStream is) {
     EasyCursor newone = new EasyCursor();
     newone.Load(is);
     return newone;
@@ -80,7 +80,7 @@ public class EasyCursor extends EasyProperties {
   /**
    * make from url'd string made from a properties streamed output
    */
-  public static final EasyCursor fromUrl(String s) {
+  public static EasyCursor fromUrl(String s) {
     EasyCursor newone = new EasyCursor();
     newone.fromURLdString(s, true);
     return newone;
@@ -169,9 +169,9 @@ public class EasyCursor extends EasyProperties {
    * tries to get an object. only works if the @param act isEasy or can be reprodiced from a property string.
    * at present the Class must have a public null constructor since I can't find out how java lets you see if a class supports an interface without having an object of that class
    */
-  public Object getObject(String key, Class act, EasyHelper helper) {
+  public <T> T getObject(String key, Class<? extends T> act, EasyHelper helper) {
     try {
-      Object newone;
+      T newone;
       if (ReflectX.isImplementorOf(act, isEasy.class)) {
         newone = act.newInstance();//+_+ just because a class is easy doesn't mean that its empty constructor is accessible
         push(key);
@@ -351,10 +351,10 @@ public class EasyCursor extends EasyProperties {
   /**
    * @return a new vector created from data saved by saveVector()
    */
-  public Vector getVector(Class act, EasyHelper helper) {
+  public <T> Vector<T> getVector(Class<? extends T> act, EasyHelper helper) {
     int i = getInt("size");
     if (i < 0) {//vector was not present in original save
-      return new Vector(0); //create an empty one.
+      return new Vector<T>(0); //create an empty one.
     }
     Vector v = new Vector(i);
     v.setSize(i);
@@ -368,7 +368,7 @@ public class EasyCursor extends EasyProperties {
     return v;
   }
 
-  public Vector getVector(Class act) {
+  public <T> Vector<T> getVector(Class<? extends T> act) {
     return getVector(act, null);
   }
 
@@ -523,7 +523,7 @@ public class EasyCursor extends EasyProperties {
     }
   }
 
-  public static final EasyCursor makeFrom(isEasy object) {
+  public static EasyCursor makeFrom(isEasy object) {
     EasyCursor spammy = new EasyCursor();
     object.save(spammy);
     return spammy;
@@ -542,7 +542,7 @@ public class EasyCursor extends EasyProperties {
     return tl;
   }
 
-  public static final String spamFrom(isEasy object) {
+  public static String spamFrom(isEasy object) {
     return makeFrom(object).asParagraph();
   }
 

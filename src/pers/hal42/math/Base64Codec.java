@@ -8,7 +8,7 @@
 
 // it does work, though.
 
-package pers.hal42.util;
+package pers.hal42.math;
 
 public class Base64Codec {
 
@@ -36,13 +36,13 @@ public class Base64Codec {
     XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
   };
 
-  public static final String toString(byte dataX3[]){
+  public static String toString(byte dataX3[]){
     char []ncoded=encode(dataX3);
     return new String(ncoded);
   }
 
   // returns an array of base64-encoded characters to represent the passed data array.
-  public static final char[] encode(byte dataX3[])
+  public static char[] encode(byte dataX3[])
   {
     int length = dataX3.length;
     int len = ((length + 2) / 3) * 4;
@@ -75,7 +75,7 @@ public class Base64Codec {
     return out;
   }
 
-  public static final byte[] fromString(String s){
+  public static byte[] fromString(String s){
     char [] caster = new char[s.length()];
     for(int i=caster.length;i-->0;){
       caster[i]= s.charAt(i);
@@ -85,7 +85,7 @@ public class Base64Codec {
 
 
   // Returns an array of bytes which were encoded in the passed character array.
-  public static final byte[] decode(char dataX4[])
+  public static byte[] decode(char dataX4[])
   {
     int length = dataX4.length;
     int len = ((length + 3) / 4) * 3;
@@ -116,11 +116,11 @@ public class Base64Codec {
   }
 
   // testing stuff:
-  public static final String Usage() {
+  public static String Usage() {
     return "parameters: {+|-} string";
   }
 
-  public static final void Test(String[] argv) {
+  public static void Test(String[] argv) {
     try {
       int argc=argv.length;
       boolean deen = true;
