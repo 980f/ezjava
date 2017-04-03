@@ -2,12 +2,10 @@ package pers.hal42.lang;
 
 public class SystemX {
   public static String gcMessage(String instigator){
-    StringBuffer msg=new StringBuffer(100);
-    msg.append("gc() by ");
-    msg.append(instigator);
-    msg.append(" from:"+memused());
+    StringBuilder msg=new StringBuilder(100);
+    msg.append("gc() by ").append(instigator).append(" from:").append(memused());
     System.gc();
-    msg.append(" to:"+memused());
+    msg.append(" to:").append(memused());
     return msg.toString();
   }
 

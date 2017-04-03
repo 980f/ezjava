@@ -406,8 +406,8 @@ public class TextList {
     // empty first?
     int len = array.length;
     storage.ensureCapacity(size() + len);
-    for (int i = 0; i < len; i++) {
-      add(array[i]);
+    for (String anArray : array) {
+      add(anArray);
     }
     return len;
   }
@@ -416,8 +416,8 @@ public class TextList {
     // empty first?
     int len = array.length;
     storage.ensureCapacity(size() + len);
-    for (int i = 0; i < len; i++) {
-      add(array[i].toString());
+    for (Object anArray : array) {
+      add(anArray.toString());
     }
     return len;
   }
@@ -581,7 +581,7 @@ public class TextList {
     if (ascending) {
       Collections.sort(storage);
     } else {
-      Collections.sort(storage, ReversedCompare.New());//untested
+      storage.sort(ReversedCompare.New());//untested
     }
     return this;
   }

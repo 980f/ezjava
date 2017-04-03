@@ -1,5 +1,6 @@
 package pers.hal42.transport;
 
+/** hierarchy traverser, over property set that it is derived from */
 
 import pers.hal42.lang.OS;
 import pers.hal42.lang.ReflectX;
@@ -15,8 +16,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-
-//import pers.hal42.lang.TrueEnum;
 
 public class EasyCursor extends EasyProperties {
   static final ErrorLogStream dbg = ErrorLogStream.getForClass(EasyCursor.class);
@@ -106,7 +105,7 @@ public class EasyCursor extends EasyProperties {
   }
 
   public String fullKey(String key) {
-    boolean rooted = StringX.NonTrivial(key) ? key.charAt(0) == SEP : false;
+    boolean rooted = StringX.NonTrivial(key) && (key.charAt(0) == SEP);
     return (!rooted && StringX.NonTrivial(context)) ? (context + key) : key;
   }
 
@@ -137,7 +136,7 @@ public class EasyCursor extends EasyProperties {
    * sets either a string rendition of the object, or if the object is an isEasy then we create a branch
    * a slick way of getting recursion
    */
-  public EasyProperties setObject(String key, Object obj, EasyHelper helper) {
+  public <T> EasyProperties setObject(String key, T obj, EasyHelper<T> helper) {
     if (obj != null) {
       if (obj instanceof isEasy) {
         push(key);
@@ -354,9 +353,9 @@ public class EasyCursor extends EasyProperties {
   public <T> Vector<T> getVector(Class<? extends T> act, EasyHelper helper) {
     int i = getInt("size");
     if (i < 0) {//vector was not present in original save
-      return new Vector<T>(0); //create an empty one.
+      return new Vector<>(0); //create an empty one.
     }
-    Vector v = new Vector(i);
+    Vector<T> v = new Vector<>(i);
     v.setSize(i);
     while (i-- > 0) {
       try {

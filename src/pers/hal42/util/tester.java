@@ -30,6 +30,7 @@ public class tester implements TimeBomb {
     alarm= Alarmer.New(ticks,this);
   }
 
+  /** tester */
   public static void main(String[] args) {
     int number=args.length>0? Integer.parseInt(args[0]):3;
     tester tester[] = new tester[number];
@@ -38,7 +39,7 @@ public class tester implements TimeBomb {
     }
     while(Alarmer.alarmCount()>0){
       Alarmer.dump(dbg,LogLevelEnum.VERBOSE.ordinal());
-      Thread.currentThread().yield();
+      Thread.yield();
     }
   }
 

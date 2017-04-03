@@ -1,6 +1,5 @@
 package pers.hal42.stream;
 import java.util.*;
-import java.io.*;
 
 abstract public class BaseSortFile implements Comparator {
   protected boolean descending;
@@ -26,4 +25,4 @@ abstract public class BaseSortFile implements Comparator {
     return this==obj || 0==compare(this,obj);
   }
 
-} //$Id: BaseSortFile.java,v 1.1 2004/03/08 22:54:14 andyh Exp $
+}

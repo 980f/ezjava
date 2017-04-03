@@ -48,8 +48,12 @@ public class Safe {
   }
 
 
+  public static int enumSize(Class <? extends Enum> eclass){
+    return eclass.getEnumConstants().length;
+  }
+
   public static int enumSize(Enum eg) {
-    return eg.getClass().getEnumConstants().length;
+    return enumSize(eg.getClass());
   }
 
   //todo:1 move these to IOx
@@ -181,8 +185,7 @@ public class Safe {
   public static String fromStream(ByteArrayInputStream bais, int len) {
     byte[] chunk = new byte[len];
     bais.read(chunk, 0, len);
-    String s = new String(chunk);
-    return s;
+    return new String(chunk);
   }
 
 
@@ -543,12 +546,11 @@ public class Safe {
   }
 
   public static String TrivialDefault(Object o) {
-    return TrivialDefault(o, null);
+    return TrivialDefault(o, "");
   }
 
   public static String TrivialDefault(Object o, String def) {
-    def = TrivialDefault(def, "");
-    return NonTrivial(o) ? o.toString() : def;
+    return NonTrivial(o) ? o.toString() : (TrivialDefault(def, ""));
   }
 
 //  public static boolean equalStrings(String one, String two){
@@ -804,6 +806,7 @@ public class Safe {
 
   public static String sizeLong(long size) {
     // size is always positive
+    //noinspection UnnecessaryLocalVariable     but convert to double just once instead for each test.
     double fat = size;
     String ret = "";
     if (fat > T) {

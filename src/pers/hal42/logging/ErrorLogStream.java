@@ -480,11 +480,11 @@ public class ErrorLogStream implements AtExit {
 
   void objectSubDump(Object o, Class c, String path, TextList tl) {
     // see if the object has a "toSpam()" function, if so, call it
-    Method method = null;
+
     boolean logit = (tl == null);
     Class[] paramTypes = {Object.class, String.class, TextList.class};
     try {
-      method = c.getMethod("toSpam");
+      Method method = c.getMethod("toSpam");
       try {
         Object result = method.invoke(o);
         if (result instanceof TextList) {
@@ -504,9 +504,9 @@ public class ErrorLogStream implements AtExit {
         Caught(e);
       }
     } catch (NoSuchMethodException e) {
-      WARNING(c.getName() + " does not have a method 'toSpam'");
+      WARNING(c.getName() + " does not have a method 'toSpam()'");
       try {
-        method = c.getMethod("objectDump", paramTypes);
+        Method method = c.getMethod("objectDump", paramTypes);
         Object[] args = {c, path, tl};
         try {
           method.invoke(o, args);
@@ -535,8 +535,8 @@ public class ErrorLogStream implements AtExit {
           } else {
             dumpFields(o, c, path, tl, fields, logit);
             // then the classes
-            for (int i = 0; i < classes.length; i++) {
-//              objectSubDump(o, classes[i], path+"["+classes[i].getName()+"]",tl);
+            for (Class aClass : classes) {
+              objectSubDump(o, aClass, path + "[" + aClass.getName() + "]", tl);
             }
           }
         } catch (Exception e5) {
@@ -565,9 +565,9 @@ public class ErrorLogStream implements AtExit {
       logit = true;
     }
     // first, do the fields
-    for (int i = 0; i < fields.length; i++) {
+    for (Object field : fields) {
       Object fo = null;
-      Field f = (Field) fields[i];
+      Field f = (Field) field;
       String newPath = path + "." + f.getName();
       try {
         fo = f.get(o);

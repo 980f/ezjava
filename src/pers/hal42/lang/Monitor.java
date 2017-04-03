@@ -18,7 +18,6 @@ import pers.hal42.text.TextList;
 
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.Iterator;
 import java.util.Vector;
 
 public final class Monitor implements Comparable {
@@ -241,18 +240,16 @@ public final class Monitor implements Comparable {
   }
 
   // static list stuff
-  private static final WeakSet list = new WeakSet();
+  private static final WeakSet<Monitor> list = new WeakSet<>();
 
-  public static Vector dumpall() {
-    Vector v = new Vector(); // for sorting
+  public static Vector<Monitor> dumpall() {
+    Vector<Monitor> v = new Vector<>(); // for sorting
     synchronized(list) {
       try {
-        for(Iterator i = list.iterator(); i.hasNext();) {
-          v.add(i.next());
-        }
+          v.addAll(list);
       } catch (ConcurrentModificationException cme) {
         D1B2G3().Caught(cme); // ok
-        v.add("--- Report aborted: ConcurrentModificationException (noncritical, just happens with multiple threads sometimes).");
+
       } catch (Exception e) {
         D1B2G3().Caught(e); // ok
       }

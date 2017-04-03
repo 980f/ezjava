@@ -94,10 +94,7 @@ public class IOX {
   }
 
   public static boolean createDir(File file) {
-    if (!file.exists()) {
-      return file.mkdir();
-    }
-    return true;
+    return file.exists() || file.mkdir();
   }
 
   public static void createDirs(File file) {
@@ -120,8 +117,7 @@ public class IOX {
   public static String fromStream(ByteArrayInputStream bais, int len) {
     byte[] chunk = new byte[len];
     bais.read(chunk, 0, len);
-    String s = new String(chunk);
-    return s;
+    return new String(chunk);
   }
 
   //////////

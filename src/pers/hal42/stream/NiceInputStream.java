@@ -140,7 +140,7 @@ public class NiceInputStream {
 /**
  * @deprecated untested and probably buggy
  */
-  public int signedField(int numbits) throws java.io.IOException {
+  public int signedField(int numbits) {
     int piece;
     piece= bitbuff<<bitPtr;//if bitPtr>=32 then this yields 0
     bitPtr+=numbits;

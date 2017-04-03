@@ -152,7 +152,8 @@ public class Bool extends Value implements Comparable {
         ret = true;
       } else if(StringX.equalStrings("t", trueorfalse)) { // the database returns "t" for true!
         ret = true;
-      } else if(StringX.parseInt(trueorfalse) == 1) {
+      } else //noinspection RedundantIfStatement
+        if(StringX.parseInt(trueorfalse) == 1) {
         ret = true;
       } else {
         ret = false;

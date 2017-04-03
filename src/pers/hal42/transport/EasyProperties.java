@@ -1,5 +1,8 @@
 package pers.hal42.transport;
 
+/* Wrap java's Properties mechanism to add a concept of hierarchy, using class EasyCursor to do much of that.
+* */
+
 import pers.hal42.lang.*;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
@@ -13,10 +16,10 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.*;
 
-// !!! NOTE: There should only be ONE instance each
-// !!!       of setProperty() and getProperty(), and NONE of get() and put()
-// !!!       All other functions should use getString() and setString()
-// !!!       so that we can extend and do transformations on data!
+/*
+!!! NOTE: There should only be ONE instance each  of setProperty() and getProperty(), and NONE of get() and put()
+!!!       All other functions should use getString() and setString() so that we can extend and do transformations on data!
+*/
 
 public class EasyProperties extends Properties {
 
@@ -54,7 +57,7 @@ public class EasyProperties extends Properties {
   }
 
   /**
-   * if property is trivial replace with given
+   * if property is trivial replace with @param defawlt
    * @return true if already was set
    */
   public boolean Assert(String key, String defawlt){
@@ -81,7 +84,7 @@ public class EasyProperties extends Properties {
  * we can get objects if they have a string based constructor OR
  * public null constructors and a setto(String) function.
  */
-  public Object extractObject(String objimage,Class act){
+  public <T> T extractObject(String objimage,Class<? extends T> act){
     try {
       try {
         Constructor [] ctors=act.getConstructors();
@@ -96,12 +99,12 @@ public class EasyProperties extends Properties {
             nullCtor=ctor;
           }
           if(plist.length==1 && plist[0]==String.class){
-            return ctor.newInstance(arglist); //preferred exit
+            return (T) ctor.newInstance(arglist); //preferred exit
           }
         }
        //2nd chance: cosntruct then set:
         if(nullCtor!=null){
-          Object obj=nullCtor.newInstance(new Object[0]);
+          T obj= (T) nullCtor.newInstance();
           Class[] plist=new Class[1];
           plist[0]=String.class;
           Method setto=act.getMethod("setto",plist);
@@ -157,11 +160,12 @@ public class EasyProperties extends Properties {
 
 
   public boolean getBoolean(String key, boolean defaultValue){
-    for(int star=5;star-->0;) {//to recover from cycle of indirection
+//    for(int star=5;star-->0;) {//to recover from cycle of indirection
       String prop=getString(key);
-      if(!StringX.NonTrivial(prop)) break;
-      return Bool.For(prop);
-    }
+      if (StringX.NonTrivial(prop)) {
+        return Bool.For(prop);
+      }
+//    }
     return defaultValue;
   }
 
@@ -410,10 +414,8 @@ public class EasyProperties extends Properties {
   public EasyProperties Load(java.io.InputStream is){
     try {
       /*super.*/load(is);
-    } catch (java.io.IOException caught){
+    } catch (IOException | NullPointerException caught){
       //silent failure...
-    } catch (NullPointerException caught){
-      //also ignored.
     } finally {
       IOX.Close(is);
     }
@@ -533,7 +535,7 @@ public class EasyProperties extends Properties {
 
   public void storeSorted(OutputStream out, String header) throws IOException{
     // +++ convert this into a line sorter that happens on closing the stream
-    StringBuffer buffer = new StringBuffer();
+    StringBuilder buffer = new StringBuilder();
     StringWriter writer = new StringWriter();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     store(baos, header);
@@ -556,8 +558,9 @@ public class EasyProperties extends Properties {
 
 }
 
+//todo:2 replace with deriving from an Iterator
 class OrderedEasyPropertiesEnumeration implements Enumeration {
-  Vector names = null;
+  Vector<String> names = null;
   EasyProperties ezp = null;
   int iterator = -1;
 

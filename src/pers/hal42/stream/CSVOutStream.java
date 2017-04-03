@@ -1,7 +1,5 @@
 package pers.hal42.stream;
 
-import java.io.FilterOutputStream;
-
 import java.io.*;
 
 public class CSVOutStream extends FilterOutputStream {

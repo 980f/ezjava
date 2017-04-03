@@ -49,6 +49,7 @@ public final class CipherP86B2 {
       salt = primerNot95X;
     }
     byte password[] = keyChars.getBytes();
+    //noinspection UnusedAssignment
     keyChars = null; // to let it cleanup (overkill, I know)
     crypt(password); // encrypt the password; this gets the whole stream into a specific "state"
     Safe.fillBytes(password, (byte)255); // so it won't be visible before it gets cleaned up (overkill, I know)
@@ -151,7 +152,7 @@ public final class CipherP86B2 {
    *
    **********/
 
-  private final void crypt(byte bytes []) {
+  final void crypt(byte bytes []) {
     for(int i = 0; i < bytes.length; i++) { /* for every character in the buffer */
       bytes[i] = (byte)crypt(bytes[i]);
     }
@@ -160,7 +161,7 @@ public final class CipherP86B2 {
   /**
    * should only pass this "byte"s!
    */
-  private final int crypt(int original) {
+  final int crypt(int original) {
     int cc = original;
     /* only encipher printable characters */
     if((cc > 31) && (cc < 127)) {

@@ -14,7 +14,7 @@ public class Base64Codec {
 
   // code characters for values 0..63
   private static final char alphabet[] =
-    new String("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=").toCharArray();
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=".toCharArray();
   private static final char XX = 255;
   // Table for decoding base64
   private static final char codes[] = {
@@ -97,16 +97,16 @@ public class Base64Codec {
     int accum = 0;   // excess bits
     int index = 0;
 
-    for (int ix=0; ix<length; ix++) {
-      int value = codes[ dataX4[ix] & 0xFF ];   // ignore high byte of char
-      if ( value >= 0 ) {                     // skip over non-code
+    for (char aDataX4 : dataX4) {
+      int value = codes[aDataX4 & 0xFF];   // ignore high byte of char
+      if (value >= 0) {                     // skip over non-code
         accum <<= 6;            // bits shift up by 6 each time thru
         shift += 6;             // loop, with new bits being put in
         accum |= value;         // at the bottom.
-        if ( shift >= 8 ) {     // whenever there are 8 or more shifted in,
+        if (shift >= 8) {     // whenever there are 8 or more shifted in,
           shift -= 8;         // write them out (from the top, leaving any
           byte c = (byte) ((accum >> shift) & 0xff);
-          if(index < len) {
+          if (index < len) {
             out[index++] = c;     // excess at the bottom for next iteration.
           }
         }

@@ -84,7 +84,7 @@ public class DateX {
     long minutes = millis / minutesDiv;
     millis = millis % minutesDiv; // get the remainder
     long seconds = millis / secondsDiv;
-    millis = millis % secondsDiv; // get the remainder
+    //millis = millis % secondsDiv; // get the remainder
 
     return  ((days > 0) ? ("" + days + " ") : "") +
       Formatter.twoDigitFixed(hours) + ":" +

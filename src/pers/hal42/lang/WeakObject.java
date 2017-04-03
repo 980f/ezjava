@@ -16,7 +16,7 @@ public final class WeakObject<T> extends WeakReference<T> {
   }
 
   public static <T> WeakObject<T> create(T k, ReferenceQueue q) {
-    return (k == null) ? null : new WeakObject<T>(k, q);
+    return (k == null) ? null : new WeakObject<>(k, q);
   }
 
   /* A WeakObject is equal to another WeakObject iff they both refer to objects

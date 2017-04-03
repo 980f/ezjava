@@ -178,13 +178,13 @@ public class Main {
     stdProperties = makeProperties(); //starting with Java's properties
     //int rawargi=0;
     if (argv != null) {
-      for (int i = 0; i < argv.length; ++i) { //we add in command line args of our own format
-        int cut = argv[i].indexOf(':');//coz windows absorbs the more obvious '='
+      for (String anArgv : argv) { //we add in command line args of our own format
+        int cut = anArgv.indexOf(':');//coz windows absorbs the more obvious '='
         if (cut >= 0) {
-          stdProperties.setString(argv[i].substring(0, cut), argv[i].substring(cut + 1));
+          stdProperties.setString(anArgv.substring(0, cut), anArgv.substring(cut + 1));
           // +_+ fix the above to toelrate whitespace between lable and value.
         } else { //add in "nth unlabeled value or valueless label"
-          freeArgs.add(argv[i]);
+          freeArgs.add(anArgv);
         }
       }
     }

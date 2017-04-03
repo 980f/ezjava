@@ -151,8 +151,7 @@ public class OS {
   public static int diskfree(String moreParams, TextList msgs) {
     int timeout = 5;
     int displayrate = 1;
-    int c = Executor.runProcess("df -k "+ StringX.TrivialDefault(moreParams, ""), "", displayrate, timeout, msgs);
-    return c;
+    return Executor.runProcess("df -k "+ StringX.TrivialDefault(moreParams, ""), "", displayrate, timeout, msgs);
   }
 
 }

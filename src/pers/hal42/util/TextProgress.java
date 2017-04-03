@@ -9,7 +9,7 @@ public class TextProgress {
   protected boolean first; // indicates when first run is
   protected int runningCount;
   protected PrintStream outputStream;
-  protected String indentText = new String();
+  protected StringBuilder indentText = new StringBuilder();
   protected static final char backspace = '\b';
   protected static final char space     = ' ';
 
@@ -29,13 +29,14 @@ public class TextProgress {
     // make indentText here if it isn't done yet
     if(indentText.length() != indent) {
       for(int i = 0; i < indent; i++) {
-        indentText += space;  // should already be constructed
+        indentText.append(space);
       }
     }
     // don't backspace if first !
     if(first) {
       first = false;
-      outputStream.print(indentText + startChar); // only printed the first time (not erased)
+      outputStream.print(indentText);
+      outputStream.print(startChar); // only printed the first time (not erased)
     } else {
       // eraseToStart
       for(int c = length+1; c-->0;) {

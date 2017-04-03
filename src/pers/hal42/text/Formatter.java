@@ -57,7 +57,7 @@ public class Formatter {
   }
 
   public static String twoDigitFixed(long smallNumber) {
-    return new String( ( (smallNumber <= 9) ? "0" : "") + smallNumber);
+    return ((smallNumber <= 9) ? "0" : "") + smallNumber;
   }
 
   public static String twoDigitFixed(String smallNumber) {
@@ -115,7 +115,7 @@ public class Formatter {
     if (roundup) {
       ++divided;
     }
-    StringBuffer ret = new StringBuffer();
+    StringBuilder ret = new StringBuilder();
     ret.append(divided);
     if (hexponent > 0) {
       ret.append(" ");

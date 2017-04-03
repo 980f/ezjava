@@ -85,9 +85,9 @@ public class ByteArrayFIFO extends ObjectFifo {
       totallen+=all[i].length;
     }
     ByteArrayOutputStream baos = new ByteArrayOutputStream(totallen);
-    for(int i = 0; i < all.length; i++) { // must be in order
+    for (byte[] anAll : all) { // must be in order
       try {
-        baos.write(all[i]);
+        baos.write(anAll);
       } catch (Exception ex) {
         // +++ ???
       }

@@ -187,33 +187,32 @@ public class BaseConverter {
       double radix=base; //to make for a single timely conversion
       double dm=0; //digit multiplier
       boolean stillwhite=true;
-      for(int i = 0; i < ascii.length; i++) {
-        char c = ascii[i];
-        if(c=='-'){
-           isnegative=true;
-           continue;
+      for (char c : ascii) {
+        if (c == '-') {
+          isnegative = true;
+          continue;
         }
         //testing for '-' before white space allows spaces after sign
-        if(stillwhite){
-          if(c==' '||c=='\t'){ //very limited definition of 'white'
-             continue; //and we are still white
+        if (stillwhite) {
+          if (c == ' ' || c == '\t') { //very limited definition of 'white'
+            continue; //and we are still white
           } else {
-            stillwhite=false;
+            stillwhite = false;
           }
         }
 
-        if(c==radixChar){
-          sawdp=true;
-          dm=1/radix;
+        if (c == radixChar) {
+          sawdp = true;
+          dm = 1 / radix;
         } else {
-          int d=symbolList.indexOf(Character.toLowerCase(c));
-          if(d>=0){
-            if(sawdp){
-              retval+=d*dm;
-              dm/=radix;
+          int d = symbolList.indexOf(Character.toLowerCase(c));
+          if (d >= 0) {
+            if (sawdp) {
+              retval += d * dm;
+              dm /= radix;
             } else {
-              retval*=radix;
-              retval+=d;
+              retval *= radix;
+              retval += d;
             }
           } else {
             //we stop at first unknown char

@@ -111,7 +111,7 @@ public class StringX {
   public static String singleQuoteEscape(String s) {
     String ret = null;
     if (s != null) {
-      if (s.indexOf(SINGLEQUOTE) != ObjectX.INVALIDINDEX) {
+      if (s.contains(SINGLEQUOTE)) {
         s = replace(s, SINGLEQUOTE, "''"); // convert one single-quote into two
       }
       ret = SINGLEQUOTE + s + SINGLEQUOTE;
@@ -163,7 +163,7 @@ public class StringX {
 
   public static String insert(String receiver, int where, String toinsert) {
     if ((where != ObjectX.INVALIDINDEX) && (where < receiver.length())) {
-      StringBuffer sb = new StringBuffer(receiver);
+      StringBuilder sb = new StringBuilder(receiver);
       sb.insert(where, toinsert);
       return sb.toString();
     }

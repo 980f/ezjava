@@ -224,12 +224,14 @@ public class Alarmer implements Runnable {
     active=new AlarmList(dbg);
   }
 
+  public boolean kill=false;
   /**
    * seems to startup already interrupted. I.e. first sleep doesn't sleep. Ok but curious.
    */
   public void run(){
    dbg.WARNING("RUNNING");
-    while(true){
+   kill=false;
+    while(!kill){
       try {
         long nexttime=active.soonest();
         if(paused || nexttime==0){

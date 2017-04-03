@@ -50,7 +50,7 @@ public class FindFiles {
       boolean passed = true;
       for(int ex=stale.length; ex-->0;){
         String exclude=stale[ex];
-        if(filename.indexOf(exclude)>-1){
+        if(filename.contains(exclude)){
           passed = false;
           break;
         }

@@ -4,37 +4,37 @@ package pers.hal42.lang;
 import java.lang.ref.SoftReference;
 import java.lang.ref.ReferenceQueue;
 
-public final class SoftObject extends SoftReference {
-  private SoftObject(Object k) {
+public final class SoftObject<T> extends SoftReference<T> {
+  private SoftObject(T k) {
     super(k);
   }
-  private static SoftObject create(Object k) {
-    return (k == null) ? null : new SoftObject(k);
+
+  private static <T> SoftObject create(T k) {
+    return (k == null) ? null : new SoftObject<>(k);
   }
-  private SoftObject(Object k, ReferenceQueue q) {
+
+  private SoftObject(T k, ReferenceQueue<T> q) {
     super(k, q);
   }
-  public static SoftObject create(Object k, ReferenceQueue q) {
-    return (k == null) ? null : new SoftObject(k, q);
+
+  public static <T> SoftObject create(T k, ReferenceQueue<T> q) {
+    return (k == null) ? null : new SoftObject<>(k, q);
   }
+
   /* A WeakObject is equal to another WeakObject iff they both refer to objects
-  that are, in turn, equal according to their own equals methods */
+    that are, in turn, equal according to their own equals methods */
   public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof SoftObject)) {
-      return false;
+    if ((o instanceof SoftObject)) {
+      Object u = ((SoftObject) o).get();
+      T t = this.get();
+      return !((t == null) || (u == null)) && (t == u || t.equals(u));
     }
-    Object t = this.get();
-    Object u = ((SoftObject)o).get();
-    if ((t == null) || (u == null)) {
-      return false;
-    }
-    if (t == u) {
-      return true;
-    }
-    return t.equals(u);
+
+    return false;
+
   }
 }
 

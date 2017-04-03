@@ -49,7 +49,7 @@ public class WeakSet<T> extends AbstractSet<T> {
 
   public boolean add(T value) {
     purge();
-    return hash.put(value.hashCode(), new WeakReference<T>(value)) != null;
+    return hash.put(value.hashCode(), new WeakReference<>(value)) != null;
   }
 
 

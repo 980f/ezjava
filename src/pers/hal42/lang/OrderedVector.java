@@ -1,8 +1,7 @@
 package pers.hal42.lang;
 
-import pers.hal42.util.*;
-import java.util.*;
-import pers.hal42.lang.ObjectX;
+import java.util.Comparator;
+import java.util.Vector;
 
 public class OrderedVector {
   private Vector storage;
