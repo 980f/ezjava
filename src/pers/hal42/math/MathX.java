@@ -18,6 +18,14 @@ public class MathX {
     return signed>0? 1 : signed<0 ? -1 : 0;
   }
 
+  public static int signum(double signed)                                           {
+    return signed>0? 1 : signed<0 ? -1 : 0;
+  }
+
+  public static int signum(float signed)                                           {
+    return signed>0? 1 : signed<0 ? -1 : 0;
+  }
+
   /**
  * @return exponent of log base 2 of @param
  * -1 rather than -infinity for 0.
@@ -67,5 +75,19 @@ public class MathX {
   // true of numerator.0 / denominator.0 is a whole number
   public static boolean /*whole*/multipleOf(int numerator, int denominator) {
     return (numerator % denominator) == 0;
+  }
+
+
+  public static int cmp(Number lefty,Number righty){
+
+    if(lefty instanceof Integer){
+      return signum(lefty.intValue()-righty.intValue());
+    } else if(lefty instanceof Double){
+      return signum(lefty.doubleValue()-righty.doubleValue());
+    } else if(lefty instanceof Long){
+      return signum(lefty.longValue()-righty.longValue());
+    } else {
+      return signum(lefty.floatValue()-righty.floatValue());
+    }
   }
 }
