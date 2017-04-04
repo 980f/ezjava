@@ -1,0 +1,42 @@
+// $Id: DBTypes.Enum,v 1.6 2003/02/21 23:31:32 mattm Exp $
+// these are all possible data types from the different kinds of databases
+// have to upper them all, and only use the first word
+//DEC -> DECIMAL
+DECIMAL
+//INT -> INT4
+//INTEGER -> INT4
+INT4
+SMALLINT
+BIGINT
+DOUBLE
+FLOAT
+TINYINT
+REAL
+NUMERIC
+//BOOLEAN
+BOOL
+TIME
+TIMESTAMP
+DATE
+DATETIME
+BYTE
+CHAR
+SERIAL
+TEXT
+VARCHAR
+ARRAY
+BINARY
+BIT
+BLOB
+CLOB
+DISTINCT
+JAVA
+LONGVARBINARY
+LONGVARCHAR
+NULL
+OTHER
+REF
+STRUCT
+VARBINARY
+
+// $Id: DBTypes.Enum,v 1.6 2003/02/21 23:31:32 mattm Exp $

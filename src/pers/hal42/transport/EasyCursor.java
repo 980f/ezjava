@@ -8,8 +8,8 @@ import pers.hal42.lang.StringX;
 import pers.hal42.lang.VectorX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
-import pers.hal42.util.StringStack;
 import pers.hal42.text.TextListIterator;
+import pers.hal42.util.StringStack;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -168,7 +168,7 @@ public class EasyCursor extends EasyProperties {
    * tries to get an object. only works if the @param act isEasy or can be reprodiced from a property string.
    * at present the Class must have a public null constructor since I can't find out how java lets you see if a class supports an interface without having an object of that class
    */
-  public <T> T getObject(String key, Class<? extends T> act, EasyHelper helper) {
+  public <T> T getObject(String key, Class<? extends T> act, EasyHelper<T> helper) {
     try {
       T newone;
       if (ReflectX.isImplementorOf(act, isEasy.class)) {
@@ -197,9 +197,9 @@ public class EasyCursor extends EasyProperties {
     }
   }
 
-  public Object getObject(String key, Class act) {
-    return getObject(key, act, null);
-  }
+//  public <T> T getObject(String key, Class<? extends T> act) {
+//    return getObject(key, act, null);
+//  }
 
   /**
    * the remainder is an object, usually called while internal cursor is at root of storage
@@ -350,7 +350,7 @@ public class EasyCursor extends EasyProperties {
   /**
    * @return a new vector created from data saved by saveVector()
    */
-  public <T> Vector<T> getVector(Class<? extends T> act, EasyHelper helper) {
+  public <T> Vector<T> getVector(Class<? extends T> act, EasyHelper<T> helper) {
     int i = getInt("size");
     if (i < 0) {//vector was not present in original save
       return new Vector<>(0); //create an empty one.
@@ -371,7 +371,7 @@ public class EasyCursor extends EasyProperties {
     return getVector(act, null);
   }
 
-  public Vector loadVector(String key, Class act, EasyHelper helper) {
+  public <T> Vector<T> loadVector(String key, Class<? extends T> act, EasyHelper<T> helper) {
     push(key);
     try {
       return getVector(act, helper);
@@ -502,8 +502,8 @@ public class EasyCursor extends EasyProperties {
    * @return map
    * @todo convert to actually using a map. All map users were hashtables....
    */
-  public Hashtable getMap(String mapname, Class act) {
-    Hashtable table = new Hashtable();
+  public <T> Hashtable<String,T> getMap(String mapname, Class<? extends T> act) {
+    Hashtable<String,T> table = new Hashtable<>();
     push(mapname);
     try {
       //for each item on branch its key becomes the hashtable key, we make an object out of its value.
@@ -511,7 +511,7 @@ public class EasyCursor extends EasyProperties {
       for (int i = keys.size(); i-- > 0; ) {
         try {
           String key = keys.itemAt(i);
-          table.put(key, getObject(key, act));
+          table.put(key, (T)getObject(key, act));
         } catch (Exception ex) {
           continue; //recover as much as possible.
         }

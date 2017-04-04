@@ -1,0 +1,7 @@
+// DO NOT change these !!!!!!  They must remain the unchanged since the database is using them!
+// deprecated
+//DrawerClose   //timestamp for making drawer reports
+//DailyReport   //timestamp for report that is aggregate of DrawerCloses.
+//Settle        //settlement invoked (extra data= whether by guess or by us)
+//Clerklogin    //(only if different ID than last login?)
+//LoginFailure  //password failure attempt, extra data= bad password and/or userid.

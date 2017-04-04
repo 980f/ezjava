@@ -317,7 +317,7 @@ public final class Monitor implements Comparable {
 An example of mutexing via file locking:
 import java.io.*;
 public class exclude {
-  public static void main(String a[]) throws Exception {
+  public static void main(String a[]) {
     File locker = new File("/tmp/mailfile.lock");
     boolean IgotIt = false;
     AcquireLockLoop: for ( ; ; ) { // repeat forever

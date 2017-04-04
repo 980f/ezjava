@@ -76,7 +76,7 @@ public class EasyProperties extends Properties {
   /**
    * get named object
    */
-  public Object getObject(String key,Class act){
+  public <T> T getObject(String key,Class<? extends T> act){
     return extractObject(getString(key),act);
   }
 
