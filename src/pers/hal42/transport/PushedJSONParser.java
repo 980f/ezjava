@@ -1,15 +1,15 @@
 package pers.hal42.transport;
 
 import pers.hal42.ext.DepthTracker;
+import pers.hal42.ext.PushedParser;
 import pers.hal42.ext.Span;
 
-import static pers.hal42.transport.PushedJSONParser.Action.BeginWad;
-import static pers.hal42.transport.PushedJSONParser.Action.EndWad;
+import static pers.hal42.transport.PushedJSONParser.JsonAction.*;
 
 /**
  * Created by andyh on 4/3/17.
  */
-public class PushedJSONParser /* extends PushedParser*/ {
+public class PushedJSONParser extends PushedParser {
 
   static public class JsonStats {
     /**
@@ -38,7 +38,7 @@ public class PushedJSONParser /* extends PushedParser*/ {
   }
 
 
-  enum Action {
+  public enum JsonAction {
     Illegal,    //not a valid char given state, user must decide how to recover.
     Continue,   //continue scanning
     BeginWad, //open brace encountered
@@ -72,25 +72,28 @@ public class PushedJSONParser /* extends PushedParser*/ {
   /**
    * records locations for text extents, passes major events back to caller
    */
-  public Action next(char pushed) {
+  public JsonAction nextitem(char pushed) {
 
-    switch (PushedParser::next(pushed)) {
+    switch (next(pushed)) {
       case BeginValue:
       case EndValue:
       case Continue:
-        return PushedJSON::Continue;
+        return Continue;
 
       case Illegal:
-        return PushedJSON::Illegal;
+        return Illegal;
       case Done:
-        return PushedJSON::Done;
+        return Done;
 
-      case PushedParser::EndValueAndItem:
-      case PushedParser::EndItem:
+      case EndValueAndItem:
+      case EndItem:
         switch(d.last) {
+          case '=':
+            d.last=':';
+            //join
           case ':':
             recordName();
-            return PushedJSON::Continue; //null name is not the same as no name
+            return Continue; //null name is not the same as no name
           case '[': //array
             orderedWad=true;
             return BeginWad;
@@ -103,40 +106,46 @@ public class PushedJSONParser /* extends PushedParser*/ {
           case '}': //normal
             orderedWad=false;
             return EndWad;
+          case ';':
+            d.last=',';
+            //join
           case ',': //sometimes is an extraneous comma, we choose to ignore those.
-            return PushedJSON::EndItem;//missing value, possible missing whole child.
+            return EndItem;//missing value, possible missing whole child.
           case 0: /*abnormal*/
-            return PushedJSON::EndItem;//ok for single value files, not so much for normal ones.
+            return EndItem;//ok for single value files, not so much for normal ones.
           default:
-            return PushedJSON::Illegal;
+            return Illegal;
         } // switch
     }
-    return PushedJSON::Illegal;//catch regressions
+    return Illegal;//catch regressions
   }
 
   /**
    * to be called by agent that called next() after it has handled an item, to make sure we don't duplicate items if code is buggy.
    */
   public void itemCompleted() {
+    //essential override.
   }
 
   /**
    * @param fully is whether to prepare for a new stream, versus just prepare for next item.
    */
-  void reset(boolean fully) {
-
+  public void reset(boolean fully) {
+    super.reset(fully);
   }
 
   /**
    * subtract the @param offset from all values derived from location, including location.
    * this is useful when a buffer is reused, such as in reading a file a line at a time.
    */
-  void shift(int offset) {
+  public void shift(int offset) {
+    super.shift(offset);
   }
 
-  private void recordName() {
+  protected void recordName() {
+    //override
   }
 
   private void endToken(int mark) {
   }
-}; // class Parser
+}

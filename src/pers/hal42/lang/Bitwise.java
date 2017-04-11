@@ -84,6 +84,9 @@ public class Bitwise {
   public static int fieldMask(int msb,int lsb){
     return (1 << (msb+1)) - (1<<lsb);
   }
+  public static int fieldMask(int msb){
+    return fieldMask(msb,0);
+  }
 
   /** @return bits @param lsb for width @param width set to 1.*/
   public static int bitMask(int lsb,int width){

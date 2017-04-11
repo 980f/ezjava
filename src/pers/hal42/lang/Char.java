@@ -7,8 +7,11 @@ import pers.hal42.lang.StringX;
  * Created by andyh on 4/3/17.
  */
 public class Char {
-  public
-  byte raw;
+  public byte raw;
+
+  public Char(byte raw) {
+    this.raw = raw;
+  }
 
   public static boolean isPresent(String flags, byte flag) {
     return StringX.NonTrivial(flags) && flags.indexOf(flag) >= 0;
@@ -76,11 +79,11 @@ public class Char {
     return isDigit() || in("+-.Ee");
   }
 
-  boolean isWhite() {
+  public boolean isWhite() {
     return Character.isWhitespace(raw);
   }
 
-  boolean in(String tokens) {
+  public boolean in(String tokens) {
     return isPresent(tokens, raw);
   }
 

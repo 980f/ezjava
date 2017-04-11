@@ -1,13 +1,8 @@
 package pers.hal42.lang;
 
-import com.sun.org.apache.xml.internal.dtm.ref.DTMDefaultBaseIterators;
 import pers.hal42.ext.Char;
-import sun.awt.image.ByteBandedRaster;
-
-import java.util.jar.Pack200;
-
-import static pers.hal42.text.Ascii.U;
-
+import pers.hal42.text.Ascii;
+import static pers.hal42.lang.Bitwise.*;
 /**
  * Created by andyh on 4/4/17.
  */
@@ -17,10 +12,14 @@ public class UTF8 extends Char {
    * in addition to utf8 info this wraps ctype functions making them members of a char.
    */
     public UTF8(byte raw ){
-//      Char(raw);
+      super(raw);
     }
 
-    UTF8 setto(byte raw){
+    public UTF8(char raw){
+      this((byte) raw);
+    }
+
+    public UTF8 setto(byte raw){
       this.raw = raw;
       return this;
     }
@@ -30,14 +29,14 @@ public class UTF8 extends Char {
     }
 
     /** compare byte.
-     * @returns whether this is the same value as @param ch. */
-    boolean is(int ch) {
+     * @return whether this is the same value as @param ch. */
+    public boolean is(int ch) {
       return raw == (byte)ch;
     }
 
 
     /** if you skip a byte then numFollowers will be illegal*/
-    boolean isMultibyte() {
+    public boolean isMultibyte() {
       return (raw & 0x80) !=0; //treating illegals as multibyte.
     }
 
@@ -51,22 +50,22 @@ public class UTF8 extends Char {
       Packer(int uch) {
         setto(uch);
       }
-      void firstBits( int uch, int  nf)   {
+      int firstBits( int uch, int  nf)   {
         if((int) (raw) < 0xC0) { //80..BF are illegal raw, we ignore that here, C0 and C1  are not specfied so lump them in as well
           //we can't trust numFollowers if this byte isn't multiByte
-          uch=0;   //illegal argument
+          return 0;   //illegal argument
         } else {
           if(nf==~0){//unknown, so go compute
             nf=numFollowers();
           }
           //need to keep 6-nf bits
-          uch= Bitwise.fieldMask(6-nf,1) & raw;
+          return Bitwise.fieldMask(6-nf,1) & raw;
         }
       }
 
-      void  moreBits( int &uch)   {
+      int  moreBits( int uch)   {
         uch<<=6;
-        uch |= fieldMask(6)&byte (raw);
+        return uch | fieldMask(6,1)& raw;
       }
 
       int  pad( int uch,  int  followers)  {
@@ -95,7 +94,7 @@ public class UTF8 extends Char {
   /** first byte tells you how many follow, number of leadings ones -2 (FE and FF are both 5)
    *  subsequent bytes start with 0b10xx xxxx 80..BF, which are not legal single byte chars.
    */
-   int numFollowers()   {//todo:00 fix signedness problems
+  public int numFollowers()   {//todo:00 fix signedness problems
     if(raw < 0xC0) { //80..BF are illegal raw, we ignore that here, C0 and C1  are not specfied so lump them in as well
       return 0;   //7 bits    128
     }
@@ -116,13 +115,13 @@ public class UTF8 extends Char {
   }
 
 
-   int   numFollowers(int unichar) {
+   static int  numFollowers(int unichar) {
     if(unichar < (1 << 7)) {//quick exit for ascii
       return 0;
     }
     for(int f=1;f<6;++f){
        int  bits=(6*f) + (6-f);
-      if(unichar<(1U << bits)) {
+      if(unichar<(1 << bits)) {
         return f;
       }
     }
@@ -130,35 +129,35 @@ public class UTF8 extends Char {
     return 0;//not yet implementing invalid extensions.
   } //  numFollowers
 
-  byte  firstByte(int unichar,  int  followers)  {
+  static byte  firstByte(int unichar,  int  followers)  {
     if(followers>0) {
       byte  prefix=(byte)0xFC;
       prefix <<= (5 - followers);//1->C0, 2->E0 3->F0 4->F8
       unichar >>= (6 * followers);
-      return prefix |= unichar;
+      return (byte) (prefix | unichar);
     } else {
-      return static_cast<byte >(unichar);//only the one byte needed.
+      return (byte)unichar;//only the one byte needed.
     }
   }
 
-  byte   nextByte(int unichar,  int  followers)  {
+  static byte  nextByte(int unichar,  int  followers)  {
      int  shift = 6 * followers;
     unichar >>= shift;
-    unichar &= fieldMask(6);
+    unichar &= fieldMask(6,1);
     unichar |= (1 << 7);
-    return static_cast<byte >(unichar);//# truncate to 8 bits.
+    return (byte) (unichar);//# truncate to 8 bits.
   }
 
-  char  hexNibble( int uch,  int  sb)   {
-    byte  nib= 15&(uch>>(sb*4)); //push to low nib
-    return nib>9? 'A'+nib-10: '0'+nib;
+  static char  hexNibble( int uch,  int  sb)   {
+    byte  nib= (byte) (15&(uch>>(sb*4))); //push to low nib
+    return Ascii.Char(nib>9? 'A'+nib-10: '0'+nib);
   }
 
 
 
 }; // class UTF8
 
-#if 0
+/*#if 0
 
   to stream a  int as utf8:
 
@@ -183,4 +182,5 @@ public class UTF8 extends Char {
   #endif
 
   #endif // UTF8_H
-}
+  */
+
