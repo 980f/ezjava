@@ -61,7 +61,7 @@ public class PushedParser {
   Phase phase;
 
   /**
-   * 'location' recorded at start and end of token
+   * 'cursor' recorded at start and end of token
    */
   Span value=new Span();
   /**
@@ -79,7 +79,7 @@ public class PushedParser {
     EndValueAndItem,  //seperator ended item.
 
     //no-one seems to care about these events, we'll keep them in case value must be extracted immediatley after the terminating character
-    BeginValue, //record location, it is first char of something.
+    BeginValue, //record cursor, it is first char of something.
     EndValue,  //just end the token
 
   }
@@ -129,7 +129,7 @@ public class PushedParser {
   }
 
   public Action next(char pushed) {
-//added a finally clause    IncrementOnExit<unsigned> ioe(d.location);//increment before we dig deep lest we forget given the multiple returns.
+//added a finally clause    IncrementOnExit<unsigned> ioe(d.cursor);//increment before we dig deep lest we forget given the multiple returns.
     //   try {
     d.last = pushed;
 

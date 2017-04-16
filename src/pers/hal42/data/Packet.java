@@ -21,7 +21,7 @@ public class Packet {
   int instance=0;
 
 
-  protected int nexti=0; //next available location==bytes present
+  protected int nexti=0; //next available cursor==bytes present
   protected boolean ended=false;
   protected int size=0;  //pre-allocated space
 

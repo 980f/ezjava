@@ -82,4 +82,8 @@ public class Span {
       ", highest=" + highest +
       '}';
   }
+
+  public void end(int probe) {
+    this.highest=probe;
+  }
 }

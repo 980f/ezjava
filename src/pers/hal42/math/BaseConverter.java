@@ -62,7 +62,7 @@ public class BaseConverter {
     double remainder=value*shifter;     //...mpy instead of divide here
     //the msd is now just after the radix point in remainder
 
-    int oss           = signum; //state machine starts with sign location
+    int oss           = signum; //state machine starts with sign cursor
 
     char retval[] = new char[numChars];
     int i=0;

@@ -60,7 +60,7 @@ public class PushedJSONParser extends PushedParser {
    */
   public boolean haveName;
   /**
-   * 'location' recorded at start and end of name token
+   * 'cursor' recorded at start and end of name token
    */
   public Span name;
   public boolean quotedName;
@@ -135,7 +135,7 @@ public class PushedJSONParser extends PushedParser {
   }
 
   /**
-   * subtract the @param offset from all values derived from location, including location.
+   * subtract the @param offset from all values derived from cursor, including cursor.
    * this is useful when a buffer is reused, such as in reading a file a line at a time.
    */
   public void shift(int offset) {

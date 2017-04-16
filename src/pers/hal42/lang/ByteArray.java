@@ -23,7 +23,7 @@ public class ByteArray {
   }
 
   /**
-   * create new array inserting byte @param toinsert into @param src byte array at @param offset location
+   * create new array inserting byte @param toinsert into @param src byte array at @param offset cursor
    */
   public static byte[] insert(byte[] src, int toinsert, int offset) {
     byte[] target;

@@ -13,7 +13,7 @@ public class Buffer {
   protected byte[] buffer;
   public int errorCount=0;
 
-  protected int writeptr=0; //next available location==bytes present
+  protected int writeptr=0; //next available cursor==bytes present
   protected int alloc=0;  //pre-allocated space
 
   public boolean NonTrivial(){
