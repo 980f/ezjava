@@ -232,8 +232,7 @@ public class StringX {
    * This either prepends [LEFT = true] or appends [LEFT = false] characters to extend a string to length,
    * or it truncates the string if it is too long.
    */
-  public static String fill(String source, char filler, int length,
-                            boolean left) {
+  public static String fill(String source, char filler, int length, boolean left) {
     source = TrivialDefault(source, "");
     source.trim();
     if (length == source.length()) {
@@ -308,8 +307,7 @@ public class StringX {
     return trim(dirty, true, true);
   }
 
-  public static String trim(String dirty, boolean leading,
-                            boolean trailing) {
+  public static String trim(String dirty, boolean leading, boolean trailing) {
     if (NonTrivial(dirty)) {
       int start = 0;
       int end = dirty.length();
@@ -330,13 +328,13 @@ public class StringX {
         }
       }
       return subString(dirty, start, ++end);
+    } else {
+      return "";
     }
-    return "";
   }
 
   public static String proper(String toChange) {
-    return subString(toChange, 0, 1).toUpperCase() +
-      restOfString(toChange, 1).toLowerCase();
+    return subString(toChange, 0, 1).toUpperCase() + restOfString(toChange, 1).toLowerCase();
   }
 
   /**
@@ -426,8 +424,7 @@ public class StringX {
    * @param ignoreCase how to compare
    * @return which string matches, or INVALIDINDEX
    */
-  public static int equalStrings(String one, String[] two,
-                                 boolean ignoreCase) {
+  public static int equalStrings(String one, String[] two, boolean ignoreCase) {
     if (two != null) {
       for (int i = 0; i < two.length; i++) {
         if (equalStrings(one, two[i], ignoreCase)) {
@@ -454,8 +451,7 @@ public class StringX {
     return equalStrings(one, two, false);
   }
 
-  public static boolean equalStrings(String one, String two,
-                                     boolean ignoreCase) {
+  public static boolean equalStrings(String one, String two, boolean ignoreCase) {
     if (NonTrivial(one)) {
       if (NonTrivial(two)) {
         return ignoreCase ? one.equalsIgnoreCase(two) : one.equals(two);
@@ -548,16 +544,7 @@ public class StringX {
     return String.valueOf(copy);
   }
 
-  protected static final String[][] replacers = {
-    {"\\\\", "\\"},
-    {"\\b", "\b"},
-    {"\\t", "\t"},
-    {"\\n", "\n"},
-    {"\\f", "\f"},
-    {"\\\"", "\""},
-    {"\\r", "\r"},
-    {"\\'", "\'"},
-  };
+  protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
 
   public static String unescapeAll(String source) {
     if (NonTrivial(source)) {

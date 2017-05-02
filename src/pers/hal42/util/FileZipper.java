@@ -90,11 +90,11 @@ public class FileZipper extends Thread implements AtExit {
     }
   }
 
-  // it has its own main in case someone wants to use it,
-  // but it just uses Tester
-  public static void main(String[] args) {
-    Tester.main(args);
-  }
+//  // it has its own main in case someone wants to use it,
+//  // but it just uses Tester
+//  public static void main(String[] args) {
+//    Tester.main(args);
+//  }
 
   public void run() {
     try {

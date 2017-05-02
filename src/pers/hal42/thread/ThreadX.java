@@ -1,5 +1,6 @@
 package pers.hal42.thread;
 
+import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.Formatter;
 import pers.hal42.text.TextList;
@@ -208,9 +209,9 @@ public class ThreadX {
    * @param target
    * @return null on defective target else a running thread running that target
    */
-  public static Thread Demonize(Runnable target){
+  public static Thread Demonize(Runnable target,String traceName){
     if(target!=null){
-      Thread runner=new Thread(target, "ThreadX.Demonized");
+      Thread runner=new Thread(target, StringX.OnTrivial(traceName,"ThreadX.Demonized"));
       runner.setDaemon(true);
       runner.start();
       return runner;
