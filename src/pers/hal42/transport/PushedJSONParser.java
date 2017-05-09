@@ -3,14 +3,143 @@ package pers.hal42.transport;
 import pers.hal42.ext.DepthTracker;
 import pers.hal42.ext.PushedParser;
 import pers.hal42.ext.Span;
+import pers.hal42.logging.ErrorLogStream;
+
+import java.text.MessageFormat;
 
 import static pers.hal42.transport.PushedJSONParser.JsonAction.*;
 
 /**
  * Created by andyh on 4/3/17.
+ * tracks incoming byte sequence, records interesting points, reports interesting events
  */
 public class PushedJSONParser extends PushedParser {
+  static final ErrorLogStream dbg = ErrorLogStream.getForClass(PushedJSONParser.class);
+  /**
+   * whether a name was seen, bounds recorded in 'name'.
+   */
+  public boolean haveName;
+  /**
+   * 'cursor' recorded at start and end of name token
+   */
+  public Span name = new Span();
+  /**
+   * whether the name was quoted.
+   */
+  public boolean quotedName;
+  /**
+   * our first user doesn't care about the difference between [ and {, but someone else may so:
+   */
+  public boolean orderedWad;
+  JsonStats stats = new JsonStats();
 
+  /**
+   * records locations for text extents, passes major events back to caller
+   */
+  public JsonAction nextitem(char pushed) {
+
+    switch (next(pushed)) {
+    case BeginValue:
+    case EndValue:
+    case Continue:
+      return Continue;
+
+    case Illegal:
+      return Illegal;
+    case Done:
+      return Done;
+
+    case EndValueAndItem:
+    case EndItem:
+      switch (d.last) {
+      case '='://treat equals like colon// todo: an enable for this feature
+        d.last = ':';
+        //join
+      case ':':
+        if (super.value.isValid()) {
+          haveName = true;//hmmm, what about no name but a colon?
+          quotedName = super.wasQuoted;
+          name = super.value;
+          recordName();
+          return Continue; //null name is not the same as no name
+        } else {
+          return Illegal; //stray colon.
+        }
+      case '[': //array
+        orderedWad = true;
+        return BeginWad;
+      case '{': //normal
+        orderedWad = false;
+        return BeginWad;
+      case ']':
+        orderedWad = true;
+        return EndWad;
+      case '}': //normal
+        orderedWad = false;
+        return EndWad;
+      case ';': //treat semis like commas, //todo: an enable for this
+        d.last = ',';
+        //join
+      case ',': //sometimes is an extraneous comma, we choose to ignore those.
+        return EndItem;//missing value, possible missing whole child.
+      case 0: /*abnormal*/
+        return EndItem;//ok for single value files, not so much for normal ones.
+      default:
+        return Illegal;//inspect d.last to guess why
+      } // switch
+    }
+    return Illegal;//catch regressions
+  }
+
+  /**
+   * to be called by agent that called next() after it has handled an item, to make sure we don't duplicate items if code is buggy.
+   */
+  public void itemCompleted() {
+    //essential override.
+    haveName = false;
+    quotedName = false;
+    name.clear();
+    super.wasQuoted = false;
+    super.value.clear();
+  }
+
+  /**
+   * @param fully is whether to prepare for a new stream, versus just prepare for next item.
+   */
+  public void reset(boolean fully) {
+    super.reset(fully);
+  }
+
+  /**
+   * subtract the @param offset from all values derived from cursor, including cursor.
+   * this is useful when a buffer is reused, such as in reading a file a line at a time.
+   */
+  public void shift(int offset) {
+    super.shift(offset);
+  }
+
+  /**
+   * this is a stub, you don't need to super it.
+   */
+  protected void recordName() {
+    dbg.VERBOSE(MessageFormat.format("found name between {0} and {1}", name.lowest, name.highest));
+  }
+
+  private void endToken(int mark) {
+  }
+
+  public enum JsonAction {
+    Illegal,    //not a valid char given state, user must decide how to recover.
+    Continue,   //continue scanning
+    BeginWad, //open brace encountered
+    EndItem,  //comma between siblings
+    EndWad,   //closing wad
+    Done
+  }
+
+  /**
+   * attributes of the file, only interesting for debug
+   */
   static public class JsonStats {
     /**
      * number of values
@@ -35,117 +164,5 @@ public class PushedJSONParser extends PushedParser {
         ++totalScalar;
       }
     }
-  }
-
-
-  public enum JsonAction {
-    Illegal,    //not a valid char given state, user must decide how to recover.
-    Continue,   //continue scanning
-    BeginWad, //open brace encountered
-    EndItem,  //comma between siblings
-    EndWad,   //closing wad
-    Done
-  }
-
-  ;
-
-/**
- * tracks incoming byte sequence, records interesting points, reports interesting events
- */
-
-
-//extended return value
-  /**
-   * whether a name was seen, bounds recorded in 'name'.
-   */
-  public boolean haveName;
-  /**
-   * 'cursor' recorded at start and end of name token
-   */
-  public Span name;
-  public boolean quotedName;
-  /**
-   * our first user doesn't care about the difference between [ and {, but someone else may so:
-   */
-  public boolean orderedWad;
-
-  /**
-   * records locations for text extents, passes major events back to caller
-   */
-  public JsonAction nextitem(char pushed) {
-
-    switch (next(pushed)) {
-      case BeginValue:
-      case EndValue:
-      case Continue:
-        return Continue;
-
-      case Illegal:
-        return Illegal;
-      case Done:
-        return Done;
-
-      case EndValueAndItem:
-      case EndItem:
-        switch(d.last) {
-          case '=':
-            d.last=':';
-            //join
-          case ':':
-            recordName();
-            return Continue; //null name is not the same as no name
-          case '[': //array
-            orderedWad=true;
-            return BeginWad;
-          case '{': //normal
-            orderedWad=false;
-            return BeginWad;
-          case ']':
-            orderedWad=true;
-            return EndWad;
-          case '}': //normal
-            orderedWad=false;
-            return EndWad;
-          case ';':
-            d.last=',';
-            //join
-          case ',': //sometimes is an extraneous comma, we choose to ignore those.
-            return EndItem;//missing value, possible missing whole child.
-          case 0: /*abnormal*/
-            return EndItem;//ok for single value files, not so much for normal ones.
-          default:
-            return Illegal;
-        } // switch
-    }
-    return Illegal;//catch regressions
-  }
-
-  /**
-   * to be called by agent that called next() after it has handled an item, to make sure we don't duplicate items if code is buggy.
-   */
-  public void itemCompleted() {
-    //essential override.
-  }
-
-  /**
-   * @param fully is whether to prepare for a new stream, versus just prepare for next item.
-   */
-  public void reset(boolean fully) {
-    super.reset(fully);
-  }
-
-  /**
-   * subtract the @param offset from all values derived from cursor, including cursor.
-   * this is useful when a buffer is reused, such as in reading a file a line at a time.
-   */
-  public void shift(int offset) {
-    super.shift(offset);
-  }
-
-  protected void recordName() {
-    //override
-  }
-
-  private void endToken(int mark) {
   }
 }

@@ -37,7 +37,6 @@ public class PushedParser {
 
   public Diag d=new Diag();
 
-  protected boolean inQuote;
   /**
    * used to skip over utf extended chars
    */
@@ -52,22 +51,23 @@ public class PushedParser {
    * <tr> <td>After</td>   <td>end item</td>          <td>--</td>           <td>(no event)</td> </tr>
    * </tbody>     </table>
    */
-  public enum Phase {
+  protected enum Phase {
     Before, //nothing known, expect name or value
     Inside, //inside quotes
     After, //inside unquoted text: we're tolerant so this can be a name or a symbolic value
   }
 
-  Phase phase;
+  protected Phase phase;
+  protected boolean inQuote;
 
   /**
    * 'cursor' recorded at start and end of token
    */
-  Span value=new Span();
+  protected Span value=new Span();
   /**
    * whether value was found with quotes around it
    */
-  boolean wasQuoted;
+  protected boolean wasQuoted;
 
   public enum Action {
     //these tend to pass through all layers, to where the character source is:
@@ -129,8 +129,6 @@ public class PushedParser {
   }
 
   public Action next(char pushed) {
-//added a finally clause    IncrementOnExit<unsigned> ioe(d.cursor);//increment before we dig deep lest we forget given the multiple returns.
-    //   try {
     d.last = pushed;
 
     if (pushed == '\n') {
@@ -165,9 +163,8 @@ public class PushedParser {
       return Illegal;//can't get here
     }
 
-
     if (utfFollowers.decrement()) {//it is to be treated as a generic text char
-      ch.setto(Ascii.k);
+      ch.setto(Ascii.k);//will treat the same as some other non-framing character
     } else if (ch.isMultibyte()) {//first byte of a utf8 multibyte character
       utfFollowers.setto(ch.numFollowers());
       ch.setto(Ascii.k);
@@ -182,7 +179,7 @@ public class PushedParser {
         utfFollowers.increment();//ignores all escapes, especially \"
       }
       //still inside quotes
-      if (phase == Before) {//first char after quote is first care of token
+      if (phase == Before) {//first char after quote is first char of token
         beginValue();
         return BeginValue;
       }
@@ -197,8 +194,7 @@ public class PushedParser {
         if (ch.in(seperators)) {
           return endValue(true);
         }
-        return Continue;
-//    break;//end Inside
+        return Continue;//end Inside
 
       case After:
         if (ch.isWhite()) {
@@ -209,7 +205,6 @@ public class PushedParser {
           return EndItem;
         }
         return Illegal;
-//    break;
 
       case Before:  //expecting name or value
         if (ch.isWhite()) {

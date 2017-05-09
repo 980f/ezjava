@@ -1,5 +1,7 @@
 package pers.hal42.text;
 
+import org.jetbrains.annotations.NotNull;
+import pers.hal42.ext.Span;
 import pers.hal42.lang.Bool;
 import pers.hal42.lang.OS;
 import pers.hal42.lang.ReversedCompare;
@@ -10,15 +12,99 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Vector;
 
-//+++ add wrappers for writing functions that stretch for reasonable indices.
+/**
+ * a vector of strings with handy functions. It has gotten big enough to have a baser class extracted without so many fancy things like support for TextColumn class
+ */
 
 public class TextList {
-  public Vector<String> storage;
+  public static final boolean SMARTWRAP_ON = true;
 
   //wrap all of Vector's functions that we preserve:
+  public static final boolean SMARTWRAP_OFF = false;
+  private static final String[] trashArray = new String[0];
+  public Vector<String> storage;
+  public boolean allowStretch = true;//only is set to false when debugging blowups
+
+  //////////////////////
+  public TextList(int initialCapacity, int capacityIncrement) {
+    storage = new Vector<>(initialCapacity, capacityIncrement);
+  }
+
+  public TextList(int initialCapacity) {
+    storage = new Vector<>(initialCapacity);
+  }
+
+  public TextList() {
+    storage = new Vector<>();
+  }
+
+  public TextList(String[] array) {
+    storage = new Vector<>();
+    fromStringArray(array);
+  }
+
+  public TextList(Object[] array) {
+    storage = new Vector<>();
+    fromObjectArray(array);
+  }
+
+  /**
+   * this was created at first for wrapping already existing array of strings.
+   */
+  public TextList(Vector<String> trusted) {
+    storage = trusted;
+  }
+
+  public TextList(String toSplit, int lineLength, boolean smartWrap) {
+    this();
+    this.split(toSplit, lineLength, smartWrap);
+  }
+
+  // --- this may have too much info in it;
+  // maybe it isn't supposed to do the Ascii.bracket stuff ???
+  // maybe the ascii stuff should be in the EasyURLString class itself ???
+  public TextList(EasyUrlString toSplit, int lineLength, boolean smartWrap) {
+    this();
+    if (toSplit != null) {
+      this.split(Ascii.imageBracketSpace(toSplit.rawValue().getBytes()).toString(), lineLength, smartWrap);
+    }
+  }
+
+  public TextList(EasyUrlString toSplit) {
+    this(toSplit, 40, true);
+  }
 
   public static String safe(String o) {
     return StringX.TrivialDefault(o, ""); //# DO NOT USE StringX.OnTrivial: It turns "" into " ", which is NOT what we need here.
+  }
+
+  /**
+   * @return new textlist made from @param array of strings
+   */
+  public static TextList CreateFrom(String[] array) {
+    TextList newone = new TextList();
+    newone.fromStringArray(array);
+    return newone;
+  }
+
+  public static TextList CreateFrom(String csvLine) {
+    TextList newone = new TextList();
+    newone.simpleCsv(csvLine);
+    return newone;
+  }
+
+  public static boolean NonTrivial(TextList arf) {
+    return arf != null && arf.size() > 0;
+  }
+
+  public static TextList Empty() {
+    return new TextList();
+  }
+
+  public static TextList clone(TextList from) {
+    TextList ret = Empty();
+    ret.appendMore(from);
+    return ret;
   }
 
   public TextList add(String o) {
@@ -84,8 +170,6 @@ public class TextList {
     return this;
   }
 
-  public boolean allowStretch = true;//only is set to false when debugging blowups
-
   private void expandIfNeeded(int i) {
     if (i >= size()) {
       if (allowStretch) {
@@ -144,8 +228,6 @@ public class TextList {
   public Object[] toArray() {
     return storage.toArray();
   }
-
-  private static final String[] trashArray = new String[0];
 
   public String[] toStringArray() {
     return storage.toArray(trashArray);
@@ -217,68 +299,18 @@ public class TextList {
     return this;
   }
 
-
-  //////////////////////
-  public TextList(int initialCapacity, int capacityIncrement) {
-    storage = new Vector<>(initialCapacity, capacityIncrement);
-  }
-
-  public TextList(int initialCapacity) {
-    storage = new Vector<>(initialCapacity);
-  }
-
-  public TextList() {
-    storage = new Vector<>();
-  }
-
-  public TextList(String[] array) {
-    storage = new Vector<>();
-    fromStringArray(array);
-  }
-
-  public TextList(Object[] array) {
-    storage = new Vector<>();
-    fromObjectArray(array);
-  }
-
-  /**
-   * this was created at first for wrapping already existing array of strings.
-   */
-  public TextList(Vector<String> trusted) {
-    storage = trusted;
-  }
-
   /**
    * @return width of widest entry in list
    */
   public int longestEntry() {
     int max = 0;
-    for (int i = storage.size(); i-- > 0; ) {//
-      int esize = itemAt(i).length();
+    for (String item : storage) {//
+      int esize = item.length();
       if (max < esize) {
         max = esize;
       }
     }
     return max;
-  }
-
-  public TextList(String toSplit, int lineLength, boolean smartWrap) {
-    this();
-    this.split(toSplit, lineLength, smartWrap);
-  }
-
-  // --- this may have too much info in it;
-  // maybe it isn't supposed to do the Ascii.bracket stuff ???
-  // maybe the ascii stuff should be in the EasyURLString class itself ???
-  public TextList(EasyUrlString toSplit, int lineLength, boolean smartWrap) {
-    this();
-    if (toSplit != null) {
-      this.split(Ascii.imageBracketSpace(toSplit.rawValue().getBytes()).toString(), lineLength, smartWrap);
-    }
-  }
-
-  public TextList(EasyUrlString toSplit) {
-    this(toSplit, 40, true);
   }
 
   public TextList split(String toSplit, int lineLength, boolean smartWrap) {
@@ -366,9 +398,6 @@ public class TextList {
     return this;
   }
 
-  public static final boolean SMARTWRAP_ON = true;
-  public static final boolean SMARTWRAP_OFF = false;
-
   public String itemAt(int index) {//casting and protection for access
     if ((index < storage.size()) && (index >= 0)) {
       try {
@@ -420,21 +449,6 @@ public class TextList {
       add(anArray.toString());
     }
     return len;
-  }
-
-  /**
-   * @return new textlist made from @param array of strings
-   */
-  public static TextList CreateFrom(String[] array) {
-    TextList newone = new TextList();
-    newone.fromStringArray(array);
-    return newone;
-  }
-
-  public static TextList CreateFrom(String csvLine) {
-    TextList newone = new TextList();
-    newone.simpleCsv(csvLine);
-    return newone;
   }
 
   /**
@@ -513,19 +527,31 @@ public class TextList {
   }
 
   /***
-   *  Append strings from @param csv separating at commas.
+   *  Append strings from @param csv separating at commas. Empty fields are retained.
    */
   public TextList simpleCsv(String csv) {
-    int index = 0;
-    int start = 0;
+    return simpleParse(csv, ',',true);
+  }
+
+
+  /***
+   * @return this after appending strings cut at splitchar
+   */
+  @NotNull
+  public TextList simpleParse(String csv, char splitchar, boolean keepEmpties) {
+    Span cutter = new Span();
     if (StringX.NonTrivial(csv)) {
-      for (; index < csv.length(); index++) {
-        if (csv.charAt(index) == ',') {
-          add(StringX.subString(csv, start, index).trim());
-          start = index + 1;
+      cutter.lowest = 0;
+      for (int index = 0; index < csv.length(); ) {
+        if (csv.charAt(index++) == splitchar) {
+          cutter.highest = index;
+          String element = cutter.subString(csv, 0).trim();
+          if (StringX.NonTrivial(element) || keepEmpties) {
+            add(element);
+          }
         }
       }
-      add(StringX.subString(csv, start, index).trim());//add final field
+      add(cutter.subString(csv, 0).trim());//add final field
     }
     return this;
   }
@@ -563,10 +589,6 @@ public class TextList {
     return asParagraph();//tl
   }
 
-  public static boolean NonTrivial(TextList arf) {
-    return arf != null && arf.size() > 0;
-  }
-
   public Vector Vector() {
     return storage;
   }
@@ -599,7 +621,6 @@ public class TextList {
     return this;
   }
 
-
   /**
    * @return this, after adding pieces of @param sentence per @see cutword's definitoin of "word"
    */
@@ -616,16 +637,6 @@ public class TextList {
       }
     }
     return this;
-  }
-
-  public static TextList Empty() {
-    return new TextList();
-  }
-
-  public static TextList clone(TextList from) {
-    TextList ret = Empty();
-    ret.appendMore(from);
-    return ret;
   }
 
   /**

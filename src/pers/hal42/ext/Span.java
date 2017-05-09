@@ -75,6 +75,22 @@ public class Span {
     other.clear();
   }
 
+  public String subString(String tocut,int skip){
+    if(lowest==INVALIDINDEX){
+      return "";
+      //and skipping doesn't make sense
+    }
+    try {
+      if(highest==INVALIDINDEX){//then take tail
+        return tocut.substring(lowest);
+      } else {
+        return tocut.substring(lowest, highest);
+      }
+    } finally {
+      leapfrog(skip);
+    }
+  }
+
   @Override
   public String toString() {
     return "Span{" +

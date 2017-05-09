@@ -25,17 +25,16 @@ public class EasyProperties extends Properties {
 
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(EasyProperties.class, LogLevelEnum.WARNING);
 
-  public EasyProperties(){
+  public EasyProperties() {
     super();
   }
 
-  public EasyProperties(Properties rhs){
-//#can't do it this way...    super(rhs);
+  public EasyProperties(Properties rhs) {
     super();
     addMore(rhs);//...gotta copy to go deep on easycursor stuff
   }
 
-  public EasyProperties(String from){
+  public EasyProperties(String from) {
     super();
     this.fromString(from, false /* don't need to clear a new one */);
   }
@@ -43,236 +42,233 @@ public class EasyProperties extends Properties {
   /**
    * @return list of all full length names in set, regardless of internal cursor position
    */
-  public TextList allKeys(){
-    TextList keylist=new TextList(this.size());
+  public TextList allKeys() {
+    TextList keylist = new TextList(this.size());
     //HashTable.propertyNames gives full length names
-    for(Enumeration enump = super.propertyNames(); enump.hasMoreElements(); ) {
-      keylist.add((String)enump.nextElement());
+    for (Enumeration enump = super.propertyNames(); enump.hasMoreElements(); ) {
+      keylist.add((String) enump.nextElement());
     }
     return keylist;
   }
 
-  public static boolean isLegit(String value){
+  public static boolean isLegit(String value) {
     return StringX.NonTrivial(value);// at least need this much!!! else 'default' values don't work
   }
 
   /**
    * if property is trivial replace with @param defawlt
+   *
    * @return true if already was set
    */
-  public boolean Assert(String key, String defawlt){
-    if(!StringX.NonTrivial(getString(key))){
-      setProperty(key,defawlt);
+  public boolean Assert(String key, String defawlt) {
+    if (!StringX.NonTrivial(getString(key))) {
+      setProperty(key, defawlt);
       return false; //new setting is used
     }
     return true;//was already good
   }
 
-  public EasyProperties setObject(String key,Object obj){
-    setString(key,String.valueOf(obj));
+  public EasyProperties setObject(String key, Object obj) {
+    setString(key, String.valueOf(obj));
     return this;
   }
 
   /**
    * get named object
    */
-  public <T> T getObject(String key,Class<? extends T> act){
-    return extractObject(getString(key),act);
+  public <T> T getObject(String key, Class<? extends T> act) {
+    return extractObject(getString(key), act);
   }
 
-/**
- * we can get objects if they have a string based constructor OR
- * public null constructors and a setto(String) function.
- */
-  public <T> T extractObject(String objimage,Class<? extends T> act){
+  /**
+   * we can get objects if they have a string based constructor OR
+   * public null constructors and a setto(String) function.
+   */
+  public <T> T extractObject(String objimage, Class<? extends T> act) {
     try {
       try {
-        Constructor [] ctors=act.getConstructors();
-        Constructor nullCtor=null;
-        Object []arglist=new Object[1];
-        arglist[0]=objimage;
+        Constructor[] ctors = act.getConstructors();
+        Constructor nullCtor = null;
+        Object[] arglist = new Object[1];
+        arglist[0] = objimage;
 
-        for(int i=ctors.length;i-->0;){
-          Constructor ctor=ctors[i];
-          Class[] plist=ctor.getParameterTypes();
-          if(plist.length==0){
-            nullCtor=ctor;
+        for (int i = ctors.length; i-- > 0; ) {
+          Constructor ctor = ctors[i];
+          Class[] plist = ctor.getParameterTypes();
+          if (plist.length == 0) {
+            nullCtor = ctor;
           }
-          if(plist.length==1 && plist[0]==String.class){
+          if (plist.length == 1 && plist[0] == String.class) {
             return (T) ctor.newInstance(arglist); //preferred exit
           }
         }
-       //2nd chance: cosntruct then set:
-        if(nullCtor!=null){
-          T obj= (T) nullCtor.newInstance();
-          Class[] plist=new Class[1];
-          plist[0]=String.class;
-          Method setto=act.getMethod("setto",plist);
-          if(setto!=null){
-            setto.invoke(obj,arglist); //if we could trust all setto's to return this...
+        //2nd chance: cosntruct then set:
+        if (nullCtor != null) {
+          T obj = (T) nullCtor.newInstance();
+          Class[] plist = new Class[1];
+          plist[0] = String.class;
+          Method setto = act.getMethod("setto", plist);
+          if (setto != null) {
+            setto.invoke(obj, arglist); //if we could trust all setto's to return this...
             //we could return the return value of the setto above.
             //at present some return their arg rather than 'this'
           }
           return obj;
         }
         return act.newInstance();
-      }
-      catch (Exception ex) {
+      } catch (Exception ex) {
         return act.newInstance();
       }
-    } catch(Exception arf){
-      dbg.Caught("getObject got",arf);
+    } catch (Exception arf) {
+      dbg.Caught("getObject got", arf);
       return null;
     }
   }
 
-  public Object getObject(String key,Object def){
+  public Object getObject(String key, Object def) {
     try {
-      Object obj=getObject(key,def.getClass());//might goto EasyCursor.getobject
-      return obj!=null ? obj : def;//.clone();
-    }
-    catch (Exception ex) {
+      Object obj = getObject(key, def.getClass());//might goto EasyCursor.getobject
+      return obj != null ? obj : def;//.clone();
+    } catch (Exception ex) {
       return def;//.clone();
     }
   }
 
-  public EasyProperties setClass(String key, Class claz){
-    setString(key,claz.getName());
+  public EasyProperties setClass(String key, Class claz) {
+    setString(key, claz.getName());
     return this;
   }
 
   /**
    * @return a Class for the given @param key, null on any problem
    */
-  public Class getClass(String key){
+  public Class getClass(String key) {
     return ReflectX.classForName(getString(key));
   }
 
-  public EasyProperties setBoolean(String key, boolean newValue){
-    setString(key,Bool.toString(newValue));
+  public EasyProperties setBoolean(String key, boolean newValue) {
+    setString(key, Bool.toString(newValue));
     return this;
   }
 
-//this had been commentedout without a reason why.
-  public boolean assertBoolean(String key, boolean newValue){
-    return Assert(key,Bool.toString(newValue));
+  //this had been commentedout without a reason why.
+  public boolean assertBoolean(String key, boolean newValue) {
+    return Assert(key, Bool.toString(newValue));
   }
 
 
-  public boolean getBoolean(String key, boolean defaultValue){
-//    for(int star=5;star-->0;) {//to recover from cycle of indirection
-      String prop=getString(key);
-      if (StringX.NonTrivial(prop)) {
-        return Bool.For(prop);
-      }
-//    }
+  public boolean getBoolean(String key, boolean defaultValue) {
+    String prop = getString(key);
+    if (StringX.NonTrivial(prop)) {
+      return Bool.For(prop);
+    }
     return defaultValue;
   }
 
-  public boolean getBoolean(String key){
-    return getBoolean(key,false);
+  public boolean getBoolean(String key) {
+    return getBoolean(key, false);
   }
 
-  public EasyProperties setInt(String key, int newValue){
-    setString(key,String.valueOf(newValue));
+  public EasyProperties setInt(String key, int newValue) {
+    setString(key, String.valueOf(newValue));
     return this;
   }
 
-  public boolean Assert(String key, int newValue){
-    return Assert(key,String.valueOf(newValue));
+  public boolean Assert(String key, int newValue) {
+    return Assert(key, String.valueOf(newValue));
   }
 
-  public int getInt(String key, int defaultValue){
+  public int getInt(String key, int defaultValue) {
     try {
-      String prop=getString(key);
-      return StringX.NonTrivial(prop)?StringX.parseInt(prop):defaultValue;
-    } catch (Exception caught){
+      String prop = getString(key);
+      return StringX.NonTrivial(prop) ? StringX.parseInt(prop) : defaultValue;
+    } catch (Exception caught) {
       return defaultValue;      //be silent on errors
     }
   }
 
-  public EasyProperties setChar(String key, char newValue){
-    setString(key,String.valueOf(newValue));
+  public EasyProperties setChar(String key, char newValue) {
+    setString(key, String.valueOf(newValue));
     return this;
   }
 
-  public char getChar(String key, char defaultValue){
+  public char getChar(String key, char defaultValue) {
     try {
-      String prop=getString(key);
-      return StringX.NonTrivial(prop)?StringX.firstChar(prop):defaultValue;
-    } catch (Exception caught){
+      String prop = getString(key);
+      return StringX.NonTrivial(prop) ? StringX.firstChar(prop) : defaultValue;
+    } catch (Exception caught) {
       return defaultValue;      //be silent on errors
     }
   }
 
-  public int getInt(String key){
-    return getInt(key,0);
+  public int getInt(String key) {
+    return getInt(key, 0);
   }
 
-  public EasyProperties setLong(String key, long newValue){
-    setString(key,Long.toString(newValue));
+  public EasyProperties setLong(String key, long newValue) {
+    setString(key, Long.toString(newValue));
     return this;
   }
 
-  public boolean assertLong(String key, long newValue){
-    return Assert(key,Long.toString(newValue));
+  public boolean assertLong(String key, long newValue) {
+    return Assert(key, Long.toString(newValue));
   }
 
-  public long getLong(String key, long defaultValue){
+  public long getLong(String key, long defaultValue) {
     try {
-      String prop=getString(key);
-      return StringX.NonTrivial(prop)?StringX.parseLong(prop):defaultValue;
-    } catch (Exception caught){
+      String prop = getString(key);
+      return StringX.NonTrivial(prop) ? StringX.parseLong(prop) : defaultValue;
+    } catch (Exception caught) {
       return defaultValue;      //be silent on errors
     }
   }
 
-  public long getLong(String key){
-    return getLong(key,0);
+  public long getLong(String key) {
+    return getLong(key, 0);
   }
 
-  public boolean assertDouble(String key, double newValue){
-    return Assert(key,Double.toString(newValue));
+  public boolean assertDouble(String key, double newValue) {
+    return Assert(key, Double.toString(newValue));
   }
 
-  public EasyProperties setNumber(String key, double newValue){
-    setString(key,Double.toString(newValue));
+  public EasyProperties setNumber(String key, double newValue) {
+    setString(key, Double.toString(newValue));
     return this;
   }
 
-  public double getNumber(String key, double defaultValue){
-    assertDouble(key,defaultValue); //regular default syntax doesn't get us a default
-    return StringX.parseDouble(getString(key),defaultValue);      //be silent on errors
+  public double getNumber(String key, double defaultValue) {
+    assertDouble(key, defaultValue); //regular default syntax doesn't get us a default
+    return StringX.parseDouble(getString(key), defaultValue);      //be silent on errors
   }
 
-  public double getNumber(String key){
-    return getNumber(key,0.0);
+  public double getNumber(String key) {
+    return getNumber(key, 0.0);
   }
 
   public char getChar(String key) {
-    return getChar(key,(char)0);
+    return getChar(key, (char) 0);
   }
 
   /**
-  // filter all sets through here so we can do stuff if we want, except ...
-  // NOTE: These strings MUST be 64KB or smaller!
-  // (which means length < ~65535, but it still might be too long depending on the type of char!)
-  // if you need longer data types, use getBytes() and setBytes() or a similar array handler
+   * // filter all sets through here so we can do stuff if we want, except ...
+   * // NOTE: These strings MUST be 64KB or smaller!
+   * // (which means length < ~65535, but it still might be too long depending on the type of char!)
+   * // if you need longer data types, use getBytes() and setBytes() or a similar array handler
    * ! we want to be able to overwrite a non-null value with a null one!
    */
-  public EasyProperties setString(String key, String newValue){
-    setProperty(key,newValue);
+  public EasyProperties setString(String key, String newValue) {
+    setProperty(key, newValue);
     return this;
   }
 
-/**
- * added trim() here as crlf/lf stuff in properties files was killing us.
- * we could do a scan on load-from-file to optimize this
- */
-  public String getProperty(String key){//4debug, to see param going to Properties.getProperty
-    if(StringX.NonTrivial(key)){
-      String raw=super.getProperty(key);
-      if(raw!=null){
+  /**
+   * added trim() here as crlf/lf stuff in properties files was killing us.
+   * we could do a scan on load-from-file to optimize this
+   */
+  public String getProperty(String key) {//4debug, to see param going to Properties.getProperty
+    if (StringX.NonTrivial(key)) {
+      String raw = super.getProperty(key);
+      if (raw != null) {
         return raw.trim();//which might become zero length but won't be a null.
       }
     }
@@ -282,53 +278,50 @@ public class EasyProperties extends Properties {
   /**
    * remove items whose values are null
    */
-  private EasyProperties purgeNulls(boolean trivialsToo){
-    Enumeration allprops=super.keys();
+  private EasyProperties purgeNulls(boolean trivialsToo) {
+    Enumeration allprops = super.keys();
     Object okey; //key as object
     Object value;
-    while(allprops.hasMoreElements()){
-      okey=allprops.nextElement();
-      value=super.get(okey);
-      if( value==null || (trivialsToo && !ObjectX.NonTrivial(value))){
+    while (allprops.hasMoreElements()) {
+      okey = allprops.nextElement();
+      value = super.get(okey);
+      if (value == null || (trivialsToo && !ObjectX.NonTrivial(value))) {
         remove(okey);
       }
     }
     return this;
   }
 
-  public EasyProperties purgeNulls(){
+  public EasyProperties purgeNulls() {
     return purgeNulls(false);
   }
 
-  public EasyProperties purgeTrivials(){
+  public EasyProperties purgeTrivials() {
     return purgeNulls(true);
   }
 
-  public String getString(String key, String defaultValue){
+  public String getString(String key, String defaultValue) {
     String retval = defaultValue;
     try {
-      String prop=getProperty(key);
-      if(isLegit(prop)) {
+      String prop = getProperty(key);
+      if (isLegit(prop)) {
         retval = prop;
       } else {
         dbg.VERBOSE("getString: Did not find key '" + key + "'!");
       }
-    } catch (Exception caught){
-      dbg.Caught("getString keyed '" + key + "'!",caught);
-    } finally {
-      return retval;
+    } catch (Exception caught) {
+      dbg.Caught("getString keyed '" + key + "'!", caught);
     }
+    return retval;
   }
 
-  // ++++++++++++++ should we endeavor to make this case-INsensitive?
-
-  public String getString(String key){
-    return getString(key,"");//empty string rather than null!!!
+  public String getString(String key) {
+    return getString(key, "");//empty string rather than null!!!
   }
 
-  public void setURLedString(String key, String newValue){
-    if(StringX.NonTrivial(newValue)) {
-      setString(key,EasyUrlString.encode(newValue));
+  public void setURLedString(String key, String newValue) {
+    if (StringX.NonTrivial(newValue)) {
+      setString(key, EasyUrlString.encode(newValue));
     }
   }
 
@@ -339,21 +332,21 @@ public class EasyProperties extends Properties {
     return StringX.TrivialDefault(EasyUrlString.decode(getString(key, defaultValue)), defaultValue);
   }
 
-  public TextList getPackedList(String key){
-    TextList list=new TextList();
-    String packed=getString(key);
+  public TextList getPackedList(String key) {
+    TextList list = new TextList();
+    String packed = getString(key);
     list.wordsOfSentence(packed);
     return list;
   }
 
-  public void saveEnum(String key, Enum target){
-    setString(key,target.name());
+  public void saveEnum(String key, Enum target) {
+    setString(key, target.name());
   }
 
-  public void loadEnum(String key, Enum target){
-    String prop=getString(key);
-    if(prop!=null){
-      target= Enum.valueOf(target.getClass(),prop);
+  public void loadEnum(String key, Enum target) {
+    String prop = getString(key);
+    if (prop != null) {
+      target = Enum.valueOf(target.getClass(), prop);
     }
   }
 
@@ -377,33 +370,32 @@ public class EasyProperties extends Properties {
 //      return Safe.INVALIDINDEX;
 //    }
 //  }
-
-  public void setDate(String key,Date d){
-    setLong(key,d.getTime());
+  public void setDate(String key, Date d) {
+    setLong(key, d.getTime());
   }
 
-  public Date getDate(String key,Date def){
-    long utcmillis =getLong(key);
-    if(utcmillis>0){
+  public Date getDate(String key, Date def) {
+    long utcmillis = getLong(key);
+    if (utcmillis > 0) {
       return new Date(utcmillis);//previously was always "NOW"!
     } else {
       return def;
     }
   }
 
-  public Date getDate(String key){
-    return getDate(key,DateX.Now());
+  public Date getDate(String key) {
+    return getDate(key, DateX.Now());
   }
 
-  public void setUTC(String key,UTC d){
-    setLong(key,d != null ? d.utc : 0L);
+  public void setUTC(String key, UTC d) {
+    setLong(key, d != null ? d.utc : 0L);
   }
 
-  public UTC getUTC(String key,UTC def){
-    return new UTC().setto(getLong(key,def != null ? def.utc : 0L));
+  public UTC getUTC(String key, UTC def) {
+    return new UTC().setto(getLong(key, def != null ? def.utc : 0L));
   }
 
-  public UTC getUTC(String key){
+  public UTC getUTC(String key) {
     return new UTC().setto(getLong(key));
   }
 
@@ -411,10 +403,11 @@ public class EasyProperties extends Properties {
     return new OrderedEasyPropertiesEnumeration(this);
   }
 
-  public EasyProperties Load(java.io.InputStream is){
+  public EasyProperties Load(java.io.InputStream is) {
     try {
-      /*super.*/load(is);
-    } catch (IOException | NullPointerException caught){
+      /*super.*/
+      load(is);
+    } catch (IOException | NullPointerException caught) {
       //silent failure...
     } finally {
       IOX.Close(is);
@@ -434,13 +427,13 @@ public class EasyProperties extends Properties {
    * when called from EasyCursor this should list only the branch
    */
   public String asSwitchedParagraph(String specialEOL, String valueSeparator, boolean raw) {
-    StringBuffer block=new StringBuffer(250); //wag
-    for(Enumeration enump = propertyNames(); enump.hasMoreElements(); ) {
-      String name = (String)enump.nextElement();
+    StringBuffer block = new StringBuffer(250); //wag
+    for (Enumeration enump = propertyNames(); enump.hasMoreElements(); ) {
+      String name = (String) enump.nextElement();
       block.append(name);
       block.append(valueSeparator);
       block.append(raw ? super.getProperty(name) : getString(name));
-      if(enump.hasMoreElements()){//in case 'specialEOL' is a comma
+      if (enump.hasMoreElements()) {//in case 'specialEOL' is a comma
         block.append(specialEOL);
       }
     }
@@ -455,7 +448,7 @@ public class EasyProperties extends Properties {
     return asSwitchedParagraph(specialEOL, valueSeparator, true);
   }
 
-  public String asParagraph(){
+  public String asParagraph() {
     return asParagraph(defaultPropertySeparator);
   }
 
@@ -463,16 +456,16 @@ public class EasyProperties extends Properties {
     dbg.VERBOSE(header + asParagraph(specialEOL, valueSeparator));
   }
 
-  public TextList propertyList(){
-    TextList unsorted=new TextList(this.size());
+  public TextList propertyList() {
+    TextList unsorted = new TextList(this.size());
     return unsorted.assureItems(this.propertyNames());
   }
 
   // returns the number added
   public int addMore(Properties moreps) {
     int count = 0;
-    for(Enumeration enump = moreps.propertyNames(); enump.hasMoreElements(); ) {
-      String key = (String)enump.nextElement();
+    for (Enumeration enump = moreps.propertyNames(); enump.hasMoreElements(); ) {
+      String key = (String) enump.nextElement();
       String value = moreps.getProperty(key);
       setString(key, value);
       count++;
@@ -489,15 +482,15 @@ public class EasyProperties extends Properties {
     try {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       store(baos, header);
-      if(defaults!=null){//+_+ can only recurse one level deep with this approach
-        defaults.store(baos,header);
+      if (defaults != null) {//+_+ can only recurse one level deep with this approach
+        defaults.store(baos, header);
       }
       return String.valueOf(baos);
     } catch (Exception caught) {
       dbg.Enter("toString");
       dbg.Caught(caught);
       dbg.Exit();
-      return "#"+header+" is faulty";
+      return "#" + header + " is faulty";
     }
   }
 
@@ -513,27 +506,28 @@ public class EasyProperties extends Properties {
   }
 
   public void fromString(String from, boolean clearFirst) {
-    if(clearFirst) {
+    if (clearFirst) {
       clear();
     }
-    if(StringX.NonTrivial(from)) {
+    if (StringX.NonTrivial(from)) {
       try {
         byte bytes[] = from.getBytes();
         ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        /*super.*/load(bais);
+        /*super.*/
+        load(bais);
       } catch (Exception caught) {
         dbg.Caught(caught);
       }
     }
   }
 
-  public static EasyProperties FromString(String streamed){
+  public static EasyProperties FromString(String streamed) {
     EasyProperties newone = new EasyProperties();
-    newone.fromString(streamed,false);
+    newone.fromString(streamed, false);
     return newone;
   }
 
-  public void storeSorted(OutputStream out, String header) throws IOException{
+  public void storeSorted(OutputStream out, String header) throws IOException {
     // +++ convert this into a line sorter that happens on closing the stream
     StringBuilder buffer = new StringBuilder();
     StringWriter writer = new StringWriter();
@@ -542,14 +536,14 @@ public class EasyProperties extends Properties {
     BufferedReader reader = new BufferedReader(new StringReader(String.valueOf(baos)));
     TextList tl = new TextList();
     String test = "";
-    while(test != null) {
+    while (test != null) {
       test = reader.readLine();
       tl.add(test);
     }
     tl.sort();
     OutputStreamWriter osw = new OutputStreamWriter(out);
     String linefeed = System.getProperty("line.separator");
-    for(int i = 0; i < tl.size(); i++) {
+    for (int i = 0; i < tl.size(); i++) {
       osw.write(tl.itemAt(i));
       osw.write(linefeed);
     }
@@ -566,7 +560,7 @@ class OrderedEasyPropertiesEnumeration implements Enumeration {
 
   public OrderedEasyPropertiesEnumeration(EasyProperties ezp) {
     this.ezp = ezp;
-    names = ezp.propertyList().storage ;
+    names = ezp.propertyList().storage;
     Collections.sort(names);
   }
 
@@ -575,7 +569,7 @@ class OrderedEasyPropertiesEnumeration implements Enumeration {
   }
 
   public boolean hasMoreElements() {
-    return (iterator < (names.size()-1));
+    return (iterator < (names.size() - 1));
   }
 
 }
