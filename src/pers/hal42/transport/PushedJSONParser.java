@@ -33,6 +33,15 @@ public class PushedJSONParser extends PushedParser {
   public boolean orderedWad;
   JsonStats stats = new JsonStats();
 
+  /** @param equalsAndSemi determines dialect of JSON allowed. */
+  public PushedJSONParser(boolean equalsAndSemi) {
+    String seps="{}[]:,";
+    if(equalsAndSemi){
+      seps+="=;";
+    }
+    lookFor(seps);
+  }
+
   /**
    * records locations for text extents, passes major events back to caller
    */
@@ -57,7 +66,7 @@ public class PushedJSONParser extends PushedParser {
         //join
       case ':':
         if (super.value.isValid()) {
-          haveName = true;//hmmm, what about no name but a colon?
+          haveName = true;
           quotedName = super.wasQuoted;
           name = super.value;
           recordName();
@@ -98,7 +107,7 @@ public class PushedJSONParser extends PushedParser {
     //essential override.
     haveName = false;
     quotedName = false;
-    name.clear();
+//constructor escaped and was null    name.clear();
     super.wasQuoted = false;
     super.value.clear();
   }

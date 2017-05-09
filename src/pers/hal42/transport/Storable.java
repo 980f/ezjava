@@ -21,7 +21,7 @@ public class Storable {
    */
   protected int index = -1;
   Storable parent; //can be null.
-  Type type;
+  Type type=Unclassified;
 
   public enum Origin {
     Ether,
@@ -30,7 +30,7 @@ public class Storable {
     Assigned
   }
   Origin origin=Ether;
-  String image;
+  String image="";
   double value;
   boolean bit;
 

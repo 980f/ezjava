@@ -11,7 +11,7 @@ import static pers.hal42.ext.PushedParser.Phase.*;
  */
 public class PushedParser {
 
-  String seperators;
+  protected String seperators;
 
   public static class Diag {
     public int location = 0;//number of chars total
@@ -57,7 +57,7 @@ public class PushedParser {
     After, //inside unquoted text: we're tolerant so this can be a name or a symbolic value
   }
 
-  protected Phase phase;
+  protected Phase phase=Before;
   protected boolean inQuote;
 
   /**
@@ -84,7 +84,7 @@ public class PushedParser {
 
   }
 
-  void itemCompleted() {
+  protected void itemCompleted() {
     value.clear();
     phase = Before;
     inQuote = false;//usually already is, except on reset
@@ -111,11 +111,11 @@ public class PushedParser {
     reset(true);
   }
 
-  public void lookFor(String seps) {
+  protected void lookFor(String seps) {
     seperators = seps;
   }
 
-  Action endValue(boolean andItem) {
+  private Action endValue(boolean andItem) {
     wasQuoted = inQuote;
     inQuote = false;
     phase = andItem ? Before : After;
@@ -123,70 +123,71 @@ public class PushedParser {
     return andItem ? EndValueAndItem : EndValue;
   }
 
-  void beginValue() {
+  private void beginValue() {
     phase = Inside;
     value.begin(d.location);
   }
 
   public Action next(char pushed) {
-    d.last = pushed;
+    try {
+      d.last = pushed;
 
-    if (pushed == '\n') {
-      d.column = 1;//match pre-increment below.
-      ++d.row;
-    } else {
-      ++d.column;
-    }
+      if (pushed == '\n') {
+        d.column = 1;//match pre-increment below.
+        ++d.row;
+      } else {
+        ++d.column;
+      }
 
-    UTF8 ch = new UTF8(pushed);
+      UTF8 ch = new UTF8(pushed);
 
-    if (pushed == 0) {//end of stream
-      if (inQuote) {
-        switch (phase) {
+      if (pushed == 0) {//end of stream
+        if (inQuote) {
+          switch (phase) {
           case Before: //file ended with a start quote.
             return Illegal;
           case Inside: //act like endquote was missing
             return endValue(true);
           case After:
             return Illegal;//shouldn't be able to get here.
-        }
-      } else {
-        switch (phase) {
+          }
+        } else {
+          switch (phase) {
           case Before:
             return Done;
           case Inside:
             return endValue(true);
           case After:
             return EndItem; //eof push out any partial node
+          }
         }
+        return Illegal;//can't get here
       }
-      return Illegal;//can't get here
-    }
 
-    if (utfFollowers.decrement()) {//it is to be treated as a generic text char
-      ch.setto(Ascii.k);//will treat the same as some other non-framing character
-    } else if (ch.isMultibyte()) {//first byte of a utf8 multibyte character
-      utfFollowers.setto(ch.numFollowers());
-      ch.setto(Ascii.k);
-    }
+      if (utfFollowers.decrement()) {//it is to be treated as a generic text char
+        ch.setto(Ascii.k);//will treat the same as some other non-framing character
+      } else if (ch.isMultibyte()) {//first byte of a utf8 multibyte character
+        utfFollowers.setto(ch.numFollowers());
+        ch.setto(Ascii.k);
+      }
 
-    //we still process it
-    if (inQuote) {
-      if (ch.is('"')) {//end quote
-        return endValue(false);
+      //we still process it
+      if (inQuote) {
+        if (ch.is('"')) {//end quote
+          return endValue(false);
+        }
+        if (ch.is('\\')) {
+          utfFollowers.increment();//ignores all escapes, especially \"
+        }
+        //still inside quotes
+        if (phase == Before) {//first char after quote is first char of token
+          beginValue();
+          return BeginValue;
+        }
+        return Continue;
       }
-      if (ch.is('\\')) {
-        utfFollowers.increment();//ignores all escapes, especially \"
-      }
-      //still inside quotes
-      if (phase == Before) {//first char after quote is first char of token
-        beginValue();
-        return BeginValue;
-      }
-      return Continue;
-    }
 
-    switch (phase) {
+      switch (phase) {
       case Inside:
         if (ch.isWhite()) {
           return endValue(false);
@@ -220,8 +221,11 @@ public class PushedParser {
         }
         beginValue();
         return BeginValue;
-    } // switch
-    return Illegal;// in case we have a missing case above, should never get here.
+      } // switch
+      return Illegal;// in case we have a missing case above, should never get here.
+    } finally {
+      ++d.location;
+    }
   }
 
 }

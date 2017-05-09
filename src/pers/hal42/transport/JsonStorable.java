@@ -25,7 +25,11 @@ public class JsonStorable extends PushedJSONParser {
   /**
    * record name early, for debug, could wait until makeChild
    */
-  String name;
+  String name="";
+
+  public JsonStorable(boolean equalsAndSemi) {
+    super(equalsAndSemi);
+  }
 
   protected void recordName() {
     name = getString(super.name);
@@ -52,6 +56,7 @@ public class JsonStorable extends PushedJSONParser {
    * read file and parse it permissivley to a Storable. Try to guess node types, but not aggressively
    */
   public boolean loadFile(String filename) {
+    this.filename=filename; //record for debug
     path = FileSystems.getDefault().getPath(filename);
     return cache();
   }
@@ -97,13 +102,14 @@ public class JsonStorable extends PushedJSONParser {
             //save present item as a wad
             Storable kid = makeChild(parent);
             while (parse(kid)) {
+              //nothing to do here.
             }
             return true;
           }
 //        break;
           case EndItem:
             makeChild(parent);
-            return true;//might be more children
+            return false;//might be more children
           case EndWad:
             //if there is an item pending add it to wad, this will be the case if the last item of a wad doesn't have a gratuitous comma after it.
             cleanup(parent);
