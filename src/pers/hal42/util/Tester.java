@@ -5,7 +5,7 @@ import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.timer.*;
 
-public class tester implements TimeBomb {
+public class Tester implements TimeBomb {
 
   static ErrorLogStream dbg=ErrorLogStream.getForName("tester", LogLevelEnum.VERBOSE);
 
@@ -24,7 +24,7 @@ public class tester implements TimeBomb {
   }
 
 
-  public tester(String id,int ticks) {
+  public Tester(String id,int ticks) {
     this.id=id;
     sw=new StopWatch();
     alarm= Alarmer.New(ticks,this);
