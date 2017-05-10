@@ -15,11 +15,6 @@ import pers.hal42.text.TextList;
 
 import java.util.Arrays;
 
-// +++ @@@ %%% Get when reading existing info:
-//    Primary keys
-//    Foreign keys
-//    Index
-
 public class TableProfile implements Comparable {
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(TableProfile.class);
 
@@ -44,6 +39,7 @@ public class TableProfile implements Comparable {
     return tp;
   }
 
+  /** @returns this after appending @param joiners columns to the exist columns. */
   public TableProfile join(ColumnProfile [] joiners) {
     ColumnProfile [] merger= new ColumnProfile [columns.length+joiners.length] ;
     System.arraycopy(columns,0,merger,0,columns.length);
@@ -65,14 +61,16 @@ public class TableProfile implements Comparable {
     return ti.name()+".*";
   }
 
+  /** @returns a new list of column names */
   public TextList fieldNames() {
     TextList tl = new TextList();
-    for(int i = 0; i < columns.length; i++) {
-      tl.Add(columns[i].name());
+    for(ColumnProfile item: columns) {
+      tl.Add(item.name());
     }
     return tl;
   }
 
+  /** @returns a <b>copy</b> of this table's columns. */
   public ColumnProfile [] columns() {
     ColumnProfile [] cols = new ColumnProfile [columns.length];
     System.arraycopy(columns, 0, cols, 0, columns.length);
@@ -84,33 +82,34 @@ public class TableProfile implements Comparable {
   }
 
   public int width() {
-    int ret = -1;
     if(columns != null) {
-      ret = 0;
-      for(int i = columns.length; i-->0;) {
-        ret += columns[i].size();
+      int ret = 0;
+      for(ColumnProfile item : columns) {
+        ret += item.size();
       }
+      return ret;
+    } else {
+      return -1;
     }
-    return ret;
   }
 
+  /**@returns column named @param fieldName, null if no such column or fieldName is null */
   public ColumnProfile column(String fieldName) {
-    ColumnProfile ret = null;
     if(fieldName != null) {
-      for(int i = 0; i < columns.length; i++) {
-        if(fieldName.equalsIgnoreCase(columns[i].name())) {
-          ret = columns[i];
-          break;
+      for(ColumnProfile column: columns) {
+        if(fieldName.equalsIgnoreCase(column.name())) {
+          return column;
         }
       }
+      return null;//column not found
     } else {
       dbg.ERROR("fieldName = NULL !!!");
+      return null;//bad argument
     }
-    return ret;
   }
 
+  /** @returns @param i-th column, null if i is bad */
   public ColumnProfile column(int i) {
-    // +++ bitch on errors
     return ((i >=0) && (i < columns.length)) ? columns[i] : null;
   }
   /**
@@ -123,19 +122,18 @@ public class TableProfile implements Comparable {
    * Definition Schemas, representation in the diagnostics area, and similar uses.
    */
   public boolean fieldExists(String fieldName) {
-    boolean ret = false;
     if(fieldName != null) {
-      for(int i = 0; i < columns.length; i++) {
-        if(fieldName.equalsIgnoreCase(columns[i].name())) {
-          ret = true;
-          break;
+      for(ColumnProfile column: columns) {
+        if(fieldName.equalsIgnoreCase(column.name())) {
+          return true;
         }
       }
+      dbg.VERBOSE(name() + "." + fieldName + " does NOT exist.");
+      return false;//not found
     } else {
       dbg.ERROR(fieldName + " = NULL !!!");
+      return false;//bogus fieldname
     }
-    dbg.VERBOSE(name() + "." + fieldName + " does " + (ret ? "" : "NOT ") + "exist.");
-    return ret;
   }
 
   public boolean isLogType() {
@@ -165,4 +163,3 @@ public class TableProfile implements Comparable {
     }
   }
 }
-//$Id: TableProfile.java,v 1.33 2005/03/19 15:59:04 andyh Exp $

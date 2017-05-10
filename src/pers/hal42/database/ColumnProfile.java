@@ -1,6 +1,8 @@
 package pers.hal42.database;
-/**  Contains the Column information used by database profiling, etc.
- * This was created against a Postgres database, might need some fields dropped for mysql (or annotated as not relevant) */
+/**
+ * Contains the Column information used by database profiling, etc.
+ * This was created against a Postgres database, might need some fields dropped for mysql (or annotated as not relevant)
+ */
 
 import pers.hal42.lang.ObjectX;
 import pers.hal42.lang.StringX;
@@ -36,7 +38,7 @@ public class ColumnProfile implements Comparable {
   }
 
   /**
-   * returns correctenss of strucutre, not whether it is a member of the enclosing database.
+   * returns correctness of structure, not whether it is a member of the enclosing database.
    */
   public boolean isViable() {
     return StringX.NonTrivial(columnName); //&&type in typelist&&nullable is valid ...
@@ -78,39 +80,31 @@ public class ColumnProfile implements Comparable {
     return ObjectX.NonTrivial(table) ? table.name() + '.' + name() : name();
   }
 
-  public static final int     TEXTLEN = 0;//ObjectX.INVALIDINDEX;
-  public static final int     INT4LEN = 4; // duh!
-  public static final int     CHARLEN = 1; // special PG datatype that is one char
-  public static final int     BOOLLEN = 1; // assume one byte
+  public static final int TEXTLEN = 0;//ObjectX.INVALIDINDEX;
+  public static final int INT4LEN = 4; // duh!
+  public static final int CHARLEN = 1; // special PG datatype that is one char
+  public static final int BOOLLEN = 1; // assume one byte
 
-  public static final boolean ALLOWNULL=true;//strange that this was missing
-  public static final boolean NOAUTO=false;
+  public static final boolean ALLOWNULL = true;//strange that this was missing
+  public static final boolean NOAUTO = false;
 
   private static int sizeForType(ColumnTypes type) {
-    int ret = 0;
-    switch(type) {
-      case BOOL: {
-        ret = BOOLLEN;
-      } break;
-      case TEXT: {
-        ret = TEXTLEN;
-      } break;
-      case INT4: {
-        ret = INT4LEN;
-      } break;
-      case CHAR: {
-        ret = CHARLEN;
-      } break;
+    switch (type) {
+      case BOOL:
+        return BOOLLEN;
+      case TEXT:
+        return TEXTLEN;
+      case INT4:
+        return INT4LEN;
+      case CHAR:
+        return CHARLEN;
+      default:
+        return 0;
     }
-    return ret;
   }
 
   // creator for code-based profiles
-  public static ColumnProfile create(TableProfile table, String name,
-                                     ColumnTypes dbtype, int size,
-                                     boolean nullable, String displayName,
-                                     boolean autoIncrement,
-                                     String columnDef) {
+  public static ColumnProfile create(TableProfile table, String name,                                     ColumnTypes dbtype, int size, boolean nullable, String displayName,boolean autoIncrement, String columnDef) {
     name = StringX.TrivialDefault(name, "").toLowerCase();
     ColumnProfile cp = new ColumnProfile();
     cp.table = table;
@@ -133,25 +127,23 @@ public class ColumnProfile implements Comparable {
 
   // creator for existing tables
   public static ColumnProfile create(TableProfile table, String name, String type, String size, String nullable) {
-    return create(table, name, (ColumnTypes.valueOf(type)), StringX.parseInt(size), nullable.equalsIgnoreCase("YES"), null, false,"");
+    return create(table, name, (ColumnTypes.valueOf(type)), StringX.parseInt(size), nullable.equalsIgnoreCase("YES"), null, false, "");
   }
 
   public int compareTo(Object o) {
-    int i = 0;
     if (ObjectX.NonTrivial(o)) {
       try {
         ColumnProfile cp = (ColumnProfile) o;
-        i = name().compareTo(cp.name());
+        int i = name().compareTo(cp.name());
         if (i == 0) {
           return table.compareTo(cp.table);
         }
-      }
-      catch (Exception e) {
+        return i;
+      } catch (Exception e) {
         dbg.ERROR("Compared different types!");
+        return 0;//not our problem to deal with bad code. 0 is the only value that meets commutative requirement
       }
-      return i;
-    }
-    else {
+    } else {
       return 1; // this is bigger than null
     }
   }
@@ -178,8 +170,8 @@ public class ColumnProfile implements Comparable {
   }
 
   public static String dbUnReadyColumnDef(ColumnTypes type, String defaultFromDB) {
-    if(StringX.NonTrivial(defaultFromDB)) {
-      if(type.isTextlike()) {
+    if (StringX.NonTrivial(defaultFromDB)) {
+      if (type.isTextlike()) {
         return StringX.unSingleQuoteEscape(defaultFromDB);
       } else {
         return defaultFromDB;
@@ -195,7 +187,7 @@ public class ColumnProfile implements Comparable {
   }
 
   public boolean sameTypeAs(ColumnProfile other) {
-    return this.type==other.type;
+    return this.type == other.type;
   }
 
   public boolean sameNullableAs(ColumnProfile other) {

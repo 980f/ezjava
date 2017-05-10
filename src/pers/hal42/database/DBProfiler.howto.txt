@@ -1,27 +1,6 @@
 How To use the DBProfiler outside of PayMate.net's library to input into Excel:
 
-[These instructions assume that you have the latest JDK from sun installed on your system.]
-
-0) You must have the informix jdbc drivers installed on your system, or at least the jar to run ifxjdbc from.  Note the location where I put it on my system in step 1.  You can put it wherever you want, but you will probably have to point to it from the commandline's -cp switch.  If you don't have the ifxjdbc.jar, you can get it from informix, or I can email it to you.  See Contact Info below.
-1) Run it from the jar and output to a file (for import into Excel):
   java -cp c:\temp\DBProfiler.jar;c:\jdk1.3\jre\lib\ext\ifxjdbc.jar DBProfiler 208.58.21.51:8080 mainsail mainsail mainsail 1strauss > excel.txt
-2) Import the CSV file into Excel (Office 2000, at least):
-  A) Open Excel.
-  B) Create a new (blank) sheet.
-  C) From the 'Data' menu, choose 'Get External Data', 'Import Text File'.
-  D) Choose the file that you created in step 1 (eg: excel.txt).
-  E) Set the 'Type' to 'Delimited' & click [Next].
-  F) Set the 'Delimiter' to 'Comma' and the 'Text Qualifier' to '{None}', then click [Finish] and tell Excel where to place the table in your spreadsheet, if it asks.
-  G) Format the resulting spreadsheet to your liking.  Delete the Nullable column now, if you don't want it.  You may also want to shrink the font, etc. now.
-3) Inserting the spreadsheet into Word for columnating:
-  A) Open word and create a new document.
-  B) In Excel, click the top-left box (empty) and choose 'Copy' from the 'Edit' menu.
-  C) In word, click in the document and choose 'Paste' from the 'Edit' menu.
-  D) You can now shrink the font more, shrink the margins, create columns, etc., so that the printout will look nice for you.
-4) Note: The actual list of parameters can be shown if you run it with no parameters:
-  java -cp c:\temp\DBProfiler.jar;c:\jdk1.3\jre\lib\ext\ifxjdbc.jar DBProfiler
-5) Contact Info:  matt_mello@paymate.net
-
 
 
 How to package up the java files into a jar for distribution:
@@ -32,8 +11,3 @@ How to package up the java files into a jar for distribution:
 4) Jar them:
   jar -cf DBProfiler.jar ColumnProfile.class TableProfile.class DatabaseProfile.class DBProfiler.class
 
-
-
----------------------------------------------------------------------------
-Copyright 2000, PayMate.net
-$Id: DBProfiler.howto.txt,v 1.2 2000/11/24 18:56:06 mattm Exp $

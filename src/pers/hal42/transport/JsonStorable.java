@@ -1,6 +1,7 @@
 package pers.hal42.transport;
 
 import org.jetbrains.annotations.NotNull;
+import pers.hal42.ext.CountedLock;
 import pers.hal42.ext.Span;
 import pers.hal42.lang.ByteArray;
 import pers.hal42.logging.ErrorLogStream;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 
 /**
  * Created by Andy on 5/8/2017.
@@ -17,10 +19,12 @@ public class JsonStorable extends PushedJSONParser {
   static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonStorable.class);
   public Storable root;
   public String filename;
+  public boolean specialRootTreatment=true;//@see BeginWad clause of parse().
 
-  public Path path;
-  byte[] content;
-  boolean cached;
+  //extend if you want access to these.
+  protected Path path;
+  protected byte[] content;
+  protected boolean cached;
 
   /**
    * record name early, for debug, could wait until makeChild
@@ -53,7 +57,7 @@ public class JsonStorable extends PushedJSONParser {
   }
 
   /**
-   * read file and parse it permissivley to a Storable. Try to guess node types, but not aggressively
+   * just read the file
    */
   public boolean loadFile(String filename) {
     this.filename=filename; //record for debug
@@ -77,36 +81,44 @@ public class JsonStorable extends PushedJSONParser {
     }
   }
 
+  int illegalsCount=0;
   /** the return value here is inspected by the BeginWad clause's while.
    * The initial call should get a false if the file is well formed, a true suggests a truncated file.
    * Inspecting the parser.stats member for depth also would help decipher truncation.
    * */
   public boolean parse(Storable parent) {
-    try// (stats.depthTracker.open())
-     {
+    try (CountedLock popper=stats.depthTracker.open(d.location)) {
+      dbg.VERBOSE(MessageFormat.format("Json File Depth now {0}/{1}",popper.asInt(),stats.depthTracker.maxDepth));
       if (root == null) {
         root = parent;//wild stab at averting NPE's. often is the expected thing.
       }
       if (cached) {
-        for (byte b : content) {
-          switch (nextitem((char) b)) {
+        while(d.location<content.length){//todo: use a bytearraystream
+          char b= (char)  content[d.location];
+          switch (nextitem(b)) {
           case Continue:
             continue;//like the case says ;)
           case Illegal://not much is illegal.
-            //todo: dioagnostic report
+            if(++illegalsCount<100) {//give up complaining after a while, so as to speed up failure.
+              dbg.ERROR(MessageFormat.format("Illegal character at row {0}:column {1}, will pretend it's not there. (1-based coords)", d.row, d.column));
+            }
             break;
           case Done://terminate children all the way up.
             return false;//end wad because we are at end of file.
-//        break;
           case BeginWad: {
-            //save present item as a wad
-            Storable kid = makeChild(parent);
-            while (parse(kid)) {
+            Storable kid;
+            if(parent==root && specialRootTreatment){//#same object, not equivalent.
+              //ignore 'begin wad' on root node, so that a standard json file (one value) can parse into an already existing node.
+              kid=parent;
+            } else {//this is a wad type child node
+              //save present item as a wad
+              kid = makeChild(parent);//push
+            }
+            while (parse(kid)) {//recurse
               //nothing to do here.
             }
             return true;
           }
-//        break;
           case EndItem:
             makeChild(parent);
             return false;//might be more children

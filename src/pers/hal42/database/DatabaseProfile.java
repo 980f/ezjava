@@ -8,13 +8,11 @@
  */
 
 package pers.hal42.database;
-import  pers.hal42.util.*; // Safe
-import  java.util.*; // tables
 import pers.hal42.lang.StringX;
 
-public class DatabaseProfile extends Vector {
-  // +++ contain instead of extend the vector so that remove can be hidden ???
-  // +++ add more info in here from the DatabaseMetaData ???
+import java.util.Vector;
+
+public class DatabaseProfile extends Vector<TableProfile> {
   private String name = null;
   public TableProfile itemAt(int index) {
     return (TableProfile)elementAt(index);
@@ -26,8 +24,7 @@ public class DatabaseProfile extends Vector {
     return name;
   }
   public TableProfile tableFromName(String tablename) {
-    for(int i = size(); i-->0; ) {
-      TableProfile tp = itemAt(i);
+    for(TableProfile tp:this){
       if((tp != null) && StringX.equalStrings(tp.name(), tablename, true/*ignoreCase*/)) {
         return tp;
       }
