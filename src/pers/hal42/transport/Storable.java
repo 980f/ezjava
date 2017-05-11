@@ -339,6 +339,17 @@ public class Storable {
     Wad
   }
 
+  /** try to filter out accidentally created nodes.
+   * I think this was left over from a parser that didn't handle trailing commas.*/
+  public boolean isTrivial() {
+    return false;
+//    return origin== Ether && type==Unclassified;
+  }
+
+  public int numChildren() {
+    return wad.size();
+  }
+
 
   /**
    * marker annotation for use by applyTo and apply()

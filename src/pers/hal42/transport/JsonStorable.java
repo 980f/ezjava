@@ -4,13 +4,16 @@ import org.jetbrains.annotations.NotNull;
 import pers.hal42.ext.CountedLock;
 import pers.hal42.ext.Span;
 import pers.hal42.lang.ByteArray;
+import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.MessageFormat;
+import java.util.Vector;
 
 /**
  * Created by Andy on 5/8/2017.
@@ -69,12 +72,12 @@ public class JsonStorable extends PushedJSONParser {
     ++stats.totalNodes;
     Storable kid = parent.makeChild(haveName ? name : null);//ternary in case we forgot to erase previous one
     String value = super.value.isValid() ? getString(super.value) : null;
-    if(value!=null){
+    if (value != null) {
       ++stats.totalScalar;//<=totalNodes.
     }
     kid.setValue(value);
     itemCompleted();//to prevent duplication or propagation of values over nulls.
-    name="!error";//this should stand out if we carelessly use it.
+    name = "!error";//this should stand out if we carelessly use it.
     return kid;
   }
 
@@ -149,9 +152,9 @@ public class JsonStorable extends PushedJSONParser {
     }
   }
 
-  public static Storable ClassOptions(Class claz){
+  public static Storable ClassOptions(Class claz) {
     String optsfile = claz.getSimpleName();
-    Storable root=new Storable(optsfile);//named 4 debug
+    Storable root = new Storable(optsfile);//named 4 debug
     optsfile += ".json";
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile)) {
@@ -161,5 +164,118 @@ public class JsonStorable extends PushedJSONParser {
     //todo: either dbg the stats or print them to a '#attribute field
     return root;
   }
+
+  public static class Printer {
+
+
+    PrintStream ps;
+    int tablevel;
+
+    public Printer(final PrintStream ps, final int tablevel) {
+      this.ps = ps;
+      this.tablevel = tablevel;
+    }
+
+    void indent() {
+      for (int tabs = tablevel; tabs-- > 0; ) {
+        ps.append('\t'); //or we could use spaces
+      }
+    }
+
+    void printText(String p, boolean forceQuote) {
+      if (forceQuote) {//todo: or of string contains any of the parse separators or a space or ...
+        ps.append('"');
+      }
+      ps.append(p);
+      if (forceQuote) {
+        ps.append('"');
+      }
+    } // printText
+
+    boolean printName(Storable node) {
+      indent();
+      if (StringX.NonTrivial(node.name)) {
+        printText(node.name, true); //forcing quotes here, may not need to
+        ps.append(':');
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    boolean printValue(Storable node,int last) {
+      if (node == null) { //COA
+        return false;
+      }
+      if (node.isTrivial()) { //drop autocreated but unused nodes.
+        return false;
+      }
+//this c++ functionality must be done by caller, until we register watchers and all that jazz.      node.preSave(); //when not trivial this flushes cached representations
+
+      switch (node.type) {
+        case Null:
+          printName(node);
+          ps.print("null"); //fix code whenever you see one of these
+          break;
+        case Boolean:
+          printName(node);
+          ps.print(node.getTruth()?"true":"false");
+          break;
+        default:
+        case Unclassified:
+          if (printName(node)) {
+            ps.print("!Unknown"); //fix your own code whenever you see one of these
+          } else {
+            return false;
+          }
+          //else the node disappears
+          break;
+        case Numeric: {
+          printName(node);
+          double number = node.getValue();
+          //todo:1 output nans as keyword
+          if ((long) number == number) {
+            ps.print((long) number);
+          } else {
+            ps.print(number);
+          }
+        }
+        break;
+        case Textual:
+          printName(node);
+          printText(node.getImage(), true); //always quote
+          break;
+        case Wad:
+          printName(node);
+          printWad(node.wad);
+          break;
+      } /* switch */
+      if(node.ordinal()<last) {
+        ps.println(',');
+      }
+      return true;
+    } /* printValue */
+
+    void printWad(Vector<Storable> wad) {
+      ps.println('{');
+      ++tablevel;
+      int last=wad.size()-1;
+      wad.forEach(node -> printValue(node,last));
+      --tablevel;
+      indent();
+      ps.print('}');
+    } /* printWad */
+
+  }
+  /**
+   * before calling this you probably need to node.apply(Object obj)
+   */
+  public static void SaveOptions(Storable node, PrintStream ps, int tablevel) {
+    if (node != null && ps != null && tablevel >= 0) {
+      Printer print=new Printer(ps,tablevel);
+      print.printValue(node,node.numChildren()-1);
+    }
+  }
+
 }
 
