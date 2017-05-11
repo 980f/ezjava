@@ -50,7 +50,7 @@ public class JsonStorable extends PushedJSONParser {
         content = Files.readAllBytes(path);
         cached = content.length > 0;
       } catch (IOException e) {
-        dbg.Caught("reading json as bytes", e);
+        dbg.Caught(e, "reading json as bytes");
       }
     }
     return cached;
@@ -144,7 +144,7 @@ public class JsonStorable extends PushedJSONParser {
       }
       return false;
     } catch (Exception e) {
-      dbg.Caught("parsing", e);
+      dbg.Caught(e, "parsing");
       return true;
     }
   }

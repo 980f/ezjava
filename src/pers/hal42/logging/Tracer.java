@@ -21,7 +21,7 @@ public class Tracer extends ErrorLogStream {
   }
 
   public void Caught(Throwable caught){
-    super.Caught(prefix(),caught);
+    super.Caught(caught, prefix());
   }
 
   public void ERROR(String msg){

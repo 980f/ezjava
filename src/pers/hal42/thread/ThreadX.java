@@ -132,7 +132,7 @@ public class ThreadX {
       mortal.join(maxwait);
       return false;
     } catch (Exception ex) {
-      dbg.Caught("waitOnStopped()",ex);//+_+ needs more info
+      dbg.Caught(ex, "waitOnStopped()");//+_+ needs more info
       return true;
     }
   }

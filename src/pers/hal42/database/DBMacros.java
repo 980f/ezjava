@@ -492,7 +492,7 @@ public class DBMacros extends GenericDB {
         mye = t;
       } else {
         String toLog = "Exception performing query: " + swatch.millis() + " ms = " + queryStr + "; [recycled] " + t;
-        dbg.Caught(toLog, t);
+        dbg.Caught(t, toLog);
         log(toLog);
       }
     }
@@ -552,7 +552,7 @@ public class DBMacros extends GenericDB {
     closeCon(mycon); // pray that nobody else is using it!  probably is hosed, either way
     String msg = "DB.CONNCLOSED";
 //    service.PANIC(msg);
-    dbg.Caught(msg + ": " + originalQuery + "\n", t);
+    dbg.Caught(t, msg + ": " + originalQuery + "\n");
     return true;
   }
 
@@ -608,7 +608,7 @@ public class DBMacros extends GenericDB {
         if(throwException) {
           tothrow = e;
         } else {
-          dbg.Caught("Exception performing update [recycled]: " + queryStr, e);
+          dbg.Caught(e, "Exception performing update [recycled]: " + queryStr);
           if(mycon == null) {
             dbg.WARNING("mycon == null");
           }

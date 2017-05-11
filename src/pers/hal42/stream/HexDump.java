@@ -37,7 +37,7 @@ public class HexDump {
       byte [] bytes = StringX.TrivialDefault(content, "").getBytes();
       dump(header, new ByteArrayInputStream(bytes), os, eol);
     } catch (Exception e) {
-      dbg.Caught("dump(): Exception opening ByteArrayInputStream.",e);
+      dbg.Caught(e, "dump(): Exception opening ByteArrayInputStream.");
     }
   }
 
@@ -77,7 +77,7 @@ public class HexDump {
             }
           }
         } catch (Exception e) {
-          dbg.Caught("dump(): Exception reading stream!",e);
+          dbg.Caught(e, "dump(): Exception reading stream!");
         }
       }
       try {
@@ -95,7 +95,7 @@ public class HexDump {
       osw.write(headerWing);
       osw.write(eol);
     } catch (Exception e) {
-      dbg.Caught("headline(): Exception outputting header!",e);
+      dbg.Caught(e, "headline(): Exception outputting header!");
     }
   }
 
@@ -133,7 +133,7 @@ public class HexDump {
       }
       osw.write(eol);
     } catch (Exception e) {
-      dbg.Caught("contentline(): Exception outputting contents!",e);
+      dbg.Caught(e, "contentline(): Exception outputting contents!");
     }
   }
 

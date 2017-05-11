@@ -147,12 +147,12 @@ public abstract class Query {
         try {
           fValue = (String) f.get(record);
         } catch(Exception t) {
-          dbg.Caught("toProperties: Error getting value for field " + fName + ".", t);
+          dbg.Caught(t, "toProperties: Error getting value for field " + fName + ".");
         }
         try {
           ezp.setString(fName.toLowerCase(), StringX.TrivialDefault(fValue, ""));
         } catch(Exception t) {
-          dbg.Caught("toProperties: Error setting ezp value for field " + fName + ".", t);
+          dbg.Caught(t, "toProperties: Error setting ezp value for field " + fName + ".");
         }
 //      }
     }
@@ -176,8 +176,8 @@ public abstract class Query {
             fValue = ezp.getString(fName);
             f.set(this, fValue);
           } catch (Exception t) {
-            dbg.Caught("fromProperties: Error setting value for field: [" +
-                       fName + "=" + fValue + "]", t);
+            dbg.Caught(t, "fromProperties: Error setting value for field: [" +
+                       fName + "=" + fValue + "]");
           }
 //        }
       }

@@ -251,7 +251,7 @@ public class Alarmer implements Runnable {
         }
       }
       catch (Throwable ex) {
-        dbg.Caught("Unexpected exception:",ex);
+        dbg.Caught(ex, "Unexpected exception:");
         continue;
       }
     }

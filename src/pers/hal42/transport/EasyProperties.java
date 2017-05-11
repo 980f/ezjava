@@ -120,7 +120,7 @@ public class EasyProperties extends Properties {
         return act.newInstance();
       }
     } catch (Exception arf) {
-      dbg.Caught("getObject got", arf);
+      dbg.Caught(arf, "getObject got");
       return null;
     }
   }
@@ -310,7 +310,7 @@ public class EasyProperties extends Properties {
         dbg.VERBOSE("getString: Did not find key '" + key + "'!");
       }
     } catch (Exception caught) {
-      dbg.Caught("getString keyed '" + key + "'!", caught);
+      dbg.Caught(caught, "getString keyed '" + key + "'!");
     }
     return retval;
   }

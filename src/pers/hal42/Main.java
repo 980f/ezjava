@@ -88,7 +88,7 @@ public class Main {
     } catch (java.io.FileNotFoundException fnf) {
       dbg.ERROR(fnf.getMessage());
     } catch (Exception ex) {
-      dbg.Caught("Main::getProp:properties load.", ex);   //it is ok to not have any properties.
+      dbg.Caught(ex, "Main::getProp:properties load.");   //it is ok to not have any properties.
     } finally {
       Close(inStream);
     }
@@ -219,7 +219,7 @@ public class Main {
       try {
         toKeepAlive.interrupt();
       } catch (Exception e) {
-        dbg.Caught("while ending:", e);
+        dbg.Caught(e, "while ending:");
       }
     }
   }

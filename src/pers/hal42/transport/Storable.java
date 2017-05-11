@@ -394,17 +394,70 @@ public class Storable {
               if (subchanges >= 0) {
                 changes += subchanges;
               } else {
-                dbg.ERROR(MessageFormat.format("Not yet handling fields of type {0}", fclaz.getCanonicalName()));
+                dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
               }
               continue;//in order to not increment 'changes'
             }
             ++changes;
           } catch (IllegalAccessException e) {
-            dbg.Caught(MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()), e);
+            dbg.Caught(e, MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()));
           }
         }
       }
     }
     return changes;
   }
+
+  public int apply(Object obj, boolean narrow, boolean aggressive) {
+    if (obj == null) {
+      return -1;
+    }
+    int changes = 0;
+
+    Class claz = obj.getClass();
+    final Field[] fields = narrow ? claz.getDeclaredFields() : claz.getFields();
+    for (Field field : fields) {
+      Stored stored = field.getAnnotation(Stored.class);
+      if (stored != null) {
+        String name = field.getName();
+        Storable child = this.existingChild(name);
+        ;
+        if (child != null) {
+          try {
+            Class fclaz = field.getType();//parent class: getDeclaringClass();
+            if (aggressive) {
+              field.setAccessible(true);
+            }
+            if (fclaz == String.class) {
+              child.setValue( field.get(obj).toString());//this is our only exception to recursing on non-natives.
+            } else if (fclaz == boolean.class) {
+              child.setValue(field.getBoolean(obj));
+            } else if (fclaz == double.class) {
+              child.setValue(field.getDouble(obj));
+            } else if (fclaz == int.class) {
+              child.setValue(field.getInt(obj));
+            }
+            //todo: add clauses for the remaining field.getXXX methods.
+            else {
+              //time for recursive descent
+              int subchanges = child.apply(field.get(obj),narrow, aggressive);
+              if (subchanges >= 0) {
+                changes += subchanges;
+              } else {
+                dbg.ERROR(MessageFormat.format("Not yet recording fields of type {0}", fclaz.getCanonicalName()));
+              }
+              continue;//in order to not increment 'changes'
+            }
+            ++changes;
+          } catch (IllegalAccessException e) {
+            dbg.Caught(e, MessageFormat.format("applying {0} to Storable", claz.getCanonicalName()));
+          }
+        }
+      }
+    }
+    return changes;
+  }
+
+
+
 }

@@ -325,10 +325,10 @@ public class ErrorLogStream implements AtExit {
   }
 
   public void Caught(Throwable caught) {
-    Caught("", caught);
+    Caught(caught, "");
   }
 
-  public void Caught(String title, Throwable caught) {
+  public void Caught(Throwable caught, String title) {
     int localLevel = ERROR.ordinal(); //FUE
     TextList tl = Caught(title, caught, new TextList());
     for (int i = 0; i < tl.size(); i++) {//#in order

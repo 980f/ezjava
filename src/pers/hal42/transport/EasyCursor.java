@@ -192,7 +192,7 @@ public class EasyCursor extends EasyProperties {
         return (T) super.getObject(key, act);
       }
     } catch (Exception ex) {
-      dbg.Caught("EasyCursor.getObject:" + act.getName(), ex);
+      dbg.Caught(ex, "EasyCursor.getObject:" + act.getName());
       return null;
     }
   }

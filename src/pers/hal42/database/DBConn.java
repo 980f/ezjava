@@ -18,7 +18,7 @@ public class DBConn {
       try {
         dbConnection.close();//don't trust finalizer
       } catch (SQLException e) {
-        dbg.Caught("Closing an abandoned database connection",e);
+        dbg.Caught(e, "Closing an abandoned database connection");
       }
       dbConnection=null;
     }
