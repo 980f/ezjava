@@ -1,0 +1,26 @@
+# Set the default behavior, in case people don't have core.autocrlf set.
+* text=auto
+
+#force code to lf only
+*.c text eol=lf
+*.cpp text eol=lf
+*.h text eol=lf
+*.html text eol=lf
+
+# files to always be normalized and converted to native line endings on checkout.
+*.txt text
+
+# files that will always have CRLF line endings on checkout.
+*.sln text eol=crlf
+#suo's should probably not be in a repo:
+*.suo text eol=crlf
+
+# files that are truly binary and should not be modified.
+*.png binary
+*.jpg binary
+*.jar binary
+*.zip binary
+*.pdf binary
+
+#exe's usually are not in a repo:
+*.exe binary
