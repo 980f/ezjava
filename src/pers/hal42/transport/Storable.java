@@ -1,13 +1,15 @@
 package pers.hal42.transport;
 
-import jdk.internal.org.objectweb.asm.tree.TryCatchBlockNode;
 import org.jetbrains.annotations.NotNull;
-import pers.hal42.lang.StringX;//null checks and trimming
-import pers.hal42.text.TextList;//pathname
+import pers.hal42.lang.StringX;
+import pers.hal42.text.TextList;
 
-import java.util.Vector;//this is a tree
+import java.lang.annotation.*;
+import java.util.Vector;
 
-import static pers.hal42.transport.Storable.Origin.*;
+import static pers.hal42.transport.Storable.Origin.Defawlted;
+import static pers.hal42.transport.Storable.Origin.Ether;
+import static pers.hal42.transport.Storable.Type.Boolean;
 import static pers.hal42.transport.Storable.Type.*;
 
 /**
@@ -257,10 +259,10 @@ public class Storable {
   @NotNull
   public Storable makeChild(String childname) {
     Storable kid = new Storable(childname);
-    origin=Ether;
     kid.index = wad.size();
     kid.parent = this;
     wad.add(kid);
+    this.type=Type.Wad;//any scalar value it had is moot once it becomes a parent.
     return kid;
   }
 
@@ -322,5 +324,13 @@ public class Storable {
 
   public enum Type {
     Unclassified, Null, Boolean, Numeric, Textual, Wad
+  }
+
+
+  @Documented
+  @Retention(RetentionPolicy.CLASS)
+  @Target({ ElementType.FIELD})
+  public @interface Stored {
+    String defawlt() default "0";
   }
 }

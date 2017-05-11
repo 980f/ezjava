@@ -69,7 +69,7 @@ public class PushedJSONParser extends PushedParser {
           haveName = true;
           quotedName = super.wasQuoted;
           name = super.value;
-          recordName();
+          recordName(); //early access to name, you don't have to implement this function for the parser to do its job.
           return Continue; //null name is not the same as no name
         } else {
           return Illegal; //stray colon.
