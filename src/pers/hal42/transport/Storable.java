@@ -5,8 +5,11 @@ import pers.hal42.lang.StringX;
 import pers.hal42.text.TextList;
 
 import java.lang.annotation.*;
+import java.lang.reflect.Field;
+import java.text.MessageFormat;
 import java.util.Vector;
 
+import static pers.hal42.transport.JsonStorable.dbg;
 import static pers.hal42.transport.Storable.Origin.Defawlted;
 import static pers.hal42.transport.Storable.Origin.Ether;
 import static pers.hal42.transport.Storable.Type.Boolean;
@@ -23,7 +26,7 @@ public class Storable {
    */
   protected int index = -1;
   Storable parent; //can be null.
-  Type type=Unclassified;
+  Type type = Unclassified;
 
   public enum Origin {
     Ether,
@@ -31,19 +34,24 @@ public class Storable {
     Parsed,
     Assigned
   }
-  Origin origin=Ether;
-  String image="";
+
+  Origin origin = Ether;
+  String image = "";
   double value;
   boolean bit;
 
-  /** linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
-   for really big nodes create a nodeIndexer outside of this class and access members herein by index. */
+  /**
+   * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
+   * for really big nodes create a nodeIndexer outside of this class and access members herein by index.
+   */
   Vector<Storable> wad = new Vector<>();
 
-  /** only use this for root nodes. */
+  /**
+   * only use this for root nodes.
+   */
   public Storable(String name) {
     this.name = name;
-    this.parent=null;//in yur face.
+    this.parent = null;//in yur face.
   }
 
   /**
@@ -57,8 +65,8 @@ public class Storable {
    * set value from string. This will parse the string if the type is not textual
    */
   public void setValue(String text) {
-    if(origin==Origin.Ether){
-      origin=Origin.Parsed;
+    if (origin == Origin.Ether) {
+      origin = Origin.Parsed;
     }
     if (text == null) {
       type = Null;
@@ -69,26 +77,26 @@ public class Storable {
     }
     image = text.trim();
     switch (type) {
-    case Unclassified:
-      break;
-    case Null:
-      setType(Textual);
-      break;
-    case Boolean:
-      parseBool(image);
-      //else silently ignore garbage.
-      break;
-    case Numeric:
-      try {
-        value = Double.parseDouble(image);//leave this as the overly picky parser
-      } catch (Throwable any) {
-        value = Double.NaN;
-      }
-      break;
-    case Textual:
-      break;
-    case Wad:
-      break;
+      case Unclassified:
+        break;
+      case Null:
+        setType(Textual);
+        break;
+      case Boolean:
+        parseBool(image);
+        //else silently ignore garbage.
+        break;
+      case Numeric:
+        try {
+          value = Double.parseDouble(image);//leave this as the overly picky parser
+        } catch (Throwable any) {
+          value = Double.NaN;
+        }
+        break;
+      case Textual:
+        break;
+      case Wad:
+        break;
     }
   }
 
@@ -96,18 +104,18 @@ public class Storable {
     if (image.length() == 1) {
       char single = image.charAt(0);
       switch (single) {
-      case 't':
-      case 'T':
-      case '1':
-        bit = true;
-        return true;
-      case 'f':
-      case 'F':
-      case '0':
-        bit = false;
-        return true;
-      default:
-        return false;
+        case 't':
+        case 'T':
+        case '1':
+          bit = true;
+          return true;
+        case 'f':
+        case 'F':
+        case '0':
+          bit = false;
+          return true;
+        default:
+          return false;
       }
     } else if (image.equalsIgnoreCase("true")) {
       bit = true;
@@ -143,54 +151,54 @@ public class Storable {
     image = java.lang.Boolean.toString(bit);
   }
 
-  public void setDefault(boolean truly){
-    switch(origin){
-    case Ether:
-      origin=Defawlted;
-      //#join
-    case Defawlted:
-      setValue(truly);
-      //#join
-    case Parsed:
-      setType(Type.Boolean);
-      break;
-    case Assigned:
-      //do nothing
-      break;
+  public void setDefault(boolean truly) {
+    switch (origin) {
+      case Ether:
+        origin = Defawlted;
+        //#join
+      case Defawlted:
+        setValue(truly);
+        //#join
+      case Parsed:
+        setType(Type.Boolean);
+        break;
+      case Assigned:
+        //do nothing
+        break;
     }
   }
 
-  public void setDefault(double number){
-    switch(origin){
-    case Ether:
-      origin=Defawlted;
-      //#join
-    case Defawlted:
-      setValue(number);
-      //#join
-    case Parsed:
-      setType(Type.Numeric);
-      break;
-    case Assigned:
-      //do nothing
-      break;
+  public void setDefault(double number) {
+    switch (origin) {
+      case Ether:
+        origin = Defawlted;
+        //#join
+      case Defawlted:
+        setValue(number);
+        //#join
+      case Parsed:
+        setType(Type.Numeric);
+        break;
+      case Assigned:
+        //do nothing
+        break;
     }
   }
 
-  public void setDefault(String string){
-    switch(origin){
-    case Ether:
-      origin=Defawlted;
-      //#join
-    case Defawlted:
-      setValue(string);
-      //#join
-    case Parsed:
-      setType(Type.Textual);
-      break;
-    case Assigned:
-      //do nothing
-      break;
+  public void setDefault(String string) {
+    switch (origin) {
+      case Ether:
+        origin = Defawlted;
+        //#join
+      case Defawlted:
+        setValue(string);
+        //#join
+      case Parsed:
+        setType(Type.Textual);
+        break;
+      case Assigned:
+        //do nothing
+        break;
     }
   }
 
@@ -262,7 +270,7 @@ public class Storable {
     kid.index = wad.size();
     kid.parent = this;
     wad.add(kid);
-    this.type=Type.Wad;//any scalar value it had is moot once it becomes a parent.
+    this.type = Type.Wad;//any scalar value it had is moot once it becomes a parent.
     return kid;
   }
 
@@ -323,14 +331,80 @@ public class Storable {
   }
 
   public enum Type {
-    Unclassified, Null, Boolean, Numeric, Textual, Wad
+    Unclassified,
+    Null,
+    Boolean,
+    Numeric,
+    Textual,
+    Wad
   }
 
 
+  /**
+   * marker annotation for use by applyTo and apply()
+   */
   @Documented
-  @Retention(RetentionPolicy.CLASS)
-  @Target({ ElementType.FIELD})
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.FIELD})
   public @interface Stored {
-    String defawlt() default "0";
+    //marker, field's own type is explored for information needed to write to it.
+  }
+
+  /**
+   * set the values of fields marked 'Stored' (and set the local types).
+   * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
+   * if @param aggressive then private fields are modified. (untested)
+   *
+   * @returns the number of assignments made (a diagnostic)
+   */
+  public int applyTo(Object obj, boolean narrow, boolean aggressive) {
+    if (obj == null) {
+      return -1;
+    }
+    int changes = 0;
+
+    Class claz = obj.getClass();
+    final Field[] fields = narrow ? claz.getDeclaredFields() : claz.getFields();
+    for (Field field : fields) {
+      Stored stored = field.getAnnotation(Stored.class);
+      if (stored != null) {
+        String name = field.getName();
+        Storable child = this.existingChild(name);
+        ;
+        if (child != null) {
+          try {
+            Class fclaz = field.getType();//parent class: getDeclaringClass();
+            if (aggressive) {
+              field.setAccessible(true);
+            }
+            if (fclaz == String.class) {
+              field.set(obj, child.getImage());//this is our only exception to recursing on non-natives.
+            } else if (fclaz == boolean.class) {
+              field.setBoolean(obj, child.getTruth());
+            } else if (fclaz == double.class) {
+              field.setDouble(obj, child.getValue());
+            } else if (fclaz == int.class) {
+              field.setInt(obj, (int) child.getValue());
+            }
+            //todo: add clauses for the remaining field.setXXX methods.
+
+            else {
+              //time for recursive descent
+              int subchanges = child.applyTo(field.get(obj),narrow, aggressive);
+              if (subchanges >= 0) {
+                changes += subchanges;
+              } else {
+                dbg.ERROR(MessageFormat.format("Not yet handling fields of type {0}", fclaz.getCanonicalName()));
+              }
+              continue;//in order to not increment 'changes'
+            }
+            ++changes;
+          } catch (IllegalAccessException e) {
+            dbg.Caught(MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()), e);
+          }
+        }
+      }
+    }
+    return changes;
   }
 }

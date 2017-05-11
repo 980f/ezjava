@@ -148,5 +148,18 @@ public class JsonStorable extends PushedJSONParser {
       return true;
     }
   }
+
+  public static Storable ClassOptions(Class claz){
+    String optsfile = claz.getSimpleName();
+    Storable root=new Storable(optsfile);//named 4 debug
+    optsfile += ".json";
+    final JsonStorable optsloader = new JsonStorable(true);
+    if (optsloader.loadFile(optsfile)) {
+      optsloader.parse(root);
+      root.child("#filename").setValue(optsfile);
+    }
+    //todo: either dbg the stats or print them to a '#attribute field
+    return root;
+  }
 }
 
