@@ -99,7 +99,7 @@ public class JsonStorable extends PushedJSONParser {
    */
   public boolean parse(Storable parent) {
     try (CountedLock popper = stats.depthTracker.open(d.location)) {
-      dbg.VERBOSE(MessageFormat.format("Json File Depth now {0}/{1}", popper.asInt(), stats.depthTracker.maxDepth));
+      dbg.VERBOSE("Json File Depth now {0}/{1}", popper.asInt(), stats.depthTracker.maxDepth);
       if (root == null) {
         root = parent;//wild stab at averting NPE's. often is the expected thing.
       }
@@ -111,7 +111,7 @@ public class JsonStorable extends PushedJSONParser {
               continue;//like the case says ;)
             case Illegal://not much is illegal.
               if (++illegalsCount < 100) {//give up complaining after a while, so as to speed up failure.
-                dbg.ERROR(MessageFormat.format("Illegal character at row {0}:column {1}, will pretend it's not there. (1-based coords)", d.row, d.column));
+                dbg.ERROR("Illegal character at row {0}:column {1}, will pretend it's not there. (1-based coords)", d.row, d.column);
               }
               break;
             case BeginWad: {

@@ -31,7 +31,7 @@ public class ContentValid {
   public static boolean legalChars ( ContentType ctype , String proposed){
     for(int i = proposed.length();i-->0; ){
       if (!legalChar( ctype, proposed.charAt(i))){
-        dbg.WARNING("legalChars: Bad Char @"+i+": "+proposed.substring(0,i)+"-->"+proposed.substring(i));
+        dbg.WARNING("legalChars: Bad Char @{0}: {1}-->{2}",i,proposed.substring(0,i),proposed.substring(i));
         return false;
       }
     }

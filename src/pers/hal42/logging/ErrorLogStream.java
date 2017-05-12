@@ -22,6 +22,7 @@ import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.SQLException;
+import java.text.MessageFormat;
 import java.util.Vector;
 
 import static pers.hal42.logging.LogLevelEnum.*;
@@ -44,10 +45,11 @@ class StackTracer extends Exception {
   }
 }
 
-public class ErrorLogStream implements AtExit {
+/** auto closeable for Enter/Exit context stack*/
+public class ErrorLogStream implements AtExit, AutoCloseable {
 
   private static LogSwitch DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
-
+  //this had to be implmented with a lazy init due to classloader loops.
   private static LogSwitch globalLeveller() {
     if (DONTaccessMEuseINSTEADglobalLevellerFUNCTION == null) {
       DONTaccessMEuseINSTEADglobalLevellerFUNCTION = LogSwitch.getFor(ErrorLogStream.class, "GLOBALGATE");
@@ -172,7 +174,9 @@ public class ErrorLogStream implements AtExit {
     return this;
   }
 
+  /** used to provide a stackable context, rather than having to fake an exception to get a stack trace. */
   protected StringStack context;
+  /** top of context stack*/
   protected String ActiveMethod = "?"; //cached top of context stack
 
   public String Location() {
@@ -204,14 +208,14 @@ public class ErrorLogStream implements AtExit {
   /**
    * for when message generation for parameter to VERBOSE() and friends is expensive
    * @param msgLevel level that will be attempted.
-   * @return whether it is worth generating debug text
+   * @returns whether it is worth generating debug text
    */
   public boolean willOutput(int msgLevel) {
     return myLevel.passes(msgLevel) && globalLeveller().passes(msgLevel);
   }
 
   public boolean willOutput(LogLevelEnum msgLevel) {
-    return willOutput(msgLevel.ordinal());
+    return willOutput(msgLevel.level);
   }
 
   //////////////////////////////////////////////////////////
@@ -229,22 +233,21 @@ public class ErrorLogStream implements AtExit {
     return Debug;
   }
 
-  // !!! run javamake to test this! (works today, but any changes will EASILY break this!) MMM20001229
-  protected void Message(int msgLevel, String message) {
+
+  public void Message(int msgLevel, String message, Object ... args) {
     // strange errors in here need to be debugged with System.out
     try {
       // broke this down to find the exact line that causes the error ...
-      String prefix;
+      StringBuilder builder=new StringBuilder(200);
       if (!bare) {
-        prefix = DateX.timeStampNowYearless();
-        prefix += LogSwitch.letter(msgLevel);
-        prefix += Thread.currentThread();
-        prefix += "@" + myLevel.Name();
-        prefix += "::" + ActiveMethod + ":";
-      } else {
-        prefix = "";
+        builder.append( DateX.timeStampNowYearless());
+        builder.append( LogSwitch.letter(msgLevel));
+        builder.append( Thread.currentThread());
+        builder.append(  "@" + myLevel.Name());
+        builder.append(  "::" + ActiveMethod + ":");
       }
-      rawMessage(msgLevel, prefix + message);
+      builder.append(MessageFormat.format(message,args));
+      rawMessage(msgLevel, builder.toString());
     } catch (java.lang.NoClassDefFoundError e) {
       systemOutCaught(e);
     } catch (Exception e) {
@@ -252,8 +255,8 @@ public class ErrorLogStream implements AtExit {
     }
   }
 
-  protected void Message(LogLevelEnum msgLevel, String message) {
-    Message(msgLevel.ordinal(), message);
+  protected void Message(LogLevelEnum msgLevel, String message,Object ... args) {
+    Message(msgLevel.level, message,args);
   }
 
   private void systemOutCaught(Throwable t) {
@@ -268,60 +271,65 @@ public class ErrorLogStream implements AtExit {
     Message(VERBOSE, message);
   }
 
-  public void WARNING(String message) {
-    Message(WARNING, message);
-  }
+//  public void WARNING(String message) {
+//    Message(WARNING, message);
+//  }
 
   public void ERROR(String message) {
     Message(ERROR, message);
   }
 
-  public void VERBOSE(String message, Object[] clump) {
-    logArray(VERBOSE, message, clump);
+  public void VERBOSE(String message, Object ... clump) {
+    Message(VERBOSE, message, clump);
   }
 
-  public void WARNING(String message, Object[] clump) {
-    logArray(WARNING, message, clump);
+  public void WARNING(String message, Object ... clump) {
+    Message(WARNING, message, clump);
   }
 
-  public void ERROR(String message, Object[] clump) {
-    logArray(ERROR, message, clump);
+  public void ERROR(String message, Object ... clump) {
+    Message(ERROR, message, clump);
   }
 
+  /** output an array as html indented list*/
   public void logArray(int msgLevel, String tag, Object[] clump) {
     if (tag != null) { // just cleaner and easier to separate
-      rawMessage(msgLevel, "<ol name=" + tag + ">");
-      for (Object aClump : clump) { //#in ascending order for clarity
-        rawMessage(msgLevel, "<li> " + String.valueOf(aClump));
+      Message(msgLevel, "<ol name={0}>" ,tag );
+      for (Object aClump : clump) {
+        Message(msgLevel, "<li>{0}</li> ", String.valueOf(aClump));
       }
-      rawMessage(msgLevel, "</ol name=" + tag + ">");
+      Message(msgLevel, "</ol name={0}>" , tag );
     } else {
-      for (Object aClump : clump) { //#in ascending order for clarity
+      for (Object aClump : clump) {
         rawMessage(msgLevel, String.valueOf(aClump));
       }
     }
   }
 
   public void logArray(LogLevelEnum msgLevel, String tag, Object[] clump) {
-    logArray(msgLevel.ordinal(), tag, clump);
+    logArray(msgLevel.level, tag, clump);
   }
 
-  public void VERBOSE(String message, Vector clump) {
+  public void VERBOSEv(String message, Vector clump) {
     logArray(VERBOSE, message, clump.toArray());
   }
 
-  public void WARNING(String message, Vector clump) {
+  public void WARNINGv(String message, Vector clump) {
     logArray(WARNING, message, clump.toArray());
   }
 
-  public void ERROR(String message, Vector clump) {
+  public void ERRORv(String message, Vector clump) {
     logArray(ERROR, message, clump.toArray());
   }
 
-  public void Enter(String methodName) {
+  public void close(){
+    Exit();
+  }
+  public AutoCloseable Enter(String methodName) {
     context.push(ActiveMethod);
     ActiveMethod = methodName;
     VERBOSE("Entered");
+    return this;
   }
 
   public void Caught(Throwable caught) {
@@ -329,7 +337,7 @@ public class ErrorLogStream implements AtExit {
   }
 
   public void Caught(Throwable caught, String title) {
-    int localLevel = ERROR.ordinal(); //FUE
+    int localLevel = ERROR.level; //FUE
     TextList tl = Caught(title, caught, new TextList());
     for (int i = 0; i < tl.size(); i++) {//#in order
       Message(localLevel, tl.itemAt(i));
@@ -337,7 +345,6 @@ public class ErrorLogStream implements AtExit {
   }
 
   public static TextList Caught(String title, Throwable caught, TextList tl) {
-    int localLevel = ERROR.ordinal(); //FUE
     tl.add("<Caught> " + StringX.TrivialDefault(title, ""));
     resolveExceptions(caught, tl);
     tl.add("</Caught>");
@@ -351,7 +358,6 @@ public class ErrorLogStream implements AtExit {
     // getOrigException()
     try {
       Class c = t1.getClass();
-      int SQLItem = 1;
       String possibilities[] = {"getOrigException", "getNextException"};
       boolean isSql = false;
       // see if it is a JPosException or SQLException
@@ -504,7 +510,7 @@ public class ErrorLogStream implements AtExit {
         Caught(e);
       }
     } catch (NoSuchMethodException e) {
-      WARNING(c.getName() + " does not have a method 'toSpam()'");
+      WARNING("{0} does not have a method 'toSpam()'",c.getName() );
       try {
         Method method = c.getMethod("objectDump", paramTypes);
         Object[] args = {c, path, tl};

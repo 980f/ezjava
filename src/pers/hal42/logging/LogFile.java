@@ -180,18 +180,18 @@ public class LogFile extends Thread implements AtExit, Comparable  {
     }
   }
   public PrintFork getPrintFork(String name, LogLevelEnum defaultLevel, boolean register) {
-    return getPrintFork(name,defaultLevel.ordinal(),register);
+    return getPrintFork(name,defaultLevel.level,register);
   }
 
   public PrintFork getPrintFork(int defaultLevel, boolean register) {
     return getPrintFork(filename, defaultLevel, register);
   }
   public PrintFork getPrintFork(LogLevelEnum defaultLevel, boolean register) {
-    return getPrintFork(filename, defaultLevel.ordinal(), register);
+    return getPrintFork(filename, defaultLevel.level, register);
   }
 
     public static PrintFork makePrintFork(String filename, boolean compressed) {
-    return makePrintFork(filename, LogLevelEnum.WARNING.ordinal(), compressed);
+    return makePrintFork(filename, LogLevelEnum.WARNING.level, compressed);
   }
 
   public static PrintFork makePrintFork(String filename, int defaultLevel, boolean compressed) {

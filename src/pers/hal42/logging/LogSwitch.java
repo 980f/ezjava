@@ -25,13 +25,13 @@ public class LogSwitch implements Comparable {
   protected int level;
 
   public void setto(LogLevelEnum level){
-    this.level=level.ordinal();
+    this.level=level.level;
   }
   public void setto(int level){
     this.level=level;
   }
 
-  protected static int DEFAULT_LEVEL = VERBOSE.ordinal();//set for server, which has a harder time configuring than the client
+  protected static int DEFAULT_LEVEL = VERBOSE.level;//set for server, which has a harder time configuring than the client
 
   private static final char [] lvlLtr = {'-','/','!'};
   public static char letter(int msgLevel) {
@@ -192,8 +192,7 @@ public class LogSwitch implements Comparable {
         ls=find(key);
         String value=preloads.getString(key);//#all constructors make copy of value.
 
-        LogLevelEnum knownlevel=LogLevelEnum.valueOf(value);
-        int level=(knownlevel!=null)?knownlevel.ordinal():StringX.parseInt(value);
+        int level=LogLevelEnum.levelFor(value);
         if(ls!=null){//if it exists change its setting
           ls.setto(level);
         } else {//create a new one
@@ -210,7 +209,7 @@ public class LogSwitch implements Comparable {
     if(ls==null) {
       return false;
     } else {
-      ls.setLevel(lle.ordinal());
+      ls.setLevel(lle.level);
       return true;
     }
   }
@@ -226,7 +225,7 @@ public class LogSwitch implements Comparable {
   }
 
   public static void SetAll(LogLevelEnum lle){
-    SetAll(lle!=null?lle.ordinal():DEFAULT_LEVEL);
+    SetAll(lle!=null?lle.level:DEFAULT_LEVEL);
   }
 
   public static void SetAll(String lvl){
@@ -247,7 +246,7 @@ public class LogSwitch implements Comparable {
 
   //////////////////////////////////////////////////////
   private LogSwitch(String lookup,LogLevelEnum lle) {
-    this(lookup,lle.ordinal());
+    this(lookup,lle.level);
   }
 
   private LogSwitch(String lookup,int spam) {
@@ -271,7 +270,7 @@ public class LogSwitch implements Comparable {
   }
 
   public LogSwitch setLevel(LogLevelEnum lle){
-    return setLevel(lle.ordinal());
+    return setLevel(lle.level);
   }
 
   public String Name(){
@@ -283,7 +282,7 @@ public class LogSwitch implements Comparable {
   * if argument is the same or more severe than internal level we shall do something
   */
   public boolean passes(LogLevelEnum llev){
-    return (llev.ordinal()>=level) && (level!=0);
+    return (llev.level>=level) && (level!=0);
   }
 
   public boolean passes(int level){
@@ -292,7 +291,7 @@ public class LogSwitch implements Comparable {
 
 
   public boolean is(LogLevelEnum llev){
-    return llev.ordinal()==level;
+    return llev.level==level;
   }
 
 }

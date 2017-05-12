@@ -74,7 +74,7 @@ public class GetMacid {
 //            case Windows: {
 //            } //break;
 //            case Linux: {
-//              Executor.runProcess(cmd, "os = " + OS.OsName(), 0, 8 /* +++ parameterize */, msgs, dbg.willOutput(LogLevelEnum.VERBOSE.ordinal()), null);
+//              Executor.runProcess(cmd, "os = " + OS.OsName(), 0, 8 /* +++ parameterize */, msgs, dbg.willOutput(LogLevelEnum.VERBOSE.level), null);
 //            } break;
 //            case Windows2000:
 //            case NT: {

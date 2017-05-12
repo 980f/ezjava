@@ -131,7 +131,7 @@ public class PushedJSONParser extends PushedParser {
    * this is a stub, you don't need to super it.
    */
   protected void recordName() {
-    dbg.VERBOSE(MessageFormat.format("found name between {0} and {1}", name.lowest, name.highest));
+    dbg.VERBOSE("found name between {0} and {1}", name.lowest, name.highest);
   }
 
   private void endToken(int mark) {

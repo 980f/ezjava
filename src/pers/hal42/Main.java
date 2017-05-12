@@ -205,7 +205,7 @@ public class Main {
     while (keepAlive) {
       try {
         long stayAliveTime = Ticks.forMinutes(30);
-        dbg.WARNING("Staying Alive:" + stayAliveTime);
+        dbg.WARNING("Staying Alive:{0}" , stayAliveTime);
         ThreadX.sleepFor(stayAliveTime); // whatever
       } catch (Exception e) {
         dbg.Caught(e);
@@ -227,8 +227,8 @@ public class Main {
   public static void gc(ErrorLogStream doit) {
     if (doit.willOutput(LogLevelEnum.VERBOSE)) {
 //      gcMessage(doit.myName());
-      PrintFork.Println(gcMessage(doit.myName()), LogLevelEnum.ERROR.ordinal());
-//      PrintFork.Println("StringStack:{" + StringStack.dumpStackList().asParagraph(OS.EOL) + "}", LogLevelEnum.ERROR.ordinal());
+      PrintFork.Println(gcMessage(doit.myName()), LogLevelEnum.ERROR.level);
+//      PrintFork.Println("StringStack:{" + StringStack.dumpStackList().asParagraph(OS.EOL) + "}", LogLevelEnum.ERROR.level);
     }
   }
 

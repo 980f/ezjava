@@ -163,7 +163,7 @@ public class QAgent implements Runnable {
   //one upon a time the "puts" were protected.
   //see new class 'OrderedVector' for intended cleanup of this class's public interface.
   protected synchronized int put(Object obj){
-    if(dbg.willOutput(LogLevelEnum.VERBOSE.ordinal())){
+    if(dbg.willOutput(LogLevelEnum.VERBOSE.level)){
       dbg.VERBOSE("Posting:"+ReflectX.ObjectInfo(obj));
     }
     int size=fifo.put(obj);

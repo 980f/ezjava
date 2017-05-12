@@ -10,7 +10,7 @@ import java.io.PrintStream;
 import java.util.Vector;
 
 public class PrintFork {
-  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF.ordinal();//set for server, which has a harder time configuring than the client
+  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF.level;//set for server, which has a harder time configuring than the client
 
   protected PrintStream ps;
   public LogSwitch myLevel;
@@ -50,7 +50,7 @@ public class PrintFork {
   }
   /////////////////////////////////////////////
   public static void SetAll(LogLevelEnum lle){
-    DEFAULT_LEVEL = lle.ordinal();
+    DEFAULT_LEVEL = lle.level;
     for(int i = LogSwitchRegistry.printForkRegistry.size(); i-->0;) {
       Fork(i).myLevel.setto(DEFAULT_LEVEL);
     }
@@ -99,13 +99,13 @@ public class PrintFork {
  * this stream's gated  print
  */
   public void VERBOSE(String s) {
-    println(s, LogLevelEnum.VERBOSE.ordinal());
+    println(s, LogLevelEnum.VERBOSE.level);
   }
   public void WARNING(String s) {
-    println(s, LogLevelEnum.WARNING.ordinal());
+    println(s, LogLevelEnum.WARNING.level);
   }
   public void ERROR(String s) {
-    println(s, LogLevelEnum.ERROR.ordinal());
+    println(s, LogLevelEnum.ERROR.level);
   }
   public void println(String s, int printLevel){
     if((s != null) && myLevel.passes(printLevel)) {
