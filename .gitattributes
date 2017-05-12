@@ -20,6 +20,8 @@
 *.jpg binary
 *.jar binary
 *.zip binary
+*.tar binary
+*.gz binary
 *.pdf binary
 
 #exe's usually are not in a repo:
