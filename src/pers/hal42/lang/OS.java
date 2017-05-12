@@ -20,8 +20,7 @@ public class OS {
     signature = new String[OsEnum.numValues()];
     signature[OsEnum.Linux.ordinal()] = "Linux";//'none of the others' gets this
     signature[OsEnum.NT.ordinal()] = "NT"; //bogus, haven't ever tried this on a true NT system
-    signature[OsEnum.Windows.ordinal()] = "Windows"; //
-    signature[OsEnum.Windows2000.ordinal()] = "Windows 2000";
+    signature[OsEnum.Windows.ordinal()] = "Windows";
     signature[OsEnum.SunOS.ordinal()] = "SunOS";
   }
 
@@ -32,7 +31,7 @@ public class OS {
     if (os == null) {
       String oser = System.getProperty("os.name", "");
       for (OsEnum guess : OsEnum.values()) {
-        if (signature[guess.ordinal()].equals(oser)) {
+        if (signature[guess.ordinal()].startsWith(oser)) {
           os = guess;
           return os;
         }
@@ -62,9 +61,9 @@ public class OS {
 //    return os().is(OsEnum.NT) || os.is(OsEnum.Windows2000); // includes Win2K, in behaviour
 //  }
 //
-  public static boolean isWin2K() {
-    return os() == OsEnum.Windows2000;
-  }
+//  public static boolean isWin2K() {
+//    return os() == OsEnum.Windows2000;
+//  }
 
 //  public static boolean isSolaris() {
 //    return os().is(OsEnum.SunOS);

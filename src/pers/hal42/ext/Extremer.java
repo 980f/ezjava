@@ -78,4 +78,8 @@ public class Extremer<Scalar extends Number> {
     location = ~0;
   }
 
+  @Override
+  public String toString() {
+    return started? String.valueOf(extremum):"None";
+  }
 }; // class Extremer

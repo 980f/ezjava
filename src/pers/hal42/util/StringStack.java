@@ -22,7 +22,7 @@ public class StringStack {
     }
   }
 
-  public String peek() {
+  public String top() {
     try {
       return myStack.peek();
     } catch (EmptyStackException ignored) {
@@ -55,17 +55,22 @@ public class StringStack {
   }
 
   public String toString() {
-    return toString("/");
+    return toString("/",true);
   }
 
-  // --- not threadsafe
-  public String toString(String separator) {
-    StringBuffer sb = new StringBuffer(100);
-    for (int i = myStack.size(); i-- > 0; ) {
-      sb.insert(0, myStack.elementAt(i));
-      sb.insert(0, separator);
+ /** @returns a concatenation of stack entries from bottom to top, works nicely for file pathnames. */
+  public String toString(String separator,boolean prefix) {
+    StringBuilder sb = new StringBuilder(30*myStack.size());//guesstimate 29 bytes for typical string in the stack, a totally off the wall number.
+    for (String item:myStack ) {
+      if(prefix){
+        sb.append(separator);
+      }
+      sb.append(item);
+      if(!prefix) {
+        sb.append(separator);
+      }
     }
-    return String.valueOf(sb);
+    return sb.toString();
   }
 }
 

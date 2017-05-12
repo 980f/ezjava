@@ -439,7 +439,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
 
   public static LogFile fpf = null; //just  so that we can close the file explicitly on program exit.
 
-  public static void stdLogging(String logName, boolean background, boolean overwrite) {
+  public static PrintFork stdLogging(String logName, boolean background, boolean overwrite) {
     PrintFork pf = null;
 
     if (StringX.NonTrivial(logName)) {
@@ -456,6 +456,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
       }
     }
     Global().ERROR("stdLogging Started:" + logName + (background ? " buffered" : " straight") + (overwrite ? " overwrite" : " append"));
+    return pf;
   }
 
   public static void stdLogging(String logName, boolean background) {

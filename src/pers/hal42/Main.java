@@ -17,6 +17,9 @@ import java.util.Vector;
 import static pers.hal42.lang.SystemX.gcMessage;
 import static pers.hal42.stream.IOX.Close;
 
+/** run a class that implements an application.
+ * this is an old version that uses properties rather than Json files for configuration.
+ * adding Json should not be a big deal, even keeping properties, just need a 'JsonCursor' similar to EasyCursor.*/
 public class Main {
   private static ErrorLogStream dbg;
 
@@ -274,4 +277,3 @@ public class Main {
   }
 
 }
-//$Id: Main.java,v 1.81 2005/03/03 05:19:56 andyh Exp $
