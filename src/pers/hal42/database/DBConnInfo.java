@@ -1,15 +1,10 @@
 package pers.hal42.database;
 
 /**
- * Title:        $Source $
- * Description:
- * Copyright:    Copyright (c) 2000
- * Company:      PayMate.net
- * @author PayMate.net
- * @version $Id: DBConnInfo.java,v 1.13 2003/07/27 05:34:59 mattm Exp $
+database connection info, typically feeds jdbc connect string.
  */
 
-import pers.hal42.util.*;
+import pers.hal42.transport.JsonStorable;
 import pers.hal42.lang.StringX;
 
 public class DBConnInfo {
@@ -64,4 +59,3 @@ public class DBConnInfo {
 
 }
 
-// $Id: DBConnInfo.java,v 1.13 2003/07/27 05:34:59 mattm Exp $
