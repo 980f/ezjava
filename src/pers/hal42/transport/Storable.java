@@ -1,6 +1,7 @@
 package pers.hal42.transport;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import pers.hal42.lang.StringX;
 import pers.hal42.text.TextList;
 
@@ -17,6 +18,8 @@ import static pers.hal42.transport.Storable.Type.*;
 
 /**
  * Created by Andy on 5/8/2017.
+ * <p>
+ * This can be viewed as a DOM good for JSON data. It is intended to replace usage of java properties, despite us having nice classes to make properties look like a tree.
  */
 public class Storable {
   public final String name;
@@ -25,8 +28,18 @@ public class Storable {
    * sometimes a wad is just an array (all children are nameless
    */
   protected int index = -1;
+  @Nullable
   Storable parent; //can be null.
   Type type = Unclassified;
+  Origin origin = Ether;
+  String image = "";
+  double value;
+  boolean bit;
+  /**
+   * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
+   * for really big nodes create a nodeIndexer outside of this class and access members herein by index.
+   */
+  Vector<Storable> wad = new Vector<>();
 
   public enum Origin {
     Ether,
@@ -35,16 +48,24 @@ public class Storable {
     Assigned
   }
 
-  Origin origin = Ether;
-  String image = "";
-  double value;
-  boolean bit;
+  public enum Type {
+    Unclassified,
+    Null,
+    Boolean,
+    Numeric,
+    Textual,
+    Wad
+  }
 
   /**
-   * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
-   * for really big nodes create a nodeIndexer outside of this class and access members herein by index.
+   * marker annotation for use by applyTo and apply()
    */
-  Vector<Storable> wad = new Vector<>();
+  @Documented
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.FIELD})
+  public @interface Stored {
+    //marker, field's own type is explored for information needed to write to it.
+  }
 
   /**
    * only use this for root nodes.
@@ -202,7 +223,6 @@ public class Storable {
     }
   }
 
-
   public boolean getTruth() {
     if (type == Type.Unclassified) {
       type = Boolean;
@@ -330,17 +350,10 @@ public class Storable {
     return parent;//found existing
   }
 
-  public enum Type {
-    Unclassified,
-    Null,
-    Boolean,
-    Numeric,
-    Textual,
-    Wad
-  }
-
-  /** try to filter out accidentally created nodes.
-   * I think this was left over from a parser that didn't handle trailing commas.*/
+  /**
+   * try to filter out accidentally created nodes.
+   * I think this was left over from a parser that didn't handle trailing commas.
+   */
   public boolean isTrivial() {
     return false;
 //    return origin== Ether && type==Unclassified;
@@ -348,17 +361,6 @@ public class Storable {
 
   public int numChildren() {
     return wad.size();
-  }
-
-
-  /**
-   * marker annotation for use by applyTo and apply()
-   */
-  @Documented
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target({ElementType.FIELD})
-  public @interface Stored {
-    //marker, field's own type is explored for information needed to write to it.
   }
 
   /**
@@ -381,7 +383,6 @@ public class Storable {
       if (stored != null) {
         String name = field.getName();
         Storable child = this.existingChild(name);
-        ;
         if (child != null) {
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();
@@ -401,7 +402,7 @@ public class Storable {
 
             else {
               //time for recursive descent
-              int subchanges = child.applyTo(field.get(obj),narrow, aggressive);
+              int subchanges = child.applyTo(field.get(obj), narrow, aggressive);
               if (subchanges >= 0) {
                 changes += subchanges;
               } else {
@@ -432,7 +433,6 @@ public class Storable {
       if (stored != null) {
         String name = field.getName();
         Storable child = this.existingChild(name);
-        ;
         if (child != null) {
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();
@@ -440,7 +440,7 @@ public class Storable {
               field.setAccessible(true);
             }
             if (fclaz == String.class) {
-              child.setValue( field.get(obj).toString());//this is our only exception to recursing on non-natives.
+              child.setValue(field.get(obj).toString());//this is our only exception to recursing on non-natives.
             } else if (fclaz == boolean.class) {
               child.setValue(field.getBoolean(obj));
             } else if (fclaz == double.class) {
@@ -451,7 +451,7 @@ public class Storable {
             //todo: add clauses for the remaining field.getXXX methods.
             else {
               //time for recursive descent
-              int subchanges = child.apply(field.get(obj),narrow, aggressive);
+              int subchanges = child.apply(field.get(obj), narrow, aggressive);
               if (subchanges >= 0) {
                 changes += subchanges;
               } else {
@@ -468,7 +468,5 @@ public class Storable {
     }
     return changes;
   }
-
-
 
 }

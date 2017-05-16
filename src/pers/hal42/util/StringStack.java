@@ -7,7 +7,17 @@ import java.util.Stack;
 public class StringStack {
 
   protected Stack<String> myStack;
+  /**
+   * the name is for debugging out of memory problems- this labels the object for handy identification during a heap walk
+   */
+  private String name = "unconstructed";
   public final static String stringForEmpty = "StackEmpty";
+
+  public StringStack(String name) {
+    myStack = new Stack<>();
+    this.name = name;
+//    register(this);
+  }
 
   public String push(String item) {
     myStack.push(item);
@@ -42,31 +52,25 @@ public class StringStack {
     return myStack.search(o);
   }
 
-  private String name = "unconstructed";
-
   public String name() {
     return name;
   }
 
-  public StringStack(String name) {
-    myStack = new Stack<>();
-    this.name = name;
-//    register(this);
-  }
-
   public String toString() {
-    return toString("/",true);
+    return toString("/", true);
   }
 
- /** @returns a concatenation of stack entries from bottom to top, works nicely for file pathnames. */
-  public String toString(String separator,boolean prefix) {
-    StringBuilder sb = new StringBuilder(30*myStack.size());//guesstimate 29 bytes for typical string in the stack, a totally off the wall number.
-    for (String item:myStack ) {
-      if(prefix){
+  /**
+   * @returns a concatenation of stack entries from bottom to top, works nicely for file pathnames.
+   */
+  public String toString(String separator, boolean prefix) {
+    StringBuilder sb = new StringBuilder(30 * myStack.size());//guesstimate 29 bytes for typical string in the stack, a totally off the wall number.
+    for (String item : myStack) {
+      if (prefix) {
         sb.append(separator);
       }
       sb.append(item);
-      if(!prefix) {
+      if (!prefix) {
         sb.append(separator);
       }
     }

@@ -8,32 +8,28 @@ import pers.hal42.transport.isEasy;
 
 public class Accumulator implements isEasy {
 
+  private long count = 0;
+  private long sum = 0;
+  private long max = Long.MIN_VALUE;//formerly 0, which didn't allow for negatives
+  private long min = Long.MAX_VALUE;
+  private Monitor mon = null;
   private static final Counter nameCounter = new Counter();
-
   public Accumulator() {
     mon = new Monitor("Accumulator." + nameCounter.incr());
   }
-
-  public String toString(){
-    return String.valueOf(this.sum)+ Ascii.bracket(count);
-  }
-
-  public String toSpam() {
-    return "Cnt:"+getCount()+"/Ttl:"+getTotal()+"/Avg:"+getAverage()+"/Min:"+getMin()+"/Max:"+getMax();
-  }
-
-
   // this is for initializing an Accumulator, so that we can pick up using it where we left off
   public Accumulator(long count, long sum) {
     this();
     set(count, sum);
   }
 
-  private long count = 0;
-  private long sum = 0;
-  private long max = Long.MIN_VALUE;//formerly 0, which didn't allow for negatives
-  private long min = Long.MAX_VALUE;
-  private Monitor mon = null;
+  public String toString() {
+    return String.valueOf(this.sum) + Ascii.bracket(count);
+  }
+
+  public String toSpam() {
+    return "Cnt:" + getCount() + "/Ttl:" + getTotal() + "/Avg:" + getAverage() + "/Min:" + getMin() + "/Max:" + getMax();
+  }
 
   public void add(long lasttime) {
     try {
@@ -54,7 +50,7 @@ public class Accumulator implements isEasy {
     try {
       mon.getMonitor();
       that.mon.getMonitor();//gotta gain ownersup of both objects
-      count+=that.count;
+      count += that.count;
       sum += that.sum;
       max = Math.max(max, that.max);//formerly used average!
       min = Math.min(min, that.min);
@@ -87,14 +83,14 @@ public class Accumulator implements isEasy {
 
   /**
    * @param lasttime - what to subtract from the total
-   * Count is auto-decremented by 1.  Don't change the sign of lasttime before subtracting it.
-   * Can use this for when you add() something in a moment before you find out that you should not have.
-   * useful when this is extended into a moving sum rather than an accumulator.
+   *                 Count is auto-decremented by 1.  Don't change the sign of lasttime before subtracting it.
+   *                 Can use this for when you add() something in a moment before you find out that you should not have.
+   *                 useful when this is extended into a moving sum rather than an accumulator.
    */
   public void remove(long lasttime) {
     try {
       mon.getMonitor();
-      if(count>0){
+      if (count > 0) {
         --count;
         sum -= lasttime;
       }
@@ -151,27 +147,28 @@ public class Accumulator implements isEasy {
       mon.freeMonitor();
     }
   }
-//////////////////////////
+
+  //////////////////////////
 // isEasy()
-  public void save(EasyCursor ezp){
+  public void save(EasyCursor ezp) {
     try {
       mon.getMonitor(); // longs are not atomic
-      ezp.setLong("sum",sum);
-      ezp.setLong("num",count);
-      ezp.setLong("min",min);
-      ezp.setLong("max",max);
+      ezp.setLong("sum", sum);
+      ezp.setLong("num", count);
+      ezp.setLong("min", min);
+      ezp.setLong("max", max);
     } finally {
       mon.freeMonitor();
     }
   }
 
-  public void load(EasyCursor ezp){
+  public void load(EasyCursor ezp) {
     try {
       mon.getMonitor(); // longs are not atomic
-      sum=ezp.getLong("sum");
-      count=ezp.getLong("num");
-      min=ezp.getLong("min");
-      max=ezp.getLong("max");
+      sum = ezp.getLong("sum");
+      count = ezp.getLong("num");
+      min = ezp.getLong("min");
+      max = ezp.getLong("max");
     } finally {
       mon.freeMonitor();
     }

@@ -3,7 +3,7 @@ package pers.hal42.lang;
 public class ObjectX {
 
   // Where else can we put this ? +++
-  public static final int INVALIDINDEX=-1;
+  public static final int INVALIDINDEX = -1;
 
   private ObjectX() {
     // I exist for static purposes
@@ -23,10 +23,9 @@ public class ObjectX {
 
   /**
    * linear search
-   *
    */
-  public static <T extends Comparable<T>> int linearSearch(T [] a, T key) {
-    for(int i = a.length; i-->0;) {
+  public static <T extends Comparable<T>> int linearSearch(T[] a, T key) {
+    for (int i = a.length; i-- > 0; ) {
       int cmp = a[i].compareTo(key);//todo: apply random object compare funciton.
       if (cmp < 0) {
         continue;
@@ -39,10 +38,10 @@ public class ObjectX {
     return INVALIDINDEX; // insert at the end
   }
 
-  public static int findIndex(Object [] a, Object o) {
-    for(int i = a.length; i-->0;) {
-      if(a[i] == null) {
-        if(o == null) {
+  public static int findIndex(Object[] a, Object o) {
+    for (int i = a.length; i-- > 0; ) {
+      if (a[i] == null) {
+        if (o == null) {
           return i; // well ???
         }
       } else {
@@ -54,15 +53,15 @@ public class ObjectX {
     return INVALIDINDEX; // insert at the end
   }
 
-  public static boolean NonTrivial(Object o){
-    if(o instanceof String){
-      return StringX.NonTrivial((String)o);
+  public static boolean NonTrivial(Object o) {
+    if (o instanceof String) {
+      return StringX.NonTrivial((String) o);
     }
-    if(o instanceof StringBuffer){
-      return StringX.NonTrivial((StringBuffer)o);
+    if (o instanceof StringBuffer) {
+      return StringX.NonTrivial((StringBuffer) o);
     }
     // DO NOT import stuff from util here!
     // Call the appropriate class from your code and not this one!
-    return o!=null;
+    return o != null;
   }
 }

@@ -8,13 +8,22 @@ import pers.hal42.text.Formatter;
 import pers.hal42.text.TextList;
 
 public class LrcBufferBase extends Packet {
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(LrcBufferBase.class);
   //configuration flags
   protected byte lrcStart = 0;//allows extension to omit stx's or such from lrc
   protected boolean isReceiver = false;
   //state
   protected byte lrc = 0;
   protected boolean expectinglrc = false;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(LrcBufferBase.class);
+
+  protected LrcBufferBase(int maxsize, boolean receiver) {
+    super(maxsize); //unforuntately the super MUST precede setting the receiver mode flag.
+    this.isReceiver = receiver;
+  }
+
+//  public boolean start(int size){
+// super.start() calls our reset()
+//  }
 
   public void reset() {
     super.reset();
@@ -22,11 +31,6 @@ public class LrcBufferBase extends Packet {
     //but receiver mode is left alone
     expectinglrc = false;
   }
-
-//  public boolean start(int size){
-// super.start() calls our reset()
-//  }
-
 
   /**
    * @param content becomes content of completed buffer
@@ -76,7 +80,6 @@ public class LrcBufferBase extends Packet {
     }
   }
 
-
   /**
    * @return whether character successfully went into buffer
    */
@@ -104,7 +107,7 @@ public class LrcBufferBase extends Packet {
     for (int i = nexti; i-- > lrcStart; ) {
       updateLrc(buffer[i]);
     }
-    return (byte) lrc;
+    return lrc;
   }
 
   /**
@@ -133,11 +136,6 @@ public class LrcBufferBase extends Packet {
 
   public byte showLRC() {
     return lrc;
-  }
-
-  protected LrcBufferBase(int maxsize, boolean receiver) {
-    super(maxsize); //unforuntately the super MUST precede setting the receiver mode flag.
-    this.isReceiver = receiver;
   }
 
   /**

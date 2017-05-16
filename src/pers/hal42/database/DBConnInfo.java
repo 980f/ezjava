@@ -1,26 +1,23 @@
 package pers.hal42.database;
 
-/**
-database connection info, typically feeds jdbc connect string.
- */
-
-import pers.hal42.transport.JsonStorable;
 import pers.hal42.lang.StringX;
 
+/**
+ * database connection info, typically feeds jdbc connect string.
+ */
 public class DBConnInfo {
+
+  public String connDatasource = "";
+  public int oversize = DEFAULTOVERSIZE;
+  public int intervalsecs = DEFAULTINTERVALSECS;
+  public String connUser = "";
+  public String connPass = "";
+  public String drivername = "";
+  public String keepaliveSQL = DEFAULTKEEPALIVESQL;
 
   public static final int DEFAULTOVERSIZE = 0;
   public static final int DEFAULTINTERVALSECS = 10;
   public static final String DEFAULTKEEPALIVESQL = "select 1;";
-
-  public String connDatasource = "";
-  String connUser = "";
-  String connPass = "";
-  String drivername = "";
-  String keepaliveSQL = DEFAULTKEEPALIVESQL;
-  public int oversize = DEFAULTOVERSIZE;
-  public int intervalsecs = DEFAULTINTERVALSECS;
-
   public static final String DEFAULTDRIVER = "jdbc:postgresql:mainsail";
 
   public DBConnInfo() {
@@ -50,11 +47,11 @@ public class DBConnInfo {
 
   public String toString() {
     return "connDatasource=" + connDatasource +
-        ", connUser=" + connUser +
-        ", connPass=" + connPass +
-        ", drivername=" + drivername +
-        ", oversize="+oversize +
-        ", intervalsecs=" + intervalsecs;
+      ", connUser=" + connUser +
+      ", connPass=" + connPass +
+      ", drivername=" + drivername +
+      ", oversize=" + oversize +
+      ", intervalsecs=" + intervalsecs;
   }
 
 }

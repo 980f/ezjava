@@ -1,9 +1,13 @@
 package pers.hal42.transport;
 
-/** if a class implements "isEasy" then it has load and save from properties functions, i.e. portable public access via text */
+/**
+ * if a class implements "isEasy" then it has load and save from properties functions, i.e. portable public access via text
+ */
 
 public interface isEasy {//for eventual reflective invocation of load and save
+
   void save(EasyCursor ezc);
+
   void load(EasyCursor ezc);
 }
 /*when we get class<->properties via reflection then this interface will be emptied, remaining as permission to do the translations.

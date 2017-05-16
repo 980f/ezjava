@@ -1,6 +1,7 @@
 package pers.hal42.database;
 
-public class DBMacrosService {};
+public class DBMacrosService {
+}
 //extends Service {
 //
 //  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DBMacrosService.class);

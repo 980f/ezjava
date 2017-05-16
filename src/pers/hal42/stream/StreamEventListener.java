@@ -1,9 +1,10 @@
 package pers.hal42.stream;
 
-import java.util.*;
+import java.util.EventListener;
+import java.util.EventObject;
 
-public abstract interface StreamEventListener extends EventListener {
+public interface StreamEventListener extends EventListener {
 
-  public abstract void notify(EventObject object);
+  void notify(EventObject object);
 
 }

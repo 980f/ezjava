@@ -1,22 +1,12 @@
-package pers.hal42.ext;
-
-import pers.hal42.lang.Index;
-import pers.hal42.lang.StringX;
+package pers.hal42.lang;
 
 /**
  * Created by andyh on 4/3/17.
+ *
+ * Makes a byte behave like an object, but not the Java boxy kinda thing.
  */
 public class Char {
   public byte raw;
-
-  public Char(byte raw) {
-    this.raw = raw;
-  }
-
-  public static boolean isPresent(String flags, byte flag) {
-    return StringX.NonTrivial(flags) && flags.indexOf(flag) >= 0;
-  } /* isPresent */
-
   /**
    * characters needing escaping in many situations, a larger set than either C or Java standards.
    * In the string below there are pairs of (escape code: escaped char) e.g. n\n
@@ -39,6 +29,9 @@ public class Char {
       "??" +       //might add '*' to this list, for escaping globs.
       "\"\"";
 
+  public Char(byte raw) {
+    this.raw = raw;
+  }
 
   boolean needsSlash() {
     return new Index(SeaScapes.indexOf(raw)).isOdd();//isOdd includes checking for valid.
@@ -56,12 +49,12 @@ public class Char {
     }
   }
 
-
-////////////////////////////////////
-
   boolean numAlpha() {
     return Character.isLetterOrDigit(raw) || isPresent("+-.", raw);
   }
+
+
+////////////////////////////////////
 
   boolean startsName() {
     return Character.isJavaIdentifierStart(raw);
@@ -91,7 +84,6 @@ public class Char {
     return Character.isDigit(raw) || isPresent("aAbBcCdDeEfF", raw);
   }
 
-
   int hexDigit() {
     int trusting = (raw | 0x20) - '0';//tolowerthen subtract char for zero.
     if ((trusting > 9)) {
@@ -104,5 +96,9 @@ public class Char {
     int nib = 15 & (raw >> (sb * 4)); //push to low nib
     return (char) ((nib > 9) ? ('A' + nib - 10) : '0' + nib);
   }
+
+  public static boolean isPresent(String flags, byte flag) {
+    return StringX.hasFlag(flags, (char) flag);
+  } /* isPresent */
 
 }

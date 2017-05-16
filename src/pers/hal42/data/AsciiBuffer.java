@@ -1,30 +1,43 @@
 package pers.hal42.data;
 
-/** buffer with ascii internal framing. */
-
 
 import pers.hal42.lang.StringX;
 import pers.hal42.text.Ascii;
 import pers.hal42.text.Fstring;
 
-class AsciiOverflowError extends IllegalArgumentException {
-  int size;
-  String digits;
-
-  AsciiOverflowError(int size, String digits) {
-    this.size = size;
-    this.digits = digits;
-  }
-
-  public String toString() {
-    return "AsciiOverflowError: [" + digits + "] has more than " + size +
-        " significant places";
-  }
-}
 
 public class AsciiBuffer extends Buffer {
   boolean vomitous; //throw exception rather than set error flag
   boolean smart; //try to clip fields that don't fit
+
+  /**
+   * buffer with ascii internal framing.
+   */
+
+  static class OverflowError extends IllegalArgumentException {
+    int size;
+    String digits;
+
+    OverflowError(int size, String digits) {
+      this.size = size;
+      this.digits = digits;
+    }
+
+    public String toString() {
+      return "OverflowError: [" + digits + "] has more than " + size +
+        " significant places";
+    }
+  }
+
+  /**
+   * @param alloc is the MAXIMUM number of bytes. object does NOT stretch.
+   */
+  protected AsciiBuffer(int alloc) {
+    super(alloc);
+    vomitous = false;
+    smart = true;
+  }
+
   /**
    * @return this after appending @param text left justified blank extended to file @param size places.
    * if longer than given size trailing chars are truncated.
@@ -34,7 +47,7 @@ public class AsciiBuffer extends Buffer {
   public AsciiBuffer appendAlpha(int size, String text) {
     if (text.length() > size) {
       if (vomitous) {
-        throw new AsciiOverflowError(size, text);
+        throw new OverflowError(size, text);
       }
       if (smart) {
         text = text.trim(); //fairly stupid smartness
@@ -46,7 +59,7 @@ public class AsciiBuffer extends Buffer {
 
   /**
    * number type fixed length fields are UNSIGNED right justified zero extended
-   * @todo  check digits for non-decimal characters, we have that somewhere....
+   * @todo check digits for non-decimal characters, we have that somewhere....
    */
   public AsciiBuffer appendNumeric(int size, String digits) {
     digits = StringX.OnTrivial(digits, "0"); //not our job to complain about bad values
@@ -56,17 +69,15 @@ public class AsciiBuffer extends Buffer {
       for (int i = overflow; i-- > 0; ) {
         if (clip.charAt(i) != '0') {
           if (vomitous) {
-            throw new AsciiOverflowError(size, digits);
-          }
-          else {
+            throw new OverflowError(size, digits);
+          } else {
             anError();
             //without break; here we get a count of how many chars were a problem
           }
         }
       }
       append(digits.substring(overflow));
-    }
-    else {
+    } else {
       append(Fstring.righted(digits, size, '0'));
     }
     return this;
@@ -150,8 +161,7 @@ public class AsciiBuffer extends Buffer {
     if (len < min) {
       appendNumeric(min, number); //zero fills
       append(Ascii.FS);
-    }
-    else {
+    } else {
       appendFrame(number);
     }
     return this;
@@ -162,23 +172,10 @@ public class AsciiBuffer extends Buffer {
    * @return this
    */
   public AsciiBuffer frame(Object obj) {
-    String wtf=String.valueOf(obj);
+    String wtf = String.valueOf(obj);
     append(wtf);
     endFrame();
     return this;
-  }
-
-  /**
-   * @param alloc is the MAXIMUM number of bytes. object does NOT stretch.
-   */
-  protected AsciiBuffer(int alloc) {
-    super(alloc);
-    vomitous = false;
-    smart = true;
-  }
-
-  public static AsciiBuffer Newx(int alloc) {
-    return new AsciiBuffer(alloc);
   }
 
   public Buffer Clone() {
@@ -186,6 +183,10 @@ public class AsciiBuffer extends Buffer {
     newone.vomitous = vomitous;
     newone.smart = smart;
     return newone;
+  }
+
+  public static AsciiBuffer Newx(int alloc) {
+    return new AsciiBuffer(alloc);
   }
 
 }

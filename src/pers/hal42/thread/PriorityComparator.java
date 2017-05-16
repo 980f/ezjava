@@ -1,10 +1,25 @@
 package pers.hal42.thread;
 
-import java.util.*;
+import java.util.Comparator;
 
 public class PriorityComparator implements Comparator {
 
   boolean reversed;
+  private static PriorityComparator Forward = new PriorityComparator(false);
+
+
+  ///**
+// * compare COMPARATORS
+// */
+//  public boolean equals(Object obj){
+//    return obj instanceof NormalCompare;
+//  }
+  private static PriorityComparator Reversed = new PriorityComparator(true);
+
+  //only two real objects are ever needed:
+  private PriorityComparator(boolean reversed) {
+    this.reversed = reversed;
+  }
 
   /**
    * calls compareTo with same order given in case of a not-quite compliant comparison.
@@ -27,22 +42,6 @@ public class PriorityComparator implements Comparator {
       return reversed ? -natural : natural;
     }
   }
-
-
-///**
-// * compare COMPARATORS
-// */
-//  public boolean equals(Object obj){
-//    return obj instanceof NormalCompare;
-//  }
-
-  //only two real objects are ever needed:
-  private PriorityComparator(boolean reversed) {
-    this.reversed = reversed;
-  }
-
-  private static PriorityComparator Forward = new PriorityComparator(false);
-  private static PriorityComparator Reversed = new PriorityComparator(true);
 ///////////////////////////////////////
 
   public static Comparator Normal() {

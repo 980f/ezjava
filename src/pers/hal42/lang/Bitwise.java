@@ -1,47 +1,50 @@
 package pers.hal42.lang;
 
-/**  bit field merging and related items.
+/**
+ * bit field merging and related items.
  * Originally this was C++ code that was used in microcontrollers to actuate hardware pins. Much was lost in migrating to Java.
  * Created by andyh on 4/4/17.
  */
 public class Bitwise {
 
-  /** @return byte address argument as a pointer to that byte */
-//URGENTLY //irritating to step through during debug.
-  public static boolean bit(int patter, int bitnumber){
-    return (patter & (1 << bitnumber)) != 0;
-  }
-
-
-  public static boolean isOdd(int pattern){
-    return 0!=(pattern&1);
-  }
-
-  public static boolean isEven(int pattern){
-    return ! isOdd(pattern);
-  }
-
   public int patter;
 
-  public Bitwise setBit( int bitnumber){
+  public Bitwise setBit(int bitnumber) {
     patter |= (1 << bitnumber);
     return this;
   }
 
-  public Bitwise clearBit(int bitnumber){
+  public Bitwise clearBit(int bitnumber) {
     patter &= ~(1 << bitnumber);
     return this;
   }
 
-
-
-  public Bitwise assignBit(int bitnumber,boolean one){
-    if(one){
+  public Bitwise assignBit(int bitnumber, boolean one) {
+    if (one) {
       setBit(bitnumber);
     } else {
       clearBit(bitnumber);
     }
     return this;
+  }
+
+  /**
+   * splices a value into another according to @param mask
+   */
+  public int merge(int source, int mask) {
+    return patter = insertField(patter, source, mask);
+  }
+
+  public int mergeField(int source, int msb, int lsb) {
+    return patter = insertField(patter, source, msb, lsb);
+  }
+
+  /**
+   * @return byte address argument as a pointer to that byte
+   */
+//URGENTLY //irritating to step through during debug.
+  public static boolean bit(int patter, int bitnumber) {
+    return (patter & (1 << bitnumber)) != 0;
   }
 
 //  public static class BitReference {
@@ -67,50 +70,57 @@ public class Bitwise {
 //    }
 //  };
 
+  public static boolean isOdd(int pattern) {
+    return 0 != (pattern & 1);
+  }
 
-  /** @return splice of two values according to @param mask */
-  public static int insertField(int target, int source, int mask){
+  public static boolean isEven(int pattern) {
+    return !isOdd(pattern);
+  }
+
+  /**
+   * @return splice of two values according to @param mask
+   */
+  public static int insertField(int target, int source, int mask) {
     return (target & ~mask) | (source & mask);
   }
 
-  /** splices a value into another according to @param mask */
-  public int merge(int source, int mask){
-    return patter= insertField(patter,source, mask);
+  /**
+   * @return bits @param msb through @param lsb set to 1.
+   * Default arg allows one to pass a width for lsb aligned mask of that many bits
+   */
+  public static int fieldMask(int msb, int lsb) {
+    return (1 << (msb + 1)) - (1 << lsb);
+  }
+
+  public static int fieldMask(int msb) {
+    return fieldMask(msb, 0);
+  }
+
+  /**
+   * @return bits @param lsb for width @param width set to 1.
+   */
+  public static int bitMask(int lsb, int width) {
+    return (1 << (lsb + width)) - (1 << lsb);
+  }
+
+  /**
+   * use the following when offset or width are NOT constants, else you should be able to define bit fields in a struct and let the compiler to any inserting
+   */
+  public static int insertField(int target, int source, int msb, int lsb) {
+    return insertField(target, source << lsb, fieldMask(msb, lsb));
+  }
+
+  public static int extractField(int source, int msb, int lsb) {
+    return (source & fieldMask(msb, lsb)) >> lsb;
   }
 
 
-  /** @return bits @param msb through @param lsb set to 1.
-   * Default arg allows one to pass a width for lsb aligned mask of that many bits */
-  public static int fieldMask(int msb,int lsb){
-    return (1 << (msb+1)) - (1<<lsb);
-  }
-  public static int fieldMask(int msb){
-    return fieldMask(msb,0);
-  }
-
-  /** @return bits @param lsb for width @param width set to 1.*/
-  public static int bitMask(int lsb,int width){
-    return (1 << (lsb+width)) - (1<<lsb);
-  }
-
-
-  /** use the following when offset or width are NOT constants, else you should be able to define bit fields in a struct and let the compiler to any inserting*/
-  public static int insertField(int target, int source, int msb, int lsb){
-    return insertField(target, source<<lsb ,fieldMask(msb,lsb));
-  }
-
-  public int mergeField(int source, int msb, int lsb){
-    return patter=insertField(patter,source,msb,lsb);
-  }
-
-  public static int extractField(int source, int msb, int lsb){
-    return (source&fieldMask(msb,lsb)) >> lsb ;
-  }
-
-
-  /** use the following when offset or width are NOT constants, else you should be able to define bit fields in a struct and let the compiler to any inserting*/
-  public static int insertBits(int target, int source, int lsb, int width){
-    return insertField(target, source<<lsb ,bitMask(lsb,width));
+  /**
+   * use the following when offset or width are NOT constants, else you should be able to define bit fields in a struct and let the compiler to any inserting
+   */
+  public static int insertBits(int target, int source, int lsb, int width) {
+    return insertField(target, source << lsb, bitMask(lsb, width));
   }
 
 //  public int mergeBits(int source, int lsb, int width){
@@ -118,11 +128,9 @@ public class Bitwise {
 //  }
 
 
-
-  public static  int extractBits(int source, int lsb, int width){
-    return (source & bitMask(lsb,width)) >> lsb ;
+  public static int extractBits(int source, int lsb, int width) {
+    return (source & bitMask(lsb, width)) >> lsb;
   }
-
 
 
 //  /** for when the bits to pick are referenced multiple times and are compile time constant

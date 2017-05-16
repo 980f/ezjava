@@ -1,68 +1,64 @@
 package pers.hal42.data;
 
-/**
- * Title:        $Source: /cvs/src/net/paymate/data/AsciiBufferParser.java,v $
- * Description:
- * Copyright:    Copyright (c) 2001
- * Company:      PayMate.net
- * @author PayMate.net
- * @version $Revision: 1.6 $
- */
-
 import pers.hal42.lang.StringX;
 import pers.hal42.text.Ascii;
 import pers.hal42.text.TextList;
 
+/**
+ * pull fields somewhat like awk
+ */
 public class AsciiBufferParser extends BufferParser {
   /**
    * get record as parsable buffer
-   * @todo make byte[] version of getUntil() to make this more efficient.
+   * todo:1 make byte[] version of getUntil() to make this more efficient.
    */
-  public AsciiBuffer getRecord(){
-    String record=getUntil(Ascii.RS);
-    AsciiBuffer newone=AsciiBuffer.Newx(record.length());
+  public AsciiBuffer getRecord() {
+    String record = getUntil(Ascii.RS);
+    AsciiBuffer newone = AsciiBuffer.Newx(record.length());
     newone.append(record);
     return newone;
   }
 
-  public String getROF(){//rest of frame
+  public String getROF() {//rest of frame
     return getUntil(Ascii.FS);
   }
 
-  public String getPrefix(){
+  public String getPrefix() {
     return getUntil('.');
   }
 
   /**
- * @return variable length decimal integer
- * note: hexadecimal fields are always fixed size.
- */
-  public long getDecimalFrame(){
+   * @return variable length decimal integer
+   * note: hexadecimal fields are always fixed size.
+   */
+  public long getDecimalFrame() {
     return StringX.parseLong(getROF());
   }
-/**
- * @return new textlist made of remaining frames.
- */
-  public TextList fields(){
-    TextList fields=new TextList();
-    while(parser<buffer.used()){//should be a method for this. gotMore()
+
+  /**
+   * @return new textlist made of remaining frames.
+   */
+  public TextList fields() {
+    TextList fields = new TextList();
+    while (parser < buffer.used()) {//should be a method for this. gotMore()
       fields.add(getROF());
     }
     return fields;
   }
 
-/**
- * @return a fastidious parser, all input must be perfect.
- */
+  /**
+   * @return a fastidious parser, all input must be perfect.
+   */
   public static AsciiBufferParser Strict() {
     return new AsciiBufferParser();
   }
-/**
- * @return a slack parser, one that tries to fixup short fields and such.
- */
+
+  /**
+   * @return a slack parser, one that tries to fixup short fields and such.
+   */
   public static AsciiBufferParser Easy() {
-    AsciiBufferParser newone= new AsciiBufferParser();
-    newone.slack=true;
+    AsciiBufferParser newone = new AsciiBufferParser();
+    newone.slack = true;
     return newone;
   }
 

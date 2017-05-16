@@ -16,126 +16,111 @@ import java.util.TimeZone;
  * todo:x <strike>Merge Ticks.java into this class? NO. ticks are intervals more often than absolute.</strike>
  */
 
-public class UTC implements Comparable {
+public class UTC implements Comparable<UTC> {
+  public long utc = 0;
   /**
    * h_uman r_eadable t_ime f_ormat ==
    */
-  private static final LocalTimeFormat hrtf= LocalTimeFormat.Utc();//"yyyyMMddHHmmssSSS"
+  private static final LocalTimeFormat hrtf = LocalTimeFormat.Utc();//"yyyyMMddHHmmssSSS"
   private static final Monitor formatting = new Monitor("UTCFormatter");
 
-  public long utc=0;
   /**
    * non null but invalid time.
    */
   public UTC() {
-  //make an invalid time
+    //make an invalid time
   }
-  /**
-   * @return new timevalue from absolute millis
-   */
-  public static UTC New(long time){
-    UTC newone=new UTC();
-    newone.setto(time);
-    return newone;
-  }
-  /**
-   * @return new timevalue from value printed by this classes's toString()
-   */
-  public static UTC New(String image){
-    UTC newone=new UTC();
-    newone.setto(image);
-    return newone;
-  }
+
   /**
    * @return whether value is not ridiculously trivial
    */
-  public boolean isValid(){
-    return utc>0;
+  public boolean isValid() {
+    return utc > 0;
   }
-  /**
-   * @return whether @param probate is realistic value.
-   */
-  public static boolean isValid(UTC probate){
-    return probate !=null && probate.isValid();
-  }
+
   /**
    * @return int for ascending sort
    */
-  public int compareTo(Object o){
+  public int compareTo(UTC o) {
 //    System.out.println("comparing " + this + " to " + o);
-    if((o != null) && (o instanceof UTC)){
-      return MathX.signum(utc-((UTC)o).utc);//or could >>>32.
+    if (o != null) {
+      return MathX.signum(utc - o.utc);//or could >>>32.
     }
-    return (1-0);//+_+ could throw cast exception.
+    return (1 - 0);//could throw cast exception.
   }
-//////////////////////
+
+  //////////////////////
 // all comparables should have these functions!
-  public boolean before(UTC ref){
-    return compareTo(ref)<0;
+  public boolean before(UTC ref) {
+    return compareTo(ref) < 0;
   }
-  public boolean after(UTC ref){
-    return compareTo(ref)>0;
+
+  public boolean after(UTC ref) {
+    return compareTo(ref) > 0;
   }
-  public boolean sameas(UTC ref){//'equals' already taken
-    return compareTo(ref)==0;
+
+  public boolean sameas(UTC ref) {//'equals' already taken
+    return compareTo(ref) == 0;
   }
-  //end comparable service utilities
-  /////////////////
-/**
- * @return java version of time
- */
-  public long getTime(){
+
+  /**
+   * @return java version of time
+   */
+  public long getTime() {
     return utc;
   }
+
   /**
    * @param howmany decimal digits to return
-   * @param lsbs number of decimal digits to discard
+   * @param lsbs    number of decimal digits to discard
    * @return decimal digits as integer
    */
-  public long getDigits(int howmany,int lsbs){
-    int divider= IntegralPower.raise(10,lsbs).power;
-    if(divider<0){
-      divider=1;
+  public long getDigits(int howmany, int lsbs) {
+    int divider = IntegralPower.raise(10, lsbs).power;
+    if (divider < 0) {
+      divider = 1;
     }
-    int modulus= IntegralPower.raise(10,howmany).power;
-    return (utc/divider) % modulus;
+    int modulus = IntegralPower.raise(10, howmany).power;
+    return (utc / divider) % modulus;
   }
+
   /**
    * @return amount to give to deSKewed such that utc.deSkewed(utc.skew(refclock))== refclock.
    */
-  public long skew(UTC refclock){
-    return utc-refclock.utc;
+  public long skew(UTC refclock) {
+    return utc - refclock.utc;
   }
+  //end comparable service utilities
+  /////////////////
+
   /**
    * @return new UTC which is 'this' corrected for skew.
    * only used on client! Don't think server should use it.
    */
-  public UTC deSkewed(long skew){
-    return new UTC().setto(utc+skew);
+  public UTC deSkewed(long skew) {
+    return new UTC().setto(utc + skew);
   }
 
-  public String toString(int len){
-    return toString(0,len);
+  public String toString(int len) {
+    return toString(0, len);
   }
 
-  public String toString(int skip,int end){
-    return StringX.subString(toString(),skip,end);
+  public String toString(int skip, int end) {
+    return StringX.subString(toString(), skip, end);
   }
 
-  public String toString(){
+  public String toString() {
     try {
       formatting.getMonitor();
       return hrtf.format(new Date(utc));
-    }
-    catch (Exception e) {
+    } catch (Exception e) {
       return "";
-    }
-    finally {
+    } finally {
       formatting.freeMonitor();
     }
   }
 
-  public UTC setto(String dbvalue){
+  public UTC setto(String dbvalue) {
     try {
       formatting.getMonitor();
       utc = hrtf.parse(dbvalue).getTime();
@@ -145,24 +130,82 @@ public class UTC implements Comparable {
     }
   }
 
-  public UTC setto(long time){
-    utc=time;
+  public UTC setto(long time) {
+    utc = time;
     return this;
   }
 
-  public UTC setto(Date time){
+  public UTC setto(Date time) {
     return setto(time.getTime());
   }
-/**
- * this UTC gets @param rhs's time value, but only the time value-not the formatting
- */
-  public UTC setto(UTC rhs){
+
+  /**
+   * this UTC gets @param rhs's time value, but only the time value-not the formatting
+   */
+  public UTC setto(UTC rhs) {
     return setto(rhs.getTime());
   }
-/**
- * return a new UTC initialized with current time
- */
-  public static UTC Now(){
+
+  public final int toSeconds() {
+    return toSeconds(this);
+  }
+
+  public final UTC settoSeconds(int seconds) {
+    return setto(secondsToMillis(seconds));
+  }
+
+  /**
+   * modify this to be after @param other
+   *
+   * @return this
+   */
+  public UTC ensureAfter(UTC other) {
+    //if reboot caused the clock to roll back...do SOMETHING:
+    if (utc < other.utc) {
+      utc = other.utc + 1;
+    }
+    return this;
+  }
+
+  public boolean changeByDays(int days) {
+    UTC utc = ChangeByDays(this, days);
+    if (utc == null) {
+      return false;
+    } else {
+      setto(utc.getTime());
+      return true;
+    }
+  }
+
+  /**
+   * @return new timevalue from absolute millis
+   */
+  public static UTC New(long time) {
+    UTC newone = new UTC();
+    newone.setto(time);
+    return newone;
+  }
+
+  /**
+   * @return new timevalue from value printed by this classes's toString()
+   */
+  public static UTC New(String image) {
+    UTC newone = new UTC();
+    newone.setto(image);
+    return newone;
+  }
+
+  /**
+   * @return whether @param probate is realistic value.
+   */
+  public static boolean isValid(UTC probate) {
+    return probate != null && probate.isValid();
+  }
+
+  /**
+   * return a new UTC initialized with current time
+   */
+  public static UTC Now() {
     return new UTC().setto(DateX.utcNow());
   }
 
@@ -175,63 +218,37 @@ public class UTC implements Comparable {
   public static UTC fromSeconds(int seconds) {
     return UTC.New(secondsToMillis(seconds));
   }
+
   public static int toSeconds(UTC when) {
-    return (int)(when.getTime()/1000L);
+    return (int) (when.getTime() / 1000L);
   }
+
   public static long secondsToMillis(int seconds) {
-    return 1000L * (long)seconds;
-  }
-  public final int toSeconds() {
-    return toSeconds(this);
-  }
-  public final UTC settoSeconds(int seconds) {
-    return setto(secondsToMillis(seconds));
+    return 1000L * (long) seconds;
   }
 
-/**
- * modify this to be after @param other
- * @return this
- */
-  public UTC ensureAfter(UTC other){
-    //if reboot caused the clock to roll back...do SOMETHING:
-    if(utc<other.utc){
-      utc=other.utc+1;
-    }
-    return this;
-  }
-
-  public boolean changeByDays(int days) {
-    UTC utc = ChangeByDays(this, days);
-    if(utc == null) {
-      return false;
-    } else {
-      setto(utc.getTime());
-      return true;
-    }
-  }
-
-  public static long Elapsed(UTC first, UTC second){
-    return second.utc-first.utc;
+  public static long Elapsed(UTC first, UTC second) {
+    return second.utc - first.utc;
   }
 
   public static UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
-    if(startdate == null) {
+    if (startdate == null) {
       return null;
     }
     Date date = ChangeByDays(new Date(startdate.getTime()), days);
-    if(date == null) {
+    if (date == null) {
       return null;
     }
     return UTC.New(date.getTime());
   }
 
   public static Date ChangeByDays(Date startdate, int days) { // can be positive or negative
-    if(startdate == null) {
+    if (startdate == null) {
       return null;
     }
     // calculate the end date (start of next day)
     // +++ copy this stuff into and use it in the Search screen!
-    GregorianCalendar zoned = (GregorianCalendar)Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    GregorianCalendar zoned = (GregorianCalendar) Calendar.getInstance(TimeZone.getTimeZone("UTC"));
     zoned.setTimeInMillis(startdate.getTime());
     zoned.add(GregorianCalendar.DATE, days);
     return zoned.getTime();

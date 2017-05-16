@@ -9,13 +9,14 @@ import java.util.Set;
 // might not be necessary, but, oh well.
 
 public class MapCache {
-  private Map [ ] caches = null;
+  private Map[] caches = null;
   private Class classForArray = null;
 
   public MapCache(int fixedSize, Class classForArray) {
     caches = new Map[fixedSize];
     this.classForArray = classForArray;
   }
+
   public MapCache(Enum values, Class classForArray) {
     this(values.getClass().getEnumConstants().length, classForArray);
   }
@@ -23,9 +24,9 @@ public class MapCache {
   private synchronized Map getCache(Enum klass) {
     // first, get the correct cache
     Map cache = caches[klass.ordinal()];
-    if(cache == null) {
+    if (cache == null) {
       try {
-        cache = (Map)classForArray.newInstance();
+        cache = (Map) classForArray.newInstance();
         caches[klass.ordinal()] = cache;
       } catch (Exception ex) {
         // ???
@@ -50,11 +51,11 @@ public class MapCache {
     return getCache(klass).size();
   }
 
-  public int [] counts(Enum klass) {
-    Enum [] kc=klass.getClass().getEnumConstants();
+  public int[] counts(Enum klass) {
+    Enum[] kc = klass.getClass().getEnumConstants();
 
-    int [ ] ret = new int[kc.length];
-    for(int i = kc.length; i-->0;) {
+    int[] ret = new int[kc.length];
+    for (int i = kc.length; i-- > 0; ) {
       ret[i] = getCache(kc[i]).size();
     }
     return ret;

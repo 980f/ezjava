@@ -1,24 +1,16 @@
 package pers.hal42.lang;
 
 
-import java.lang.ref.SoftReference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
 
 public final class SoftObject<T> extends SoftReference<T> {
   private SoftObject(T k) {
     super(k);
   }
 
-  private static <T> SoftObject create(T k) {
-    return (k == null) ? null : new SoftObject<>(k);
-  }
-
   private SoftObject(T k, ReferenceQueue<T> q) {
     super(k, q);
-  }
-
-  public static <T> SoftObject create(T k, ReferenceQueue<T> q) {
-    return (k == null) ? null : new SoftObject<>(k, q);
   }
 
   /* A WeakObject is equal to another WeakObject iff they both refer to objects
@@ -35,6 +27,14 @@ public final class SoftObject<T> extends SoftReference<T> {
 
     return false;
 
+  }
+
+  private static <T> SoftObject create(T k) {
+    return (k == null) ? null : new SoftObject<>(k);
+  }
+
+  public static <T> SoftObject create(T k, ReferenceQueue<T> q) {
+    return (k == null) ? null : new SoftObject<>(k, q);
   }
 }
 

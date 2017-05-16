@@ -5,6 +5,7 @@ package pers.hal42.database;
  * <p>Description: </p>
  * <p>Copyright: Copyright (c) 2002</p>
  * <p>Company: PayMate.net</p>
+ *
  * @author PayMate.net
  * @version $Revision: 1.1 $
  */

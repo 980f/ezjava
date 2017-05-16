@@ -10,12 +10,12 @@ public class InstanceNamer {
   private String prefix;
   private Counter count = new Counter(); // Counter already has mutexing/synchronizing
 
-  public String Next(){
-    return prefix+ bracket(count.incr());
+  public InstanceNamer(String prefix) {
+    this.prefix = StringX.OnTrivial(prefix, "Instance");
   }
 
-  public InstanceNamer(String prefix) {
-    this.prefix=StringX.OnTrivial(prefix,"Instance");
+  public String Next() {
+    return prefix + bracket(count.incr());
   }
 }
 

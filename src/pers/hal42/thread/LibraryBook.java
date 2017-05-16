@@ -5,22 +5,20 @@ import pers.hal42.logging.ErrorLogStream;
 
 public class LibraryBook {
 
+  private boolean value = false;
+  private Monitor checkoutMutex = new Monitor("checkoutMonitor_" + mutexCounter.incr());
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(LibraryBook.class);
+  private static Counter mutexCounter = new Counter(); // just for naming and counting
 
   public LibraryBook() {
   }
-
-  private static Counter mutexCounter = new Counter(); // just for naming and counting
-
-  private boolean value = false;
-  private Monitor checkoutMutex = new Monitor("checkoutMonitor_"+mutexCounter.incr());
 
   // for standins
   public boolean Checkout() {
     boolean gotit = false;
     checkoutMutex.getMonitor();
     try {
-      if(!value) {
+      if (!value) {
         value = true;
         gotit = true;
       }
@@ -35,7 +33,7 @@ public class LibraryBook {
   public void Return() {
     checkoutMutex.getMonitor();
     try {
-      if(value) {
+      if (value) {
         value = false;
       } else {
         // +++ ???

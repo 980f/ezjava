@@ -1,6 +1,7 @@
 package pers.hal42.stream;
-import  java.io.IOException;
-import  java.io.InputStream;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class NullInputStream extends InputStream {
 

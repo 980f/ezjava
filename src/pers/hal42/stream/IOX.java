@@ -73,10 +73,12 @@ public class IOX {
     }
   }
 
-  /** close, stifle all errors. Flush first is object supports flushing */
-  public static <T extends Closeable> void Close(T closeable){
+  /**
+   * close, stifle all errors. Flush first is object supports flushing
+   */
+  public static <T extends Closeable> void Close(T closeable) {
     try {
-      if(closeable instanceof Flushable){
+      if (closeable instanceof Flushable) {
         ((Flushable) closeable).flush();
       }
       closeable.close();

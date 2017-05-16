@@ -4,25 +4,8 @@ package pers.hal42.lang;
 import pers.hal42.math.MathX;
 
 public class StringX {
-  private StringX() {
-    //#namespace
-  }
-
-  /**
-   * Takes an array of strings and makes one big string by putting ", " in between each.
-   * This function preserves the order of the items in the list.
-   */
-  public static String commaDelimitedCat(String[] list) {
-    StringBuilder all = new StringBuilder(); //+_+ use stringbuffer, makes less garbage
-    boolean first = true;
-    int len = list.length;
-    for (String aList : list) {
-      all.append((first) ? "" : ", ");
-      all.append(aList);
-      first = false;
-    }
-    return all.toString();
-  }
+  protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
+  private static final String SINGLEQUOTE = "'";
 
 //  public static String twoDigitFixed(long smallNumber) {
 //    return ((smallNumber <= 9) ? "0" : "") + smallNumber;
@@ -74,6 +57,27 @@ public class StringX {
 //    return hexImage(s.getBytes());
 //  }
 //
+private static final char SINGLEQUOTECHAR = '\'';
+
+  private StringX() {
+    //#namespace
+  }
+
+  /**
+   * Takes an array of strings and makes one big string by putting ", " in between each.
+   * This function preserves the order of the items in the list.
+   */
+  public static String commaDelimitedCat(String[] list) {
+    StringBuilder all = new StringBuilder(); //+_+ use stringbuffer, makes less garbage
+    boolean first = true;
+    int len = list.length;
+    for (String aList : list) {
+      all.append((first) ? "" : ", ");
+      all.append(aList);
+      first = false;
+    }
+    return all.toString();
+  }
 
   // --- extremely inefficient.  improve!
   //alh has a state machine in some old C code, til then this is nicely compact source.
@@ -105,8 +109,6 @@ public class StringX {
     return String.valueOf(source);
   }
 
-  private static final String SINGLEQUOTE = "'";
-
   // Used by database stuff.  Don't change without testing on all databases!
   public static String singleQuoteEscape(String s) {
     String ret = null;
@@ -118,8 +120,6 @@ public class StringX {
     }
     return ret;
   }
-
-  private static final char SINGLEQUOTECHAR = '\'';
 
   // Used by database stuff.  Don't change without testing on all databases!
   public static String unSingleQuoteEscape(String s) {
@@ -333,6 +333,9 @@ public class StringX {
     }
   }
 
+  /**
+   * convert to proper csae for a name, ie first char upper, the rest lower.
+   */
   public static String proper(String toChange) {
     return subString(toChange, 0, 1).toUpperCase() + restOfString(toChange, 1).toLowerCase();
   }
@@ -350,6 +353,13 @@ public class StringX {
     } catch (Exception any) {
       return 0;
     }
+  }
+
+  /**
+   * @returns whether flag is present in
+   */
+  public static boolean hasFlag(String packedflags, char flag) {
+    return NonTrivial(packedflags) && packedflags.indexOf(flag) >= 0;
   }
 
   private static StringBuffer delete(StringBuffer sb, int start, int end) {
@@ -393,14 +403,14 @@ public class StringX {
     return retval;
   }
 
+//  public static final boolean hasSubstance(String s) {
+//    return s != null && s.trim().length() > 0;
+//  }
+
   ///////////////////////////////////////////////
   public static boolean NonTrivial(String s) {
     return s != null && s.length() > 0;
   }
-
-//  public static final boolean hasSubstance(String s) {
-//    return s != null && s.trim().length() > 0;
-//  }
 
   public static boolean NonTrivial(StringBuffer sb) {
     return sb != null && NonTrivial(String.valueOf(sb));
@@ -463,9 +473,12 @@ public class StringX {
     }
   }
 
+  /**
+   * find index of string in table of known ones, guarded against nulls and refuses to match empties.
+   */
   public static int findIndex(String[] a, String o) {
     for (int i = a.length; i-- > 0; ) {
-      if (equalStrings(a[i], o)) { // this is safer than the above !!!!
+      if (equalStrings(a[i], o)) {
         return i;
       }
     }
@@ -543,8 +556,6 @@ public class StringX {
     }
     return String.valueOf(copy);
   }
-
-  protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
 
   public static String unescapeAll(String source) {
     if (NonTrivial(source)) {

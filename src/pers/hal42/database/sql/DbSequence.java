@@ -1,19 +1,15 @@
 package pers.hal42.database.sql;
+
 import pers.hal42.logging.ErrorLogStream;
 
 /**
- *  Generates unique values for use as keys. Constructor is not public. Use
- *  DbDatabase.getSequence().
- *
- * @author     Chris
- * @created    December 13, 2001
+ * Generates unique values for use as keys. Orignally crafted for postgres Sequence feature, wrapped so that we can implement something like it for different db's.
  */
 
 public class DbSequence {
 
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DbSequence.class);
-
   String name;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DbSequence.class);
 
   DbSequence(String name) {
     this.name = name;
@@ -31,6 +27,6 @@ public class DbSequence {
 //      int rtn = rs.getInt(1);
 //      ps.close();
 //      return rtn;
-      return -1;
+    return -1;
   }
 }

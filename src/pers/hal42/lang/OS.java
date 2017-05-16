@@ -7,14 +7,18 @@ import pers.hal42.util.Executor;
 import java.io.File;
 
 public class OS {
+  public static final String EOL = System.getProperty("line.separator");
+  public static final String LOGPATHKEY = "logpath";
+  private static final String DATALOGS = "/data/logs"; /// constant for servers
+  private static final String SLASHTMP = "/tmp"; /// constant for appliances
+  public static String signature[];
   /**
    * this singlet  was public because we are too lazy to wrap the TrueEnum features such as Value().
    */
   private static OsEnum os;
-
-  public static final String EOL = System.getProperty("line.separator");
-
-  public static String signature[];
+  ////////////////////////////////
+  // smart questions
+  private static String TEMPROOT = null;
 
   static {//with each OS we manipulate this list of names to recognize it
     signature = new String[OsEnum.numValues()];
@@ -23,6 +27,15 @@ public class OS {
     signature[OsEnum.Windows.ordinal()] = "Windows";
     signature[OsEnum.SunOS.ordinal()] = "SunOS";
   }
+
+  // restore as needed:
+//  public static boolean isNT() {
+//    return os().is(OsEnum.NT) || os.is(OsEnum.Windows2000); // includes Win2K, in behaviour
+//  }
+//
+//  public static boolean isWin2K() {
+//    return os() == OsEnum.Windows2000;
+//  }
 
   /**
    * gets best guess at OS from java properties.
@@ -40,37 +53,6 @@ public class OS {
       os = OsEnum.Linux;
     }
     return os;
-  }
-
-  public static String OsName() {
-    return signature[os().ordinal()];
-  }
-  ////////////////////////////////
-  // smart questions
-
-  public static boolean isLinux() {
-    return os() == OsEnum.Linux;
-  }
-
-  public static boolean isWindows() {
-    return os() == OsEnum.Windows; // really just 9X
-  }
-
-  // restore as needed:
-//  public static boolean isNT() {
-//    return os().is(OsEnum.NT) || os.is(OsEnum.Windows2000); // includes Win2K, in behaviour
-//  }
-//
-//  public static boolean isWin2K() {
-//    return os() == OsEnum.Windows2000;
-//  }
-
-//  public static boolean isSolaris() {
-//    return os().is(OsEnum.SunOS);
-//  }
-//
-  public static boolean isUnish(){
-    return isLinux();//|| isSolaris();
   }
 //
 //  public static boolean isEmbedded(){
@@ -106,11 +88,25 @@ public class OS {
   ///////////////////////
   // extra crap
 
-  public static final String LOGPATHKEY = "logpath";
+  public static String OsName() {
+    return signature[os().ordinal()];
+  }
 
-  private static String TEMPROOT = null;
-  private static final String DATALOGS = "/data/logs"; /// constant for servers
-  private static final String SLASHTMP = "/tmp"; /// constant for appliances
+  public static boolean isLinux() {
+    return os() == OsEnum.Linux;
+  }
+
+  public static boolean isWindows() {
+    return os() == OsEnum.Windows; // really just 9X
+  }
+
+  //  public static boolean isSolaris() {
+//    return os().is(OsEnum.SunOS);
+//  }
+//
+  public static boolean isUnish() {
+    return isLinux();//|| isSolaris();
+  }
 
   // synchronize to prevent multiple accesses/sets
   public static synchronized String TempRoot() {
@@ -146,11 +142,13 @@ public class OS {
     return new File(TempRoot(), particular);
   }
 
-  /** execute df -k and return its output*/
+  /**
+   * execute df -k and return its output
+   */
   public static int diskfree(String moreParams, TextList msgs) {
     int timeout = 5;
     int displayrate = 1;
-    return Executor.runProcess("df -k "+ StringX.TrivialDefault(moreParams, ""), "", displayrate, timeout, msgs);
+    return Executor.runProcess("df -k " + StringX.TrivialDefault(moreParams, ""), "", displayrate, timeout, msgs);
   }
 
 }

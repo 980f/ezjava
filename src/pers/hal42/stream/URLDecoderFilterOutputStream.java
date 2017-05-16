@@ -20,11 +20,9 @@ import java.io.OutputStream;
  * The class implements a URL decoder FilterOutputStream. By setting up such
  * an output stream, an application can write bytes to the underlying
  * output stream in URL-decoded format
- *
+ * <p>
  * NOTE: can probably replace all super.write(whatever) with out.append(whatever)
- *
  */
-
 
 
 public class URLDecoderFilterOutputStream extends FilterOutputStream {
@@ -36,7 +34,7 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
    * Creates a new URLDecoded output stream to write data to the
    * specified underlying output stream.
    *
-   * @param   out   the underlying output stream.
+   * @param out the underlying output stream.
    */
   public URLDecoderFilterOutputStream(OutputStream out) {
     super(out);
@@ -48,7 +46,7 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
       // if anything is left in teh buffer, it is not a valid format,
       // so spew it as-is
       // +++ in that case, should we except?
-      for(int i = 0; i < tmpBuff.length(); i++) {
+      for (int i = 0; i < tmpBuff.length(); i++) {
         super.write(tmpBuff.charAt(i));
       }
       tmpBuff.setLength(0);
@@ -61,19 +59,19 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
   /**
    * Writes the specified byte to this URLDecoded output stream.
    *
-   * @param      c   the character as ascii to be written.
-   * @exception  IOException  if an I/O error occurs.
+   * @param c the character as ascii to be written.
+   * @throws IOException if an I/O error occurs.
    */
   public synchronized void write(int c) throws IOException {
     try {
       tmpBuffMonitor.getMonitor();
-      if((c == '%') || (tmpBuff.length() > 0)) {
+      if ((c == '%') || (tmpBuff.length() > 0)) {
         tmpBuff.append(c);
-        if(tmpBuff.length() == 3) {
+        if (tmpBuff.length() == 3) {
           // prime for decoding
           int chr;
           try {
-            super.write(Integer.parseInt(tmpBuff.substring(1),16));
+            super.write(Integer.parseInt(tmpBuff.substring(1), 16));
           } catch (NumberFormatException e) {
             // if it is misformatted, just spew as normal
             flush();
@@ -82,10 +80,10 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
           }
         }
       } else {
-        if(c == '+') {
+        if (c == '+') {
           c = ' ';
         }
-        super.write((byte)c);
+        super.write((byte) c);
       }
     } finally {
       tmpBuffMonitor.freeMonitor();

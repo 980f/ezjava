@@ -1,24 +1,17 @@
 package pers.hal42.database;
-/**
- * Contains the Column information used by database profiling, etc.
- * This was created against a Postgres database, might need some fields dropped for mysql (or annotated as not relevant)
- */
 
 import pers.hal42.lang.ObjectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
-public class ColumnProfile implements Comparable {
-  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(ColumnProfile.class);
-
+/**
+ * Contains the Column information used by database profiling, etc.
+ * This was created against a Postgres database, might need some fields dropped for mysql (or annotated as not relevant)
+ */
+public class ColumnProfile implements Comparable<ColumnProfile> {
   // database metadata stuff:
   public String tableCat = "";
   public String tableSchem = "";
-  private TableProfile table = null;
-  private String columnName = "";
-  private ColumnTypes type;
-  private String columnSize = "";
-  private int size = -1; //todo:1 enforce restrictions?
   public String decimalDigits = "";
   public String numPrecRadix = "";
   public String nullAble = "";
@@ -26,11 +19,22 @@ public class ColumnProfile implements Comparable {
   public String columnDef = "";
   public String charOctetLength = "";
   public String ordinalPosition = "";
+  private TableProfile table = null;
+  private String columnName = "";
+  private ColumnTypes type;
+  private String columnSize = "";
+  private int size = -1; //todo:1 enforce restrictions?
   private String isNullable = "";
   private boolean nullable = false;
-
   private String displayName = ""; // for what goes at the top of a column when displaying via webpages, etc
   private boolean autoIncrement = false;
+  public static final int TEXTLEN = 0;//ObjectX.INVALIDINDEX;
+  public static final int INT4LEN = 4; // duh!
+  public static final int CHARLEN = 1; // special PG datatype that is one char
+  public static final int BOOLLEN = 1; // assume one byte
+  public static final boolean ALLOWNULL = true;//strange that this was missing
+  public static final boolean NOAUTO = false;
+  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(ColumnProfile.class);
 
   //////////////////////////
   private ColumnProfile() {
@@ -80,63 +84,12 @@ public class ColumnProfile implements Comparable {
     return ObjectX.NonTrivial(table) ? table.name() + '.' + name() : name();
   }
 
-  public static final int TEXTLEN = 0;//ObjectX.INVALIDINDEX;
-  public static final int INT4LEN = 4; // duh!
-  public static final int CHARLEN = 1; // special PG datatype that is one char
-  public static final int BOOLLEN = 1; // assume one byte
-
-  public static final boolean ALLOWNULL = true;//strange that this was missing
-  public static final boolean NOAUTO = false;
-
-  private static int sizeForType(ColumnTypes type) {
-    switch (type) {
-      case BOOL:
-        return BOOLLEN;
-      case TEXT:
-        return TEXTLEN;
-      case INT4:
-        return INT4LEN;
-      case CHAR:
-        return CHARLEN;
-      default:
-        return 0;
-    }
-  }
-
-  // creator for code-based profiles
-  public static ColumnProfile create(TableProfile table, String name,                                     ColumnTypes dbtype, int size, boolean nullable, String displayName,boolean autoIncrement, String columnDef) {
-    name = StringX.TrivialDefault(name, "").toLowerCase();
-    ColumnProfile cp = new ColumnProfile();
-    cp.table = table;
-    cp.columnName = name;
-    cp.type = dbtype;
-    dbg.VERBOSE("Just set column " + cp.fullName() + "'s type = " + cp.type.toString() + " for dbtype = " + dbtype);
-    cp.size = size > 0 ? size : sizeForType(cp.type);
-    cp.nullable = nullable;
-    cp.displayName = StringX.OnTrivial(displayName, name);
-    cp.autoIncrement = autoIncrement;
-    // the following needs to happen in the code that creates the column in the db
-    // and the code that checks the default to see if it has changed,
-    // and NOT here!
-    cp.columnDef = /*(cp.type.is(ColumnTypes.TEXT) ||
-                    cp.type.is(ColumnTypes.CHAR)) ?
-        StringX.singleQuoteEscape(columnDef) : // quote it*/
-        columnDef; // otherwise don't
-    return cp;
-  }
-
-  // creator for existing tables
-  public static ColumnProfile create(TableProfile table, String name, String type, String size, String nullable) {
-    return create(table, name, (ColumnTypes.valueOf(type)), StringX.parseInt(size), nullable.equalsIgnoreCase("YES"), null, false, "");
-  }
-
-  public int compareTo(Object o) {
+  public int compareTo(ColumnProfile o) {
     if (ObjectX.NonTrivial(o)) {
       try {
-        ColumnProfile cp = (ColumnProfile) o;
-        int i = name().compareTo(cp.name());
+        int i = name().compareTo(o.name());
         if (i == 0) {
-          return table.compareTo(cp.table);
+          return table.compareTo(o.table);
         }
         return i;
       } catch (Exception e) {
@@ -160,25 +113,8 @@ public class ColumnProfile implements Comparable {
     return dbReadyColumnDef(type, columnDef);
   }
 
-  public static String dbReadyColumnDef(ColumnTypes type, String rawDefault) {
-    rawDefault = StringX.TrivialDefault(rawDefault);
-    return type.isTextlike() ? StringX.singleQuoteEscape(rawDefault) : rawDefault;
-  }
-
   public void setDefaultFromDB(String defaultFromDB) {
     columnDef = dbUnReadyColumnDef(type, defaultFromDB);
-  }
-
-  public static String dbUnReadyColumnDef(ColumnTypes type, String defaultFromDB) {
-    if (StringX.NonTrivial(defaultFromDB)) {
-      if (type.isTextlike()) {
-        return StringX.unSingleQuoteEscape(defaultFromDB);
-      } else {
-        return defaultFromDB;
-      }
-    } else {
-      return "";
-    }
   }
 
   // for them to have the same name, the names must match (sans case)
@@ -200,6 +136,65 @@ public class ColumnProfile implements Comparable {
 
   public boolean isProbablyId() {
     return StringX.equalStrings(StringX.right(name(), 2), "ID", /* ignore case */ true);
+  }
+
+  private static int sizeForType(ColumnTypes type) {
+    switch (type) {
+      case BOOL:
+        return BOOLLEN;
+      case TEXT:
+        return TEXTLEN;
+      case INT4:
+        return INT4LEN;
+      case CHAR:
+        return CHARLEN;
+      default:
+        return 0;
+    }
+  }
+
+  // creator for code-based profiles
+  public static ColumnProfile create(TableProfile table, String name, ColumnTypes dbtype, int size, boolean nullable, String displayName, boolean autoIncrement, String columnDef) {
+    name = StringX.TrivialDefault(name, "").toLowerCase();
+    ColumnProfile cp = new ColumnProfile();
+    cp.table = table;
+    cp.columnName = name;
+    cp.type = dbtype;
+    dbg.VERBOSE("Just set column " + cp.fullName() + "'s type = " + cp.type.toString() + " for dbtype = " + dbtype);
+    cp.size = size > 0 ? size : sizeForType(cp.type);
+    cp.nullable = nullable;
+    cp.displayName = StringX.OnTrivial(displayName, name);
+    cp.autoIncrement = autoIncrement;
+    // the following needs to happen in the code that creates the column in the db
+    // and the code that checks the default to see if it has changed,
+    // and NOT here!
+    cp.columnDef = /*(cp.type.is(ColumnTypes.TEXT) ||
+                    cp.type.is(ColumnTypes.CHAR)) ?
+        StringX.singleQuoteEscape(columnDef) : // quote it*/
+      columnDef; // otherwise don't
+    return cp;
+  }
+
+  // creator for existing tables
+  public static ColumnProfile create(TableProfile table, String name, String type, String size, String nullable) {
+    return create(table, name, (ColumnTypes.valueOf(type)), StringX.parseInt(size), nullable.equalsIgnoreCase("YES"), null, false, "");
+  }
+
+  public static String dbReadyColumnDef(ColumnTypes type, String rawDefault) {
+    rawDefault = StringX.TrivialDefault(rawDefault);
+    return type.isTextlike() ? StringX.singleQuoteEscape(rawDefault) : rawDefault;
+  }
+
+  public static String dbUnReadyColumnDef(ColumnTypes type, String defaultFromDB) {
+    if (StringX.NonTrivial(defaultFromDB)) {
+      if (type.isTextlike()) {
+        return StringX.unSingleQuoteEscape(defaultFromDB);
+      } else {
+        return defaultFromDB;
+      }
+    } else {
+      return "";
+    }
   }
 }
 //$Id: ColumnProfile.java,v 1.28 2003/08/20 18:22:29 mattm Exp $

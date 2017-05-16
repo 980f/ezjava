@@ -1,4 +1,3 @@
-
 package pers.hal42.thread;
 
 // +++ search for places that do "new Thread("
@@ -6,14 +5,14 @@ package pers.hal42.thread;
 
 public class ThreadPool {
 
+  public ThreadPool() {
+  }
+
   public static Thread get(Runnable toRun, String name) {
 //    Thread ret = null;
     // +++ first, wade through the pool looking for an unused thread
     // +++ next, mark the thread as used
     // +++ finally,
-    return new Thread(toRun,name);
-  }
-
-  public ThreadPool() {
+    return new Thread(toRun, name);
   }
 }

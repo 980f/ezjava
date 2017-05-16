@@ -1,18 +1,21 @@
 package pers.hal42.database.sql;
-import java.sql.*;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 /**
- *  An expression of the form A OR B. The reason we have this class as well as
- *  DbCriterion, is that this class will optimise away unnecessary segments.
- *  i.e. A OR FALSE will be optimised to just A. The reason you may find a FALSE
- *  expression in your code is the use of DbDatabase.falseExpr(). This is a very
- *  convenient thing for dynamically generated queries.
- *  Of course we could just leave the dummy false expressions in the
- *  final SQL and presumably the dbms can optimise it away fine, but it looks a
- *  bit ugly and nasty to have these dummy expressions in the result.
- *  @see DbFalseExpr.
- * @author     Bitmec
- * @created    26 September 2001
+ * An expression of the form A OR B. The reason we have this class as well as
+ * DbCriterion, is that this class will optimise away unnecessary segments.
+ * i.e. A OR FALSE will be optimised to just A. The reason you may find a FALSE
+ * expression in your code is the use of DbDatabase.falseExpr(). This is a very
+ * convenient thing for dynamically generated queries.
+ * Of course we could just leave the dummy false expressions in the
+ * final SQL and presumably the dbms can optimise it away fine, but it looks a
+ * bit ugly and nasty to have these dummy expressions in the result.
+ *
+ * @author Bitmec
+ * @created 26 September 2001
+
  */
 public class DbOrExpr extends DbCriterion {
 
@@ -32,7 +35,7 @@ public class DbOrExpr extends DbCriterion {
     }
   }
 
-  public String getQueryString() {
+  public StringBuilder getQueryString() {
     // An optimisation hack
     if (c1 instanceof DbTrueExpr || c2 instanceof DbTrueExpr) {
       return "";

@@ -19,24 +19,39 @@ import pers.hal42.text.Formatter;
 import pers.hal42.timer.StopWatch;
 
 public class Waiter {
+  /**
+   * waitOnMe, safe object to do actual thread wait's on.
+   */
+  private final Object waitOnMe = new Object();
+  long millisecs;
+  boolean allowInterrupt;
+  ErrorLogStream dbg;
+  private int state = Ready;
+  /**
+   * originally made a member instead of a local to reduce startup overhead in
+   * Wait. primary use is to shorten successive timeouts when we sleep again
+   * after ignoring an interrupt conveniently also provides a response time
+   */
+  private StopWatch resleeper = new StopWatch();
   ////////////////////
-  public static final int Ready=0;
-  public static final int Notified=1;
-  public static final int Timedout=2;
-  public static final int Interrupted=3;
-  public static final int Excepted=4;
-  public static final int Extending=5;
+  public static final int Ready = 0;
+  public static final int Notified = 1;
+  public static final int Timedout = 2;
+  public static final int Interrupted = 3;
+  public static final int Excepted = 4;
+  public static final int Extending = 5;
+  ///////////////////
 
-  public static String stateString(int state) {
-    switch (state) {
-      case Ready:       return "Ready";
-      case Notified:    return "Notified";
-      case Timedout:    return "Timedout";
-      case Interrupted: return "Interrupted";
-      case Excepted:    return "Excepted";
-      case Extending:   return "Extending";
-      default:          return "Unknown";
+  /**
+   * create a Waiter, with legal but useless configuration.
+   *
+   * @ see Create(...)
+   */
+  public Waiter() {
+    if (dbg == null) {
+      dbg = ErrorLogStream.Null();
     }
+    prepare();
   }
 
   /**
@@ -44,11 +59,9 @@ public class Waiter {
    *
    * @return internal state as human readable String
    */
-  public String toString(){
+  public String toString() {
     return stateString(state);
   }
-
-  private int state=Ready;
 
   /**
    * something to do a switch upon... you might want to 'synch(myWaiter)' around
@@ -57,7 +70,7 @@ public class Waiter {
    *
    * @return psuedo enumeration of internal state
    */
-  public int state(){
+  public int state() {
     return state;
   }
 
@@ -66,40 +79,26 @@ public class Waiter {
    *
    * @return whether present state matches @param possiblestate int
    */
-  public boolean is(int possiblestate){
-    return state==possiblestate;
+  public boolean is(int possiblestate) {
+    return state == possiblestate;
   }
 
   /**
-   *
    * @return milliseconds from wait until notify. only strictly valid if there
-   *   WAS a notification. will be zero but not negative if notified before
-   *   wait started.
+   * WAS a notification. will be zero but not negative if notified before
+   * wait started.
    */
-  public int elapsedTime(){
-    return (int)resleeper.millis();
+  public int elapsedTime() {
+    return (int) resleeper.millis();
   }
-  ///////////////////
 
   /**
-   * originally made a member instead of a local to reduce startup overhead in
-   * Wait. primary use is to shorten successive timeouts when we sleep again
-   * after ignoring an interrupt conveniently also provides a response time
-   */
-  private StopWatch resleeper=new StopWatch();
-
-  long millisecs;
-  boolean allowInterrupt;
-  ErrorLogStream dbg;
-
-  /**
-   *
-   * @return this
    * @param millisecs becomes the wait time POSSIBLY IMMEDIATELY i.e. this can
-   *   cause a timeout if changed while running. That is good.
+   *                  cause a timeout if changed while running. That is good.
+   * @return this
    */
-  public Waiter set(long millisecs){
-    this.millisecs=millisecs ;
+  public Waiter set(long millisecs) {
+    this.millisecs = millisecs;
     return this;
   }
 
@@ -109,8 +108,8 @@ public class Waiter {
    * @param allowInterrupt sets whether to allow 'interrupted' state, else thread interrupts are ignored
    * @return this
    */
-  public Waiter set(boolean allowInterrupt){
-    this.allowInterrupt=allowInterrupt;
+  public Waiter set(boolean allowInterrupt) {
+    this.allowInterrupt = allowInterrupt;
     return this;
   }
 
@@ -120,85 +119,81 @@ public class Waiter {
    * @param dbg ErrorLogStream, set debug output stream, protects itself against defective input.
    * @return this
    */
-  public Waiter set(ErrorLogStream dbg){
-    this.dbg=ErrorLogStream.NonNull(dbg);//avert NPE
+  public Waiter set(ErrorLogStream dbg) {
+    this.dbg = ErrorLogStream.NonNull(dbg);//avert NPE
     return this;
   }
 
   /**
    * setto, coordinated (synch'ed) setting of parameters
    *
-   * @param millisecs long @see set(long)
+   * @param millisecs      long @see set(long)
    * @param allowInterrupt boolean @see set(boolean)
-   * @param dbg ErrorLogStream @see set(ErrorLogStream)
+   * @param dbg            ErrorLogStream @see set(ErrorLogStream)
    * @return this
    */
-  Waiter setto(long millisecs,boolean allowInterrupt,ErrorLogStream dbg){
+  Waiter setto(long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
     synchronized (waitOnMe) {//ensure atomic changing of the 3 args. might be gratuitous but doesn't hurt.
       return set(millisecs).set(allowInterrupt).set(dbg);
     }
   }
 
   /**
-   *
    * note: the synch in prepare is required. Clears any old notification or problem so that we can see a new one.
+   *
    * @return this
    */
-  public Waiter prepare(){
-    synchronized(waitOnMe){
-      state=Ready;
+  public Waiter prepare() {
+    synchronized (waitOnMe) {
+      state = Ready;
       resleeper.Reset();//lets us discover that we notified before waiting.
       return this;
     }
   }
 
   /**
-   * waitOnMe, safe object to do actual thread wait's on.
-   */
-  private final Object waitOnMe = new Object();
-
-  /** starts waiting
+   * starts waiting
+   *
    * @return state when waiting is done.
    */
-  public int run(){
-    synchronized(waitOnMe){
+  public int run() {
+    synchronized (waitOnMe) {
       dbg.Enter("Wait");
-      dbg.VERBOSE("waiter state is:" + this +" toat:" + millisecs);
+      dbg.VERBOSE("waiter state is:" + this + " toat:" + millisecs);
       try {
         resleeper.Start(); //always a fresh start, no "lap time" on our stopwatches.
-        if(state == Extending) {//allow for extending before starting.
+        if (state == Extending) {//allow for extending before starting.
           state = Ready;
         }
 
-        while(state == Ready) {
+        while (state == Ready) {
           long waitfor = millisecs - resleeper.millis();
-          if(waitfor < 0) {
+          if (waitfor < 0) {
             dbg.VERBOSE("timed out before waiting");
             state = Timedout;
           } else {
-            dbg.VERBOSE("waiting for "+waitfor);
+            dbg.VERBOSE("waiting for " + waitfor);
             try {
               waitOnMe.wait(waitfor); //will throw IllegalArgumentException if sleep time is negative...
-            }
-            catch(InterruptedException ie){
+            } catch (InterruptedException ie) {
               Thread.interrupted();//clear thread's interrupted flag
-              if(allowInterrupt){
+              if (allowInterrupt) {
                 dbg.VERBOSE("interrupted,exiting");
-                state=Interrupted;
+                state = Interrupted;
               } else {
                 dbg.VERBOSE("interrupted,ignored");
-                if(state==Extending){//any other state (besides Ready)will result in ending the wait when we do the continue.
+                if (state == Extending) {//any other state (besides Ready)will result in ending the wait when we do the continue.
                   state = Ready;
                 }
                 continue;//interrupts are ignored
               }
             }
-            dbg.VERBOSE( Formatter.ratioText("proceeds after ",resleeper.Stop(),millisecs));
-            if(state == Extending) {
+            dbg.VERBOSE(Formatter.ratioText("proceeds after ", resleeper.Stop(), millisecs));
+            if (state == Extending) {
               state = Ready;//but resleeper is left alone, the time set by Extend() begins when that call occurs.
               continue;//if notified we will exit the while, don't need to check for that here.
             }
-            if(state == Ready) {
+            if (state == Ready) {
               dbg.VERBOSE("timed out the normal way");
               state = Timedout;
             }
@@ -223,16 +218,16 @@ public class Waiter {
    * note: if you use this you should always give an argument to prepare().
    */
   public int Extend(long milliseconds) {
-    synchronized(waitOnMe) {
+    synchronized (waitOnMe) {
       dbg.WARNING("trying to extend from: " + this.millisecs + " to: " + milliseconds);
-      if(state == Ready || state == Extending) { //can only extend when already running or extending
+      if (state == Ready || state == Extending) { //can only extend when already running or extending
         this.millisecs = milliseconds;
         state = Extending;
         dbg.WARNING("restarting internal timer");
         resleeper.Start(); //forget the past
         try {
           waitOnMe.notify(); //internal notify, to make things more brisk.
-        } catch(Exception ex) { //especially null pointer exceptions
+        } catch (Exception ex) { //especially null pointer exceptions
           state = Excepted;
         }
       } else {
@@ -245,13 +240,13 @@ public class Waiter {
   /**
    * start waiting, setting all parameters
    *
-   * @param millisecs long @see set(long)
+   * @param millisecs      long @see set(long)
    * @param allowInterrupt boolean @see set(boolean)
-   * @param dbg ErrorLogStream @see set(ErrorLogStream)
+   * @param dbg            ErrorLogStream @see set(ErrorLogStream)
    * @return what caused wait to terminate, @see run()
    */
-  public int Start(long millisecs,boolean allowInterrupt,ErrorLogStream dbg){
-    setto(millisecs,allowInterrupt,dbg);
+  public int Start(long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
+    setto(millisecs, allowInterrupt, dbg);
     //it is ok if any of the notification functions is called by another thread between these lines of code.
     return run();
   }
@@ -260,11 +255,11 @@ public class Waiter {
    * Start, retain present 'allowInterrupt' setting
    *
    * @param millisecs long @see set(long)
-   * @param somedbg ErrorLogStream @see set(ErrorLogStream)
+   * @param somedbg   ErrorLogStream @see set(ErrorLogStream)
    * @return what caused wait to terminate, @see run()
    */
-  public final int Start(long millisecs,ErrorLogStream somedbg){
-    return Start(millisecs, this.allowInterrupt,somedbg);
+  public final int Start(long millisecs, ErrorLogStream somedbg) {
+    return Start(millisecs, this.allowInterrupt, somedbg);
   }
 
   /**
@@ -273,7 +268,7 @@ public class Waiter {
    * @param millisecs long @see set(long)
    * @return what caused wait to terminate, @see run()
    */
-  public final int Start(long millisecs){
+  public final int Start(long millisecs) {
     return Start(millisecs, this.allowInterrupt, this.dbg);
   }
 
@@ -281,40 +276,39 @@ public class Waiter {
    * configure waiter but don't wait.
    * call run() to wait using these values.
    *
-   * @param millisecs long @see set(long)
+   * @param millisecs      long @see set(long)
    * @param allowInterrupt boolean @see set(boolean)
-   * @param dbg ErrorLogStream @see set(ErrorLogStream)
+   * @param dbg            ErrorLogStream @see set(ErrorLogStream)
    * @return this
    */
-  public Waiter prepare(long millisecs,boolean allowInterrupt,ErrorLogStream dbg){
-    setto(millisecs,allowInterrupt,dbg);
+  public Waiter prepare(long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
+    setto(millisecs, allowInterrupt, dbg);
     return prepare();
   }
 
-  public final Waiter prepare(long millisecs,ErrorLogStream somedbg){
-    return prepare(millisecs, false,somedbg);
+  public final Waiter prepare(long millisecs, ErrorLogStream somedbg) {
+    return prepare(millisecs, false, somedbg);
   }
 
-  public final Waiter prepare(long millisecs){
-    return prepare(millisecs, false,ErrorLogStream.Null());
+  public final Waiter prepare(long millisecs) {
+    return prepare(millisecs, false, ErrorLogStream.Null());
   }
 
   /**
    * polite and properly synch'd version of Object.notify()
-   *   private so that only certain states can be indicated.
+   * private so that only certain states can be indicated.
    *
-   * @return true if notify did NOT happen, mostly of academic interest.
    * @param newstate what a pending run() will return
+   * @return true if notify did NOT happen, mostly of academic interest.
    */
-  private boolean notifyThis(int newstate){
-    synchronized (waitOnMe){
-      state=newstate;
+  private boolean notifyThis(int newstate) {
+    synchronized (waitOnMe) {
+      state = newstate;
       try {
         waitOnMe.notify();
         return false;
-      }
-      catch (Exception ex) {//especially null pointer exceptions
-        state=Excepted;
+      } catch (Exception ex) {//especially null pointer exceptions
+        state = Excepted;
         return true;
       } finally {
         resleeper.Stop(); //owner gets a repsonse time from this.
@@ -327,35 +321,26 @@ public class Waiter {
    *
    * @return true if notify did NOT happen, mostly of academic interest.
    */
-  public boolean Stop(){
+  public boolean Stop() {
     return notifyThis(Notified); //yes, overrides Interrupted and all other states.
   }
 
-/**
- * force a timeout NOW
- * @return true if notify did NOT happen, mostly of academic interest.
- */
-  public boolean forceTimeout(){
+  /**
+   * force a timeout NOW
+   *
+   * @return true if notify did NOT happen, mostly of academic interest.
+   */
+  public boolean forceTimeout() {
     return notifyThis(Timedout); //yes, overrides Interrupted and all other states.
   }
 
   /**
    * force an exception indication
+   *
    * @return true if notify did NOT happen, mostly of academic interest.
    */
   public boolean forceException() {
     return notifyThis(Excepted); //terminates wait and indicates things are screwed
-  }
-
-  /**
-   * create a Waiter, with legal but useless configuration.
-   * @ see Create(...)
-   */
-  public Waiter() {
-    if(dbg==null){
-      dbg=ErrorLogStream.Null();
-    }
-    prepare();
   }
 
   /**
@@ -367,24 +352,12 @@ public class Waiter {
    */
   public void finishWaiting() {
     long remaining = millisecs - resleeper.millis();
-    if(remaining > 0) {
+    if (remaining > 0) {
       dbg.WARNING("Finishing the wait for " + remaining + " ms.");
       ThreadX.sleepFor(remaining);
     } else {
-      dbg.WARNING("Not waiting any further ("+remaining+" ms remaining)");
+      dbg.WARNING("Not waiting any further (" + remaining + " ms remaining)");
     }
-  }
-
-  /**
-   * Create
-   *
-   * @param millisecs long @see set(long)
-   * @param allowInterrupt boolean @see set(boolean)
-   * @param dbg ErrorLogStream @see set(ErrorLogStream)
-   * @return new configured Waiter
-   */
-  public static Waiter Create(long millisecs,boolean allowInterrupt,ErrorLogStream dbg){
-    return new Waiter().setto(millisecs,allowInterrupt,dbg);
   }
 
   /**
@@ -392,8 +365,39 @@ public class Waiter {
    *
    * @return more info than toString
    */
-  public String toSpam(){
-    return Ascii.bracket(this.toString()+" elapsed:"+this.elapsedTime());
+  public String toSpam() {
+    return Ascii.bracket(this.toString() + " elapsed:" + this.elapsedTime());
+  }
+
+  public static String stateString(int state) {
+    switch (state) {
+      case Ready:
+        return "Ready";
+      case Notified:
+        return "Notified";
+      case Timedout:
+        return "Timedout";
+      case Interrupted:
+        return "Interrupted";
+      case Excepted:
+        return "Excepted";
+      case Extending:
+        return "Extending";
+      default:
+        return "Unknown";
+    }
+  }
+
+  /**
+   * Create
+   *
+   * @param millisecs      long @see set(long)
+   * @param allowInterrupt boolean @see set(boolean)
+   * @param dbg            ErrorLogStream @see set(ErrorLogStream)
+   * @return new configured Waiter
+   */
+  public static Waiter Create(long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
+    return new Waiter().setto(millisecs, allowInterrupt, dbg);
   }
 }
 

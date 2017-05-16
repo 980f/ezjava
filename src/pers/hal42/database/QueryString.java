@@ -15,8 +15,8 @@ import java.util.Enumeration;
 *
 * */
 public class QueryString {
+  protected StringBuffer guts = new StringBuffer(200);//most queries are big
   public static final ErrorLogStream dbg = ErrorLogStream.getForClass(QueryString.class);
-
   ///////////////////////////////////////
   // Keywords:
   private static final String SELECT = " SELECT ";
@@ -44,7 +44,7 @@ public class QueryString {
   private static final String OR = " OR ";
   private static final String CREATE = " CREATE ";
   private static final String TABLE = " TABLE ";
-  private static final String CREATETABLE = CREATE +  TABLE;// + MAINSAIL;
+  private static final String CREATETABLE = CREATE + TABLE;// + MAINSAIL;
   private static final String COMMA = " , ";
   private static final String SPACE = " ";
   private static final String EQUALS = " = ";
@@ -54,7 +54,7 @@ public class QueryString {
   private static final String LT = " < ";
   private static final String ADD = " ADD ";
   private static final String CONSTRAINT = " CONSTRAINT ";
-  private static final String ADDCONSTRAINT = ADD+CONSTRAINT;
+  private static final String ADDCONSTRAINT = ADD + CONSTRAINT;
   private static final String KEY = " KEY ";
   private static final String PRIMARYKEY = " PRIMARY " + KEY;
   private static final String FOREIGNKEY = " FOREIGN " + KEY;
@@ -86,7 +86,7 @@ public class QueryString {
   private static final String HAVING = " HAVING ";
   private static final String DEFAULT = " DEFAULT ";
   private static final String OUTER = " OUTER ";
-//  private static final String COMMAOUTER = COMMA + OUTER;
+  //  private static final String COMMAOUTER = COMMA + OUTER;
   private static final String SUBSTRING = " SUBSTRING ";
   private static final String TO = " TO ";
   private static final String FOR = " FOR ";
@@ -100,7 +100,7 @@ public class QueryString {
   private static final String USING = " USING ";
   private static final String CAST = " CAST ";
   private static final String BIGINT = " BIGINT ";
-//added for postgres:
+  //added for postgres:
   private static final String LIMIT = " LIMIT ";
   private static final String VACUUM = " VACUUM ";
   private static final String ANALYZE = " ANALYZE ";
@@ -111,73 +111,82 @@ public class QueryString {
   private static final String SHOW = " SHOW ";
   private static final String EXPLAIN = " EXPLAIN ";
   private static final String EXPLAINANALYZE = EXPLAIN + ANALYZE; // PG only;
+  private static final String SLIMUPPERSELECT = SELECT.trim().toUpperCase();
+  private static final String SLIMLOWERSELECT = SELECT.trim().toLowerCase();
+  private static final String SLIMUPPERSHOW = SHOW.trim().toUpperCase();
+  private static final String SLIMLOWERSHOW = SHOW.trim().toLowerCase();
+  private static final String LEFTOFEXPLAIN = StringX.subString(EXPLAIN, 0, 6);// "EXPLAI" since only 6 chars long
 
+  ///////////////////////////////
+  private QueryString(String starter) {
+    guts.setLength(0);//removes contents but not allocation
+    guts.append(starter);
+  }
 
-  protected StringBuffer guts= new StringBuffer(200);//most queries are big
-
-  public String toString(){//works with String +
+  public String toString() {//works with String +
     return String.valueOf(guts);
   }
 
-  public QueryString cat(QueryString s){
+  public QueryString cat(QueryString s) {
     cat(SPACE).cat(String.valueOf(s));
     return this;
   }
 
-  public QueryString cat(String s){
+  public QueryString cat(String s) {
     guts.append(s);
     return this;
   }
 
-  public QueryString cat(char c){
+  public QueryString cat(char c) {
     guts.append(c);
     return this;
   }
 
-  public QueryString cat(int s){
-    return cat((long)s);
+  public QueryString cat(int s) {
+    return cat((long) s);
   }
 
-  public QueryString cat(long s){
+  public QueryString cat(long s) {
     guts.append(s);
     return this;
   }
 
-  public QueryString where(){
+  public QueryString where() {
     return cat(WHERE);
   }
 
-  public QueryString and(){
+  public QueryString and() {
     return cat(AND);
   }
 
-  public QueryString or(){
+  public QueryString or() {
     return cat(OR);
   }
 
-  public QueryString not(){
+  public QueryString not() {
     return cat(NOT);
   }
 
-  private QueryString in(String list){
+  private QueryString in(String list) {
     return word(IN).Open().cat(list).Close();
   }
-  public QueryString inQuoted(TextList list){
+
+  public QueryString inQuoted(TextList list) {
     // have to do this list manually, as quoting has some special rules ...
     // create a new list with the quoted strings in it, then cat them into a StringBuffer and output as a string.
     // This would be faster if it was directly into a StringBuffer, but I am in a hurry right now.
     TextList list2 = new TextList(list.size());
-    for(int i = 0; i < list.size(); i++) {
+    for (int i = 0; i < list.size(); i++) {
       list2.add(Quoted(list.itemAt(i)));
     }
     return inUnquoted(list2);
   }
 
-  public QueryString inUnquoted(TextList list){
+  public QueryString inUnquoted(TextList list) {
     return in(list.asParagraph(","));
   }
 
-  public QueryString inUnquoted(ColumnProfile cp, TextList list){
+  public QueryString inUnquoted(ColumnProfile cp, TextList list) {
     return cat(cp.fullName()).inUnquoted(list);
   }
 
@@ -189,9 +198,11 @@ public class QueryString {
   public QueryString sum(ColumnProfile cp) {
     return sum(cp.fullName());
   }
+
   public QueryString sum(QueryString qs) {
     return sum(String.valueOf(qs));
   }
+
   private QueryString sum(String str) {
     return word(SUM).Open().cat(str).Close();
   }
@@ -224,7 +235,7 @@ public class QueryString {
     return word(AS).word(newname);
   }
 
-//  CASE a WHEN 1 THEN 'one'
+  //  CASE a WHEN 1 THEN 'one'
 //         WHEN 2 THEN 'two'
 //         ELSE 'other'
 //  END
@@ -236,13 +247,13 @@ public class QueryString {
   /**
    * "AND (fi
    */
-  public QueryString AndInList(ColumnProfile field,TextList options){
-    if((options!=null)&&(field!=null)){
+  public QueryString AndInList(ColumnProfile field, TextList options) {
+    if ((options != null) && (field != null)) {
       switch (options.size()) {
         case 0://make no changes whatsoever
           break;
         case 1://a simple compare
-          return nvPair(field,options.itemAt(0));
+          return nvPair(field, options.itemAt(0));
         default://2 or more must be or'd together or use "IN" syntax %%%
 
           break;
@@ -251,161 +262,125 @@ public class QueryString {
     return this;
   }
 
-  private QueryString SetJust(ColumnProfile field, String val){
+  private QueryString SetJust(ColumnProfile field, String val) {
     // do NOT use nvPair(field,val) here, as it puts a table. prefix on the fieldname
     // eg: table.field=value.  This FAILS in PG!
     // instead, use the following:
     return cat(SET).nvPair(field.name(), val);
   }
 
-  private QueryString SetJust(ColumnProfile field, UniqueId id){
-    return cat(SET).nvPair(field.name(),id); // do not change this until you read the above function !!!
+  private QueryString SetJust(ColumnProfile field, UniqueId id) {
+    return cat(SET).nvPair(field.name(), id); // do not change this until you read the above function !!!
   }
 
-  private QueryString SetJust(ColumnProfile field, int val){//wishing for templates....
+  private QueryString SetJust(ColumnProfile field, int val) {//wishing for templates....
     return cat(SET).nvPair(field.name(), val); // do not change this until you read the above function !!!
   }
 
-  private QueryString SetJust(ColumnProfile field, Long val){//wishing for templates....
+  private QueryString SetJust(ColumnProfile field, Long val) {//wishing for templates....
     return cat(SET).nvPair(field.name(), val); // do not change this until you read the above function !!!
   }
 
-  public QueryString Values(String first){
+  public QueryString Values(String first) {
     return Values().value(first);
   }
 
-  public QueryString Values(){
-    return cat(VALUES+OPENPAREN);
-  }
-
-  public QueryString Open(){
-    return cat(OPENPAREN);
-  }
-
-  public QueryString Open(ColumnProfile cp){
-    return Open().cat(cp.fullName());
-  }
-
-  public QueryString Close(){
-    return cat(CLOSEPAREN);
-  }
-
-  public QueryString comma(){
-    return cat(COMMA);
-  }
-
-  public QueryString comma(ColumnProfile cp){
-    return comma().cat(cp.fullName());
-  }
-
-  public QueryString comma(TableProfile tp){
-    return comma().cat(tp.name());
+  public QueryString Values() {
+    return cat(VALUES + OPENPAREN);
   }
 //  public QueryString commaOuter(TableProfile tp){
 //    return comma().cat(OUTER).cat(tp.name());
 //  }
 
-  public QueryString comma(QueryString qs){
+  public QueryString Open() {
+    return cat(OPENPAREN);
+  }
+
+  public QueryString Open(ColumnProfile cp) {
+    return Open().cat(cp.fullName());
+  }
+
+  public QueryString Close() {
+    return cat(CLOSEPAREN);
+  }
+
+  public QueryString comma() {
+    return cat(COMMA);
+  }
+
+  public QueryString comma(ColumnProfile cp) {
+    return comma().cat(cp.fullName());
+  }
+
+  public QueryString comma(TableProfile tp) {
+    return comma().cat(tp.name());
+  }
+
+  public QueryString comma(QueryString qs) {
     return comma().cat(qs);
   }
 
-  public QueryString comma(int s){
+  public QueryString comma(int s) {
     return comma().cat(s);
   }
 
-  public QueryString comma(UniqueId id){
-    if(UniqueId.isValid(id)) {
+  public QueryString comma(UniqueId id) {
+    if (UniqueId.isValid(id)) {
       return comma().cat(id.value());
     } else {
       return comma().cat(NULL);
     }
   }
 
-  private QueryString word(String s){
+  private QueryString word(String s) {
     return cat(SPACE).cat(s).cat(SPACE);
   }
 
-  public QueryString parenth(String s){
+  public QueryString parenth(String s) {
     return cat(SPACE).Open().cat(s).Close().cat(SPACE);
   }
 
-  public QueryString parenth(QueryString s){
+  public QueryString parenth(QueryString s) {
     return parenth(String.valueOf(s));
   }
 
-  public QueryString value(String s){
+  public QueryString value(String s) {
     return cat(Quoted(s));
   }
 
-  public QueryString value(char c){
+  public QueryString value(char c) {
     return cat(Quoted(c));
   }
 
-  public QueryString value(long ell){
+  public QueryString value(long ell) {
     return cat(/*Quoted(*/ell/*)*/); // DO NOT quote this; it can cause the database txn to be very slow, as it has to convert its type before EACH comparison!
   }
 
-/*
-   Rules:
-   1) If it contains any single quotes, escape them with another single quote
-   2) Wrap it in single quotes,
-*/
-  public static String Quoted(String s){
-    String ret = StringX.singleQuoteEscape(s);
-    dbg.VERBOSE("Quoted():" +s+ "->" +ret);
-    return ret;
-  }
-  /**
-  * SQL-92 requires that all strings are inside single quotes.
-  * Double quotation marks delimit special identifiers referred to in SQL-92
-  * as 'delimited identifiers'.  Single quotation marks delimit character strings.
-  * Within a character string, to represent a single quotation mark or
-  * apostrophe, use two single quotation marks. To represent a double
-  * quotation mark, use a double quotation mark
-  * (which requires a backslash escape character within a Java program).
-  * For example, the string
-  *   "this " is a double quote"
-  * is not valid.  This one is:
-  *   'this " is a double quote'
-  * And so is this one:
-  *   "this "" is a double quote"
-  * And this one:
-  *   'this '' is a single quote'
-  */
-
-
-  public static String Quoted(char c){
-    return Quoted(String.valueOf(c));
-  }
-  public static String Quoted(long ell){
-    return Quoted(String.valueOf(ell));
-  }
-
-  public QueryString quoted(char c){
+  public QueryString quoted(char c) {
     return cat(SPACE).value(c);
   }
 
-  public QueryString commaQuoted(String s){
+  public QueryString commaQuoted(String s) {
     return cat(COMMA).value(s);
   }
 
-  public QueryString commaQuoted(char c){
+  public QueryString commaQuoted(char c) {
     return cat(COMMA).value(c);
   }
 
-  public QueryString orderbyasc(ColumnProfile first){
+  public QueryString orderbyasc(ColumnProfile first) {
     return cat(ORDERBY).cat(first.fullName()).cat(ASC); // --- possible cause of bugs
   }
 
-  public QueryString orderbydesc(ColumnProfile first){
+  public QueryString orderbydesc(ColumnProfile first) {
     return cat(ORDERBY).cat(first.fullName()).cat(DESC); // --- possible cause of bugs
   }
 
-  public QueryString orderbydesc(int columnFirst){
+  public QueryString orderbydesc(int columnFirst) {
     return cat(ORDERBY).cat(String.valueOf(columnFirst)).cat(DESC);
   }
 
-  public QueryString orderbyasc(int columnFirst){
+  public QueryString orderbyasc(int columnFirst) {
     return cat(ORDERBY).cat(String.valueOf(columnFirst)).cat(ASC);
   }
 
@@ -428,93 +403,98 @@ public class QueryString {
   /**
    * Use one function that takes an object and does intelligent things with it instead of all of these ???
    */
-  public QueryString nvPairNull(ColumnProfile field){
-      return word(field.fullName()).cat(EQUALS).cat(NULL);
+  public QueryString nvPairNull(ColumnProfile field) {
+    return word(field.fullName()).cat(EQUALS).cat(NULL);
   }
 
-  public QueryString nvPair(ColumnProfile field, String value){
-      return nvPair(field.fullName(), value);
+  public QueryString nvPair(ColumnProfile field, String value) {
+    return nvPair(field.fullName(), value);
   }
 
-  public QueryString nvPair(ColumnProfile field, int value){
-      return nvPair(field.fullName(), value);
+  public QueryString nvPair(ColumnProfile field, int value) {
+    return nvPair(field.fullName(), value);
   }
 
-  public QueryString nvPair(ColumnProfile field, long value){
-      return nvPair(field.fullName(), value);
+  public QueryString nvPair(ColumnProfile field, long value) {
+    return nvPair(field.fullName(), value);
   }
 
-  public QueryString nvPair(ColumnProfile field, Long value){
-      return nvPair(field.fullName(), value); // --- just made this use the full name so that won't get the "ambiguous column" bug
+  public QueryString nvPair(ColumnProfile field, Long value) {
+    return nvPair(field.fullName(), value); // --- just made this use the full name so that won't get the "ambiguous column" bug
   }
 
-  public QueryString nvPair(String field, String value){
+  public QueryString nvPair(String field, String value) {
     return word(field).cat(EQUALS).value(value);
   }
 
-  public QueryString nvPair(ColumnProfile field, UniqueId value){
-    if(UniqueId.isValid(value)) {
+  public QueryString nvPair(ColumnProfile field, UniqueId value) {
+    if (UniqueId.isValid(value)) {
       return nvPair(field, value.value());
     } else {
       return nvPairNull(field);
     }
   }
 
-  public QueryString nvPair(String field, UniqueId value){
+  public QueryString nvPair(String field, UniqueId value) {
     return nvPair(field, value.value());
-  }
-
-  public QueryString nvPair(String field, int value){
-      return nvPair(field, (long) value);
-  }
-
-  public QueryString nvPair(String field, long value){
-      return word(field).cat(EQUALS).value(value);
-  }
-
-  public QueryString nvPair(String field, Long value){
-      return word(field).cat(EQUALS).cat((value == null) ? NULL : String.valueOf(value));
   }
 
 ////////////////////////////
 // compare field to value.
 
-  public QueryString nvcompare(ColumnProfile field,String cmpop, String value){
+  public QueryString nvPair(String field, int value) {
+    return nvPair(field, (long) value);
+  }
+
+  public QueryString nvPair(String field, long value) {
+    return word(field).cat(EQUALS).value(value);
+  }
+
+  public QueryString nvPair(String field, Long value) {
+    return word(field).cat(EQUALS).cat((value == null) ? NULL : String.valueOf(value));
+  }
+
+  public QueryString nvcompare(ColumnProfile field, String cmpop, String value) {
     return word(field.fullName()).cat(cmpop).value(value);
   }
-  public QueryString nvcompare(ColumnProfile field,String cmpop, long value){
+
+  public QueryString nvcompare(ColumnProfile field, String cmpop, long value) {
     return word(field.fullName()).cat(cmpop).value(value);
   }
 
-  public QueryString nGTEQv(ColumnProfile field, String value){
-    return nvcompare(field,GTEQ,value);
-  }
-  public QueryString nGTEQv(ColumnProfile field, long value){
-    return nvcompare(field,GTEQ,value);
+  public QueryString nGTEQv(ColumnProfile field, String value) {
+    return nvcompare(field, GTEQ, value);
   }
 
-  public QueryString nLTEQv(ColumnProfile field, String value){
-    return nvcompare(field,LTEQ,value);
-  }
-  public QueryString nLTEQv(ColumnProfile field, long value){
-    return nvcompare(field,LTEQ,value);
+  public QueryString nGTEQv(ColumnProfile field, long value) {
+    return nvcompare(field, GTEQ, value);
   }
 
-  public QueryString nLTv(ColumnProfile field, String value){
-    return nvcompare(field,LT,value);
-  }
-  public QueryString nLTv(ColumnProfile field, long value){
-    return nvcompare(field,LT,value);
+  public QueryString nLTEQv(ColumnProfile field, String value) {
+    return nvcompare(field, LTEQ, value);
   }
 
-  public QueryString nGTv(ColumnProfile field, String value){
-    return nvcompare(field,GT,value);
+  public QueryString nLTEQv(ColumnProfile field, long value) {
+    return nvcompare(field, LTEQ, value);
   }
-  public QueryString nGTv(ColumnProfile field, long value){
-    return nvcompare(field,GT,value);
+
+  public QueryString nLTv(ColumnProfile field, String value) {
+    return nvcompare(field, LT, value);
   }
   //end binary compares
   /////////////////////////////
+
+  public QueryString nLTv(ColumnProfile field, long value) {
+    return nvcompare(field, LT, value);
+  }
+
+  public QueryString nGTv(ColumnProfile field, String value) {
+    return nvcompare(field, GT, value);
+  }
+
+  public QueryString nGTv(ColumnProfile field, long value) {
+    return nvcompare(field, GT, value);
+  }
 
   public QueryString isNull(ColumnProfile field) {
     return isNull(field.fullName());
@@ -535,8 +515,8 @@ public class QueryString {
   /**
    * checks for field being desired state
    */
-  public QueryString booleanIs(ColumnProfile field,boolean desired){
-    if(!desired) {
+  public QueryString booleanIs(ColumnProfile field, boolean desired) {
+    if (!desired) {
       not();
     }
     return word(field.fullName());
@@ -545,13 +525,13 @@ public class QueryString {
   // means is null or == ''
   public QueryString isEmpty(ColumnProfile field) {
     Open().isNull(field.fullName());
-    if(field.numericType()==ColumnTypes.CHAR || field.numericType()==ColumnTypes.TEXT) {
+    if (field.numericType() == ColumnTypes.CHAR || field.numericType() == ColumnTypes.TEXT) {
       or().nvPair(field.fullName(), "");
     }
     return Close();
   }
 
-  public QueryString matching(ColumnProfile field1, ColumnProfile field2){
+  public QueryString matching(ColumnProfile field1, ColumnProfile field2) {
     return word(field1.fullName()).cat(EQUALS).word(field2.fullName());
   }
 
@@ -560,30 +540,30 @@ public class QueryString {
    * parens don't hurt if we aren't wrapping.
    * this presumes that the data being search is already within the modular range.
    */
-  private QueryString rangy(boolean wrapper, ColumnProfile field, String start, String end, boolean closeEnd){
-    return Open(field).cat(GTEQ).value(start) .cat(wrapper?OR:AND)
-    .word(field.fullName()).cat(closeEnd?LTEQ:LT).value(end).Close();
+  private QueryString rangy(boolean wrapper, ColumnProfile field, String start, String end, boolean closeEnd) {
+    return Open(field).cat(GTEQ).value(start).cat(wrapper ? OR : AND)
+      .word(field.fullName()).cat(closeEnd ? LTEQ : LT).value(end).Close();
   }
 
-  public QueryString andRange(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd){
-    if(ObjectRange.NonTrivial(strange)){
+  public QueryString andRange(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
+    if (ObjectRange.NonTrivial(strange)) {
       and().range(rangeName, strange, closeEnd);
     }
     return this;
   }
 
-  public QueryString orRange(ColumnProfile rangeName,ObjectRange strange, boolean closeEnd){
-    if(ObjectRange.NonTrivial(strange)){
+  public QueryString orRange(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
+    if (ObjectRange.NonTrivial(strange)) {
       or().range(rangeName, strange, closeEnd);
     }
     return this;
   }
 
-  public QueryString range(ColumnProfile rangeName,ObjectRange strange, boolean closeEnd){
-    if(ObjectRange.NonTrivial(strange)){
-      dbg.VERBOSE("range:"+strange);
-      if(strange.singular()){ // +++ simplify using new ObjectRange.end() functionality
-        nvPair(rangeName,strange.oneImage()); //ends are the same. just do an equals
+  public QueryString range(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
+    if (ObjectRange.NonTrivial(strange)) {
+      dbg.VERBOSE("range:" + strange);
+      if (strange.singular()) { // +++ simplify using new ObjectRange.end() functionality
+        nvPair(rangeName, strange.oneImage()); //ends are the same. just do an equals
       } else {
         rangy(false, rangeName, strange.oneImage(), strange.twoImage(), closeEnd);
       }
@@ -591,30 +571,8 @@ public class QueryString {
     return this;
   }
 
-  public QueryString andRange(ColumnProfile rangeName,ObjectRange strange){
+  public QueryString andRange(ColumnProfile rangeName, ObjectRange strange) {
     return andRange(rangeName, strange, true);
-  }
-
-  ///////////////////////////////
-  private QueryString(String starter) {
-    guts.setLength(0);//removes contents but not allocation
-    guts.append(starter);
-  }
-
-  public static QueryString Select(){
-    return new QueryString(SELECT);
-  }
-
-  public static QueryString Select(QueryString first){
-    return Select().cat(first);
-  }
-
-  public static QueryString Select(ColumnProfile cp){
-    return Select().cat(cp.fullName());
-  }
-
-  public static QueryString SelectDistinct(ColumnProfile cp){
-    return Select().cat(DISTINCT).cat(cp.fullName());
   }
 
   public QueryString all() {
@@ -625,21 +583,9 @@ public class QueryString {
     return word(table.all());
   }
 
-  public static QueryString SelectAll() {
-    return new QueryString(SELECTALL);
-  }
-
-  public static QueryString SelectAllFrom(TableProfile table){
-    return SelectAll().from(table);
-  }
-
-  public QueryString from(TableProfile first){
+  public QueryString from(TableProfile first) {
     return word(FROM).word(first.name());
   }
-
-//  public QueryString fromOuter(TableProfile left, TableProfile right) {
-//    return word(FROM).word(left.name()).word(OUTER).word(JOIN).word(right.name());
-//  }
 
   // +++ should do this by passing in both tables and making sure they both have that field?
   // LEFT OUTER JOIN ASSOCIATE USING (associateid)
@@ -653,17 +599,179 @@ public class QueryString {
     return cat(USING).Open().cat(column.name()).Close();
   }
 
-  // PG only
-  // the format of the query to do so is: SELECT nextval('tablename_fieldname_seq')
-  public static QueryString SelectNextVal(ColumnProfile field) {
-    return Select().word(NEXTVAL).Open().value(field.table().name()+"_"+field.name()+"_"+SEQ).Close();
-  }
-
-  public QueryString union(QueryString two){
+  public QueryString union(QueryString two) {
     return word(UNION).word(String.valueOf(two));
   }
 
-  private static QueryString Insert(TableProfile table){
+  // postgresql only
+  public final QueryString limit(int n) {
+    return cat(LIMIT).cat(n);
+  }
+
+//  public QueryString fromOuter(TableProfile left, TableProfile right) {
+//    return word(FROM).word(left.name()).word(OUTER).word(JOIN).word(right.name());
+//  }
+
+  public final QueryString AlterColumn(ColumnProfile column) {
+    return cat(ALTER).word(column.name());
+  }
+
+  // column points to its table
+  public final QueryString dropColumn(ColumnProfile column) {
+    return word(DROPCOLUMN).cat(column.name());
+  }
+
+  public final QueryString DropNotNull() {
+    return cat(DROP).not().cat(NULL);
+  }
+
+  public final QueryString SetNotNull() {
+    return cat(SET).not().cat(NULL);
+  }
+
+  public final QueryString DropDefault() {
+    return cat(DROP).cat(DEFAULT);
+  }
+
+  public final QueryString SetDefault(String def) {
+    return cat(SET).cat(DEFAULT).cat(def); // +-+ test this
+  }
+
+  public QueryString createFieldClause(ColumnProfile cp, boolean existingTable) {
+    QueryString qs = this;
+    qs.word(cp.name());
+    ColumnTypes dbt = ColumnTypes.valueOf(cp.type().toUpperCase());
+    if (cp.autoIncrement()) {
+      //noinspection StatementWithEmptyBody
+      if (dbt == ColumnTypes.SERIAL) {
+        // this is fine!
+      } else {
+        if (dbt == ColumnTypes.INT4 || dbt == ColumnTypes.SMALLINT || dbt == ColumnTypes.TINYINT) {
+          dbt = ColumnTypes.SERIAL;
+        } else {
+          dbg.ERROR("Don't know how to autoincrement the datatype " + dbt + "!");
+        }
+      }
+    }
+    switch (dbt) {
+      default: {
+        dbg.ERROR("Data type not considered in createFieldClause(): " + dbt.toString() + "!");
+      }
+      case CHAR: {
+        if (cp.size() < 2) {
+          qs.cat("\"char\""); // the PG "char" type, which implements char(1) in the main table (faster, smaller)
+          break;
+        } // else  do like all the rest
+      }
+      case BOOL:
+      case DATETIME:
+      case SERIAL:
+      case TEXT:
+        // +++ DO MORE OF THESE!!!
+      case INT4: {
+        qs.cat(dbt.name());
+      }
+      break;
+    }
+    // default goes here
+    //noinspection StatementWithEmptyBody
+    if (!existingTable && StringX.NonTrivial(cp.columnDef)) {
+      qs.word(DEFAULT).word(cp.dbReadyColumnDef());
+    } else {
+      // do nothing
+      // can't add a default clause to an 'alter table add field' statement in PG
+      // also, if the default isn't defined, don't add a default clause
+    }
+
+    return qs;
+  }
+
+  protected QueryString castAs(String what, String datatype) {
+    //CAST(TXN.TRANSTARTTIME AS BIGINT)
+    return cat(CAST).Open().cat(what).as(datatype).Close();
+  }
+
+  public final QueryString castAsBigint(String what) {
+    return castAs(what, BIGINT);
+  }
+
+  public final boolean isReadOnly() {
+    return isReadOnly(toString());
+  }
+
+  /*
+     Rules:
+     1) If it contains any single quotes, escape them with another single quote
+     2) Wrap it in single quotes,
+  */
+  public static String Quoted(String s) {
+    String ret = StringX.singleQuoteEscape(s);
+    dbg.VERBOSE("Quoted():" + s + "->" + ret);
+    return ret;
+  }
+
+//  public static final QueryString StatisticsAndCleanup() {
+//    return Vacuum(true, true, false);
+//  }
+
+  /**
+   * SQL-92 requires that all strings are inside single quotes.
+   * Double quotation marks delimit special identifiers referred to in SQL-92
+   * as 'delimited identifiers'.  Single quotation marks delimit character strings.
+   * Within a character string, to represent a single quotation mark or
+   * apostrophe, use two single quotation marks. To represent a double
+   * quotation mark, use a double quotation mark
+   * (which requires a backslash escape character within a Java program).
+   * For example, the string
+   * "this " is a double quote"
+   * is not valid.  This one is:
+   * 'this " is a double quote'
+   * And so is this one:
+   * "this "" is a double quote"
+   * And this one:
+   * 'this '' is a single quote'
+   */
+
+
+  public static String Quoted(char c) {
+    return Quoted(String.valueOf(c));
+  }
+
+  public static String Quoted(long ell) {
+    return Quoted(String.valueOf(ell));
+  }
+
+  public static QueryString Select() {
+    return new QueryString(SELECT);
+  }
+
+  public static QueryString Select(QueryString first) {
+    return Select().cat(first);
+  }
+
+  public static QueryString Select(ColumnProfile cp) {
+    return Select().cat(cp.fullName());
+  }
+
+  public static QueryString SelectDistinct(ColumnProfile cp) {
+    return Select().cat(DISTINCT).cat(cp.fullName());
+  }
+
+  public static QueryString SelectAll() {
+    return new QueryString(SELECTALL);
+  }
+
+  public static QueryString SelectAllFrom(TableProfile table) {
+    return SelectAll().from(table);
+  }
+
+  // PG only
+  // the format of the query to do so is: SELECT nextval('tablename_fieldname_seq')
+  public static QueryString SelectNextVal(ColumnProfile field) {
+    return Select().word(NEXTVAL).Open().value(field.table().name() + "_" + field.name() + "_" + SEQ).Close();
+  }
+
+  private static QueryString Insert(TableProfile table) {
     return new QueryString(INSERTINTO).cat(table.name());
   }
 
@@ -675,12 +783,12 @@ public class QueryString {
     QueryString names = QueryString.Insert(table).Open();
     QueryString values = QueryString.Clause().Close().Values();
     QueryString end = QueryString.Clause().Close();
-    if(toInsert != null) {
+    if (toInsert != null) {
       // be sure that the primary key is included in the list of properties, if valid
       ColumnProfile omitSerial;
-      if(table.primaryKey != null) { // HOWEVER, all tables need to have a primary key !!!
+      if (table.primaryKey != null) { // HOWEVER, all tables need to have a primary key !!!
         omitSerial = table.primaryKey.field;
-        if(UniqueId.isValid(serialValue)) {
+        if (UniqueId.isValid(serialValue)) {
           // be sure that the field for the serial value is in the fieldlist
           toInsert.setInt(omitSerial.name(), serialValue.value());
         }
@@ -689,10 +797,10 @@ public class QueryString {
       }
       // validate the property names with the fields to ensure insertion of at least SOME data?
       boolean first = true;
-      for(Enumeration ennum = toInsert.propertyNames(); ennum.hasMoreElements();) {
-        String name = (String)ennum.nextElement();
+      for (Enumeration ennum = toInsert.propertyNames(); ennum.hasMoreElements(); ) {
+        String name = (String) ennum.nextElement();
         ColumnProfile column = table.column(name);
-        if(column == null) {
+        if (column == null) {
           dbg.ERROR("Insert(): field " + name + " not found in table " + table.name() + "!");
         } else {
           // prefix with commas if needed
@@ -713,7 +821,6 @@ public class QueryString {
     return names.cat(values).cat(end);
   }
 
-
   private static QueryString Update(TableProfile table) {
     return new QueryString(UPDATE).word(table.name()).cat(SET);
   }
@@ -730,7 +837,7 @@ public class QueryString {
       ColumnProfile column = table.column(name);
       if (column == null) {
         dbg.ERROR("Update(): field " + name + " not found in table " +
-                  table.name() + "!");
+          table.name() + "!");
       } else {
         // prefix with commas if needed
         if (first) {
@@ -754,7 +861,7 @@ public class QueryString {
   }
 
   private static String valueByColumnType(ColumnProfile column, String prevalue, boolean forceQuotes) {
-    if(prevalue == null) { // do NOT use !NonTrivial() here!  NULL is the check we are doing.
+    if (prevalue == null) { // do NOT use !NonTrivial() here!  NULL is the check we are doing.
       return NULL; // do not quote a null, but instead use the word null
     } else {
       ColumnTypes type = column.numericType();
@@ -763,11 +870,11 @@ public class QueryString {
         case SERIAL:
         case INT4: { // do not quote integer or serial !
           String postvalue = "";
-          if(!StringX.NonTrivial(prevalue)) {
+          if (!StringX.NonTrivial(prevalue)) {
             // then we WANT null!
             if (!column.nullable()) {
               dbg.ERROR("PANIC! valueByColumnType(INT4) passed empty string, but NULL not allowed for column " +
-                        column.fullName() + "!");
+                column.fullName() + "!");
               // then go ahead and use the value passed to us!
             }
             return NULL; // and pray that the field can handle a null!
@@ -777,8 +884,8 @@ public class QueryString {
               // --- if this column doesn't allow null, this will except, HOWEVER, we can't *guess* at a value!
               // so, in that case, we should send a panic!
               if (!column.nullable()) {
-                dbg.ERROR("PANIC! valueByColumnType(INT4) passed '"+prevalue+"', but NULL not allowed for column " +
-                          column.fullName() + ", so using value verbatim");
+                dbg.ERROR("PANIC! valueByColumnType(INT4) passed '" + prevalue + "', but NULL not allowed for column " +
+                  column.fullName() + ", so using value verbatim");
                 // then go ahead and use the value passed to us!
                 return String.valueOf(integer);
               } else {
@@ -797,15 +904,15 @@ public class QueryString {
         default: // using a quoted string for an unknown type is usually converted fine by the DBMS
         case TEXT:
         case CHAR: { // but we shouldn't have any CHARs, except for "char", single char values
-          if("null".equalsIgnoreCase(prevalue.trim())) {
+          if ("null".equalsIgnoreCase(prevalue.trim())) {
             // +++ what if null isn't allowed?  Let's have it put "" in that case
-            if(column.nullable()) {
+            if (column.nullable()) {
               return NULL;
             } else {
               return Quoted(""); // for cases where null is not valid
             }
           } else {
-            if(!forceQuotes && prevalue.startsWith("'") && prevalue.endsWith("'")) { // don't add extra quotes if not needed
+            if (!forceQuotes && prevalue.startsWith("'") && prevalue.endsWith("'")) { // don't add extra quotes if not needed
               return prevalue;
             }
             return Quoted(prevalue); // quote char or unknown type fields
@@ -815,37 +922,29 @@ public class QueryString {
     }
   }
 
-//  public static final QueryString StatisticsAndCleanup() {
-//    return Vacuum(true, true, false);
-//  }
-
   // postgresql only
   public static QueryString Vacuum(TableProfile tp, boolean verbose, boolean analyze, boolean full) {
     return VacuumAnalyze(tp, verbose, analyze, full, true);
   }
+
   public static QueryString VacuumAnalyze(TableProfile tp, boolean verbose, boolean analyze, boolean full, boolean vacuum) {
     QueryString qs = new QueryString("");
-    if(vacuum) {
+    if (vacuum) {
       qs.cat(VACUUM);
-      if(full) {
+      if (full) {
         qs.cat(FULL);
       }
     }
-    if(analyze) {
+    if (analyze) {
       qs.cat(ANALYZE);
     }
-    if((vacuum || analyze) && verbose) {
+    if ((vacuum || analyze) && verbose) {
       qs.cat(VERBOSE);
     }
-    if((tp != null) && StringX.NonTrivial(tp.name())) {
+    if ((tp != null) && StringX.NonTrivial(tp.name())) {
       qs.cat(tp.name());
     }
     return qs;
-  }
-
-  // postgresql only
-  public final QueryString limit(int n) {
-    return cat(LIMIT).cat(n);
   }
 
   public static QueryString AlterTable(TableProfile table) {
@@ -854,119 +953,50 @@ public class QueryString {
 
   public static QueryString RenameColumn(String table, String from, String to) {
     return new QueryString(ALTERTABLE).cat(table).
-        word(RENAMECOLUMN).word(from).cat(TO).word(to);
+      word(RENAMECOLUMN).word(from).cat(TO).word(to);
   }
 
   public static QueryString AddColumn(ColumnProfile column) {
     return QueryString.AlterTable(column.table()).word(ADD).createFieldClause(column, true);
   }
 
-  public final QueryString AlterColumn(ColumnProfile column) {
-    return cat(ALTER).word(column.name());
-  }
-
   public static QueryString DropTable(TableProfile table) {
     return new QueryString(DROPTABLE).cat(table.name());
   }
-  // column points to its table
-  public final QueryString dropColumn(ColumnProfile column) {
-    return word(DROPCOLUMN).cat(column.name());
-  }
+
   public static QueryString DropIndex(IndexProfile index) {
     return new QueryString(DROPINDEX).cat(index.name);
-  }
-  public final QueryString DropNotNull() {
-    return cat(DROP).not().cat(NULL);
-  }
-  public final QueryString SetNotNull() {
-    return cat(SET).not().cat(NULL);
-  }
-
-  public final QueryString DropDefault() {
-    return cat(DROP).cat(DEFAULT);
-  }
-  public final QueryString SetDefault(String def) {
-    return cat(SET).cat(DEFAULT).cat(def); // +-+ test this
   }
 
   public static QueryString DropConstraint(TableProfile table, Constraint constr) {
     return AlterTable(table).word(DROPCONSTRAINT).word(constr.name);
   }
 
-
   public static QueryString DeleteFrom(TableProfile table) {
-    QueryString qs=new QueryString(DELETEFROM);
+    QueryString qs = new QueryString(DELETEFROM);
     return qs.cat(table.name()).cat(SPACE);
   }
 
-  public static QueryString Clause(){
+  public static QueryString Clause() {
     return new QueryString(EMPTY);
   }
 
   // testing these new things ...
   public static QueryString generateTableCreate(TableProfile tp) {
     QueryString qs = new QueryString(CREATETABLE).cat(tp.name());
-    if(tp.numColumns() > 1) {
+    if (tp.numColumns() > 1) {
       qs.Open();
     }
-    for(int i = 0; i < tp.numColumns(); i++) {
+    for (int i = 0; i < tp.numColumns(); i++) {
       qs.createFieldClause(tp.column(i), false /* not an existing table */);
       // on all but the last one, add a comma
-      if(!(i == (tp.numColumns()-1))) {
+      if (!(i == (tp.numColumns() - 1))) {
         qs.comma();
       }
     }
-    if(tp.numColumns() > 1) {
+    if (tp.numColumns() > 1) {
       qs.Close();
     }
-    return qs;
-  }
-
-  public QueryString createFieldClause(ColumnProfile cp, boolean existingTable) {
-    QueryString qs = this;
-    qs.word(cp.name());
-    ColumnTypes dbt = ColumnTypes.valueOf(cp.type().toUpperCase());
-    if(cp.autoIncrement()) {
-      //noinspection StatementWithEmptyBody
-      if(dbt== ColumnTypes.SERIAL) {
-        // this is fine!
-      } else {
-        if(dbt== ColumnTypes.INT4 || dbt== ColumnTypes.SMALLINT || dbt== ColumnTypes.TINYINT) {
-          dbt = ColumnTypes.SERIAL;
-        } else {
-          dbg.ERROR("Don't know how to autoincrement the datatype " + dbt + "!");
-        }
-      }
-    }
-    switch(dbt) {
-      default: {
-        dbg.ERROR("Data type not considered in createFieldClause(): " + dbt.toString() + "!");
-      }
-      case CHAR: {
-        if(cp.size() < 2) {
-          qs.cat("\"char\""); // the PG "char" type, which implements char(1) in the main table (faster, smaller)
-          break;
-        } // else  do like all the rest
-      }
-      case BOOL:
-      case DATETIME:
-      case SERIAL:
-      case TEXT:
-        // +++ DO MORE OF THESE!!!
-      case INT4: {
-        qs.cat(dbt.name());
-      } break;
-    }
-    // default goes here
-    //noinspection StatementWithEmptyBody
-    if(!existingTable && StringX.NonTrivial(cp.columnDef)) {
-      qs.word(DEFAULT).word(cp.dbReadyColumnDef());
-    } else {
-      // do nothing
-      // can't add a default clause to an 'alter table add field' statement in PG
-      // also, if the default isn't defined, don't add a default clause
-    }
-
     return qs;
   }
 
@@ -975,8 +1005,8 @@ public class QueryString {
     QueryString qs = AlterTable(key.table).cat(ADDCONSTRAINT);
     String keytype = key.isPrimary() ? PRIMARYKEY : FOREIGNKEY;
     qs.word(key.name).cat(keytype).parenth(key.field.name());
-    if(!key.isPrimary()) {
-      ForeignKeyProfile fk = (ForeignKeyProfile)key;
+    if (!key.isPrimary()) {
+      ForeignKeyProfile fk = (ForeignKeyProfile) key;
       qs.cat(REFERENCES).cat(fk.referenceTable.name());
     }
     return qs;
@@ -985,7 +1015,7 @@ public class QueryString {
   public static QueryString CreateIndex(IndexProfile index) {
     QueryString ret = index.unique ? new QueryString(CREATEUNIQUEINDEX) : new QueryString(CREATEINDEX);
     ret.cat(index.name).cat(ON).cat(index.table.name()).parenth(index.columnNamesCommad());
-    if(index.whereclause != null) {
+    if (index.whereclause != null) {
       ret.cat(index.whereclause);
     }
     return ret;
@@ -1001,35 +1031,21 @@ public class QueryString {
 
   public static QueryString TableStats(TableProfile table) {
     return QueryString.Clause().cat(
-        "select a.relpages,a.reltuples,"+
-        "b.n_tup_ins,b.n_tup_upd,b.n_tup_del "+
-        "from pg_class a, pg_stat_user_tables b where a.relfilenode=b.relid "+
+      "select a.relpages,a.reltuples," +
+        "b.n_tup_ins,b.n_tup_upd,b.n_tup_del " +
+        "from pg_class a, pg_stat_user_tables b where a.relfilenode=b.relid " +
         "and a.relname='" + table.name() + "'");
   }
 
   public static QueryString TablePages(TableProfile table) {
     return QueryString.Select().cat(
-        "reltuples,relpages "+
-        "from pg_class where relname='"+table.name()+"'");
+      "reltuples,relpages " +
+        "from pg_class where relname='" + table.name() + "'");
   }
 
   public static QueryString DatabaseAge(String databasename) {
     return QueryString.Select().cat(
-        "age(datfrozenxid) from pg_database where datname='"+databasename+"'");
-  }
-
-
-  protected QueryString castAs(String what, String datatype) {
-    //CAST(TXN.TRANSTARTTIME AS BIGINT)
-    return cat(CAST).Open().cat(what).as(datatype).Close();
-  }
-
-  public final QueryString castAsBigint(String what) {
-    return castAs(what, BIGINT);
-  }
-
-  public final boolean isReadOnly() {
-    return isReadOnly(toString());
+      "age(datfrozenxid) from pg_database where datname='" + databasename + "'");
   }
 
   public static boolean isReadOnly(QueryString qs) {
@@ -1037,11 +1053,6 @@ public class QueryString {
 // read only since it cannot change the database if it is null!
   }
 
-  private static final String SLIMUPPERSELECT = SELECT.trim().toUpperCase();
-  private static final String SLIMLOWERSELECT = SELECT.trim().toLowerCase();
-  private static final String SLIMUPPERSHOW = SHOW.trim().toUpperCase();
-  private static final String SLIMLOWERSHOW = SHOW.trim().toLowerCase();
-  private static final String LEFTOFEXPLAIN = StringX.subString(EXPLAIN, 0, 6);// "EXPLAI" since only 6 chars long
   public static boolean isReadOnly(String qss) {
     if (qss != null) {
       qss = qss.trim(); // get rid of leading spaces
@@ -1051,7 +1062,7 @@ public class QueryString {
         boolean isSelect;
         isSelect = SLIMUPPERSELECT.equalsIgnoreCase(sqlop);
         if (!isSelect) { // let's be sure ... [+++ we can make this better!]
-          if ( (qss.contains(SLIMUPPERSELECT)) || (qss.contains(SLIMLOWERSELECT))) { // then it really might be a select, so look further
+          if ((qss.contains(SLIMUPPERSELECT)) || (qss.contains(SLIMLOWERSELECT))) { // then it really might be a select, so look further
             // so, there is a select somewhere in there, but not as the first word
             // if the first word is "EXPLAIN" (special PG function), then it is probably a select
             if (LEFTOFEXPLAIN.equalsIgnoreCase(sqlop)) {
@@ -1113,6 +1124,7 @@ public class QueryString {
   public static QueryString genCreateTable(TableProfile tp) {
     return QueryString.generateTableCreate(tp);
   }
+
   // Note that you have to get a serial field's next value to use to insert the record
   static QueryString genSelectNextVal(ColumnProfile cp) {
     return QueryString.SelectNextVal(cp);
@@ -1129,23 +1141,27 @@ public class QueryString {
   static QueryString genUpdateRecord(TableProfile tp, UniqueId id, EasyProperties ezp) {
     return QueryString.Update(tp, ezp).where().nvPair(tp.primaryKey.field, id);
   }
+
   public static QueryString whereNot(ColumnProfile column) {
     return QueryString.Clause().where().isFalse(column);
   }
+
   public static QueryString whereIsTrue(ColumnProfile column) {
     return QueryString.Clause().where().isTrue(column);
   }
+
   // fragment that can be used for all genid()s
   public static QueryString genid(TableProfile tp) {
     return QueryString.Select(tp.primaryKey.field).from(tp);
   }
+
   private static QueryString idDistinct(TableProfile tp) {
     return QueryString.SelectDistinct(tp.primaryKey.field).from(tp);
   }
 
   public static QueryString genChangeFieldNullable(ColumnProfile field) {
     QueryString qs = QueryString.AlterTable(field.table()).AlterColumn(field);
-    if(field.nullable()) {
+    if (field.nullable()) {
       qs.DropNotNull();
     } else {
       qs.SetNotNull();
@@ -1155,13 +1171,12 @@ public class QueryString {
 
   public static QueryString genChangeFieldDefault(ColumnProfile field) {
     QueryString qs = QueryString.AlterTable(field.table()).AlterColumn(field);
-    if(StringX.NonTrivial(field.columnDef)) {
+    if (StringX.NonTrivial(field.columnDef)) {
       qs.SetDefault(field.dbReadyColumnDef()); // dbReadyColumnDef() quotes things that need to be quoted
     } else {
       qs.DropDefault();
     }
     return qs;
   }
-
 
 }

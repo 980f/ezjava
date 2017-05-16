@@ -6,18 +6,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 public class VirtualPrinter extends PrintStream {
-  protected ByteArrayOutputStream sbos ;
+  protected ByteArrayOutputStream sbos;
 
   private VirtualPrinter(ByteArrayOutputStream bs) {
     super(bs);
-    sbos=bs;
+    sbos = bs;
   }
 
   public VirtualPrinter() {
     this(new ByteArrayOutputStream());
   }
 
-  public String backTrace(){
+  public String backTrace() {
     try {
       return String.valueOf(sbos);
     } finally {
@@ -25,8 +25,8 @@ public class VirtualPrinter extends PrintStream {
     }
   }
 
-  public TextList Image(int width){
-    return new TextList( backTrace(),width,TextList.SMARTWRAP_ON);
+  public TextList Image(int width) {
+    return new TextList(backTrace(), width, TextList.SMARTWRAP_ON);
   }
 
 }

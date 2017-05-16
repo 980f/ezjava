@@ -7,17 +7,14 @@ import pers.hal42.math.MathX;
  * <p>
  * record max or min of a series  pushed at it
  * <p>
- * An example of one of the domains where C++ is vastly superior to java. Java engineers left out basic ordeirng functions from their Number classes.
+ * An example of one of the domains where C++ is vastly superior to java. Java engineers left out basic ordering functions from their Number classes.
  */
 public class Extremer<Scalar extends Number> {
+  public Scalar extremum;
   boolean negatory = false;
   int location = ~0;//default for debug
-
   boolean preferLatter = false;
-
   boolean started = false;
-
-  public Scalar extremum;
 
   /**
    * @return the extreme value if any values were presented, else @param ifNone
@@ -80,6 +77,6 @@ public class Extremer<Scalar extends Number> {
 
   @Override
   public String toString() {
-    return started? String.valueOf(extremum):"None";
+    return started ? String.valueOf(extremum) : "None";
   }
-}; // class Extremer
+} // class Extremer

@@ -10,7 +10,6 @@ import pers.hal42.stream.IOX;
 import pers.hal42.text.TextList;
 import pers.hal42.timer.UTC;
 
-
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -23,6 +22,9 @@ import java.util.*;
 
 public class EasyProperties extends Properties {
 
+  // for outputting in different ways
+  public static final String defaultValueSeparator = "=";
+  public static final String defaultPropertySeparator = ",";
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(EasyProperties.class, LogLevelEnum.WARNING);
 
   public EasyProperties() {
@@ -49,10 +51,6 @@ public class EasyProperties extends Properties {
       keylist.add((String) enump.nextElement());
     }
     return keylist;
-  }
-
-  public static boolean isLegit(String value) {
-    return StringX.NonTrivial(value);// at least need this much!!! else 'default' values don't work
   }
 
   /**
@@ -155,7 +153,6 @@ public class EasyProperties extends Properties {
   public boolean assertBoolean(String key, boolean newValue) {
     return Assert(key, Bool.toString(newValue));
   }
-
 
   public boolean getBoolean(String key, boolean defaultValue) {
     String prop = getString(key);
@@ -415,10 +412,6 @@ public class EasyProperties extends Properties {
     return this;
   }
 
-  // for outputting in different ways
-  public static final String defaultValueSeparator = "=";
-  public static final String defaultPropertySeparator = ",";
-
   public String asParagraph(String specialEOL) {
     return asParagraph(specialEOL, defaultValueSeparator);
   }
@@ -521,12 +514,6 @@ public class EasyProperties extends Properties {
     }
   }
 
-  public static EasyProperties FromString(String streamed) {
-    EasyProperties newone = new EasyProperties();
-    newone.fromString(streamed, false);
-    return newone;
-  }
-
   public void storeSorted(OutputStream out, String header) throws IOException {
     // +++ convert this into a line sorter that happens on closing the stream
     StringBuilder buffer = new StringBuilder();
@@ -548,6 +535,16 @@ public class EasyProperties extends Properties {
       osw.write(linefeed);
     }
     osw.close();
+  }
+
+  public static boolean isLegit(String value) {
+    return StringX.NonTrivial(value);// at least need this much!!! else 'default' values don't work
+  }
+
+  public static EasyProperties FromString(String streamed) {
+    EasyProperties newone = new EasyProperties();
+    newone.fromString(streamed, false);
+    return newone;
   }
 
 }

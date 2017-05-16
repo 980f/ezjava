@@ -17,25 +17,113 @@ import java.util.Vector;
 import static pers.hal42.lang.SystemX.gcMessage;
 import static pers.hal42.stream.IOX.Close;
 
-/** run a class that implements an application.
+/**
+ * run a class that implements an application.
  * this is an old version that uses properties rather than Json files for configuration.
- * adding Json should not be a big deal, even keeping properties, just need a 'JsonCursor' similar to EasyCursor.*/
+ * adding Json should not be a big deal, even keeping properties, just need a 'JsonCursor' similar to EasyCursor.
+ */
 public class Main {
-  private static ErrorLogStream dbg;
-
   public File Home;
   public File Logcontrol;
   public File Logger;
   public File Properties;
-
   //add a Properties from command line args. execute inside stdStart
   protected EasyCursor stdProperties;
   protected TextList freeArgs = new TextList(); //args that are not in property syntax
-
   public static final String logcontrolName = "logcontrol.properties";
-  public static Main Application = null;
-
+  public static final String buflogkey = "paymate.bufLog";
+  public static final String overlogkey = "paymate.overLog";
   static final Vector<AtExit> exiters = new Vector<>();
+  public static Main Application = null;
+  private static ErrorLogStream dbg;
+  private static boolean keepAlive = true;
+  private static Thread toKeepAlive = null;
+
+  public Main(Class mained) {
+    if (dbg == null) {
+      dbg = ErrorLogStream.getForClass(Main.class);
+    }
+    if (Application == null) { //first class in is the application...
+      Application = this;  //an arbitrary rule we will learn to love.
+    }
+    String ourPath = StringX.TrivialDefault(System.getProperty("user.dir"), File.listRoots()[0].getAbsolutePath());
+    Home = new File(ourPath);
+
+    Properties = LocalFile(mained.getName(), "properties");
+    Logcontrol = localFile(logcontrolName);
+//    Logger= OS.TempFile("paymate.log");
+    Logger = OS.TempFile(ReflectX.justClassName(mained) + ".log");
+  }
+
+  public String[] argv() {
+    return freeArgs.toStringArray();
+  }
+
+  public EasyCursor makeProperties() {//probably not as useful as stdProperties field..
+    EasyCursor ezp = new EasyCursor(System.getProperties());
+    FileInputStream inStream = null;
+    try {
+      inStream = new FileInputStream(Properties);
+      ezp.load(inStream);
+    } catch (java.io.FileNotFoundException fnf) {
+      dbg.ERROR(fnf.getMessage());
+    } catch (Exception ex) {
+      dbg.Caught(ex, "Main::getProp:properties load.");   //it is ok to not have any properties.
+    } finally {
+      Close(inStream);
+    }
+    return ezp;
+  }
+
+  public File localFile(String filename) {
+    File f = new File(filename);
+    if (!f.isAbsolute()) {
+      f = new File(Home, filename);
+    }
+    return f;
+  }
+
+  public EasyCursor logStart() {
+    //  PrintFork.SetAll(LogSwitch.OFF);//output NOTHING. without IP terminal assistance
+    EasyCursor fordebug = null;
+    FileInputStream fis = null;
+    try {
+      if (Logcontrol.exists()) {
+        fis = new FileInputStream(Logcontrol);
+        fordebug = EasyCursor.New(fis);
+        LogSwitch.apply(fordebug);
+      }//best if precedes many classes starting up.
+    } catch (IOException ignored) {
+      //yep, ignored. this is just debug control after all...
+    } finally {
+      Close(fis);//so that we can edit the file while program is running, for next rnu.
+    }
+    return fordebug;
+  }
+
+  public EasyCursor stdStart(String argv[]) {//will be prettier when we use cmdLine for arg processing
+    logStart();
+    stdProperties = makeProperties(); //starting with Java's properties
+    //int rawargi=0;
+    if (argv != null) {
+      for (String anArgv : argv) { //we add in command line args of our own format
+        int cut = anArgv.indexOf(':');//coz windows absorbs the more obvious '='
+        if (cut >= 0) {
+          stdProperties.setString(anArgv.substring(0, cut), anArgv.substring(cut + 1));
+          // +_+ fix the above to toelrate whitespace between lable and value.
+        } else { //add in "nth unlabeled value or valueless label"
+          freeArgs.add(anArgv);
+        }
+      }
+    }
+    //    stdProperties.loadEnum("debug", LogSwitch.dump());
+    boolean bufferlogger = stdProperties.getBoolean(buflogkey, false); // by default do not buffer the log
+    boolean overwritelogger = stdProperties.getBoolean(overlogkey, true); // by default, overwrite the log on program restart (however, the default of buflog=false prevents this from being used; only used when buflog=true)
+    // don't send the full path if the LogFile is going to be used (bufLog is true):
+    ErrorLogStream.stdLogging(bufferlogger ? Logger.getName() : Logger.getAbsolutePath(), bufferlogger, overwritelogger);
+    saveProps();
+    return stdProperties;
+  }
 
   public static void OnExit(AtExit cleaner) {
     exiters.add(cleaner);
@@ -64,10 +152,6 @@ public class Main {
     return EasyCursor.FromDisk(LocalFile(claz.getName(), "properties"));
   }
 
-  public String[] argv() {
-    return freeArgs.toStringArray();
-  }
-
   public static String[] Argv() {
     if (Application != null) {
       return Application.freeArgs.toStringArray();
@@ -80,30 +164,6 @@ public class Main {
     EasyCursor ezc = props();
     ezc.push(firstpush);
     return ezc;
-  }
-
-  public EasyCursor makeProperties() {//probably not as useful as stdProperties field..
-    EasyCursor ezp = new EasyCursor(System.getProperties());
-    FileInputStream inStream = null;
-    try {
-      inStream = new FileInputStream(Properties);
-      ezp.load(inStream);
-    } catch (java.io.FileNotFoundException fnf) {
-      dbg.ERROR(fnf.getMessage());
-    } catch (Exception ex) {
-      dbg.Caught(ex, "Main::getProp:properties load.");   //it is ok to not have any properties.
-    } finally {
-      Close(inStream);
-    }
-    return ezp;
-  }
-
-  public File localFile(String filename) {
-    File f = new File(filename);
-    if (!f.isAbsolute()) {
-      f = new File(Home, filename);
-    }
-    return f;
   }
 
   public static File LocalFile(String filename) {
@@ -155,60 +215,12 @@ public class Main {
     }
   }
 
-  public EasyCursor logStart() {
-    //  PrintFork.SetAll(LogSwitch.OFF);//output NOTHING. without IP terminal assistance
-    EasyCursor fordebug = null;
-    FileInputStream fis = null;
-    try {
-      if (Logcontrol.exists()) {
-        fis = new FileInputStream(Logcontrol);
-        fordebug = EasyCursor.New(fis);
-        LogSwitch.apply(fordebug);
-      }//best if precedes many classes starting up.
-    } catch (IOException ignored) {
-      //yep, ignored. this is just debug control after all...
-    } finally {
-      Close(fis);//so that we can edit the file while program is running, for next rnu.
-    }
-    return fordebug;
-  }
-
-  public static final String buflogkey = "paymate.bufLog";
-  public static final String overlogkey = "paymate.overLog";
-
-  public EasyCursor stdStart(String argv[]) {//will be prettier when we use cmdLine for arg processing
-    logStart();
-    stdProperties = makeProperties(); //starting with Java's properties
-    //int rawargi=0;
-    if (argv != null) {
-      for (String anArgv : argv) { //we add in command line args of our own format
-        int cut = anArgv.indexOf(':');//coz windows absorbs the more obvious '='
-        if (cut >= 0) {
-          stdProperties.setString(anArgv.substring(0, cut), anArgv.substring(cut + 1));
-          // +_+ fix the above to toelrate whitespace between lable and value.
-        } else { //add in "nth unlabeled value or valueless label"
-          freeArgs.add(anArgv);
-        }
-      }
-    }
-    //    stdProperties.loadEnum("debug", LogSwitch.dump());
-    boolean bufferlogger = stdProperties.getBoolean(buflogkey, false); // by default do not buffer the log
-    boolean overwritelogger = stdProperties.getBoolean(overlogkey, true); // by default, overwrite the log on program restart (however, the default of buflog=false prevents this from being used; only used when buflog=true)
-    // don't send the full path if the LogFile is going to be used (bufLog is true):
-    ErrorLogStream.stdLogging(bufferlogger ? Logger.getName() : Logger.getAbsolutePath(), bufferlogger, overwritelogger);
-    saveProps();
-    return stdProperties;
-  }
-
-  private static boolean keepAlive = true;
-  private static Thread toKeepAlive = null;
-
   public static void keepAlive() {
     toKeepAlive = Thread.currentThread();
     while (keepAlive) {
       try {
         long stayAliveTime = Ticks.forMinutes(30);
-        dbg.WARNING("Staying Alive:{0}" , stayAliveTime);
+        dbg.WARNING("Staying Alive:{0}", stayAliveTime);
         ThreadX.sleepFor(stayAliveTime); // whatever
       } catch (Exception e) {
         dbg.Caught(e);
@@ -258,22 +270,6 @@ public class Main {
    */
   public static Main cli(Object mained, String[] args) {
     return cli(mained != null ? mained.getClass() : null, args);
-  }
-
-  public Main(Class mained) {
-    if (dbg == null) {
-      dbg = ErrorLogStream.getForClass(Main.class);
-    }
-    if (Application == null) { //first class in is the application...
-      Application = this;  //an arbitrary rule we will learn to love.
-    }
-    String ourPath = StringX.TrivialDefault(System.getProperty("user.dir"), File.listRoots()[0].getAbsolutePath());
-    Home = new File(ourPath);
-
-    Properties = LocalFile(mained.getName(), "properties");
-    Logcontrol = localFile(logcontrolName);
-//    Logger= OS.TempFile("paymate.log");
-    Logger = OS.TempFile(ReflectX.justClassName(mained) + ".log");
   }
 
 }

@@ -1,4 +1,5 @@
 package pers.hal42.database.sql;
+
 import pers.hal42.database.ColumnProfile;
 import pers.hal42.database.TableProfile;
 import pers.hal42.logging.ErrorLogStream;
@@ -10,23 +11,23 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- *  A class used to update records from SQL tables. The constructor is not
- *  public. To obtain a DbUpdater call DbTable.updater(); Example: To update all
- *  the people who are (younger than 18 or older than 80) and whose name is
- *  "Fred"... to have a favourite_team of "Raiders"; <PRE>
+ * A class used to update records from SQL tables. The constructor is not
+ * public. To obtain a DbUpdater call DbTable.updater(); Example: To update all
+ * the people who are (younger than 18 or older than 80) and whose name is
+ * "Fred"... to have a favourite_team of "Raiders"; <PRE>
  * DbDatabase db = ...;
  * DbTable people = db.getTable("PEOPLE");
  * DbUpdater updater = people.deleter();
  * updater.addColumn(people.getColumn("FAVOURITE_TEAM"), "Raiders");
  * updater.setWhere(people.getColumn("AGE").lessThan(new Integer(18)).or(
- *    people.getColumn("AGE").greaterThan(new Integer(80))).and(
- *    people.getColumn("NAME").equal("FRED"));
+ * people.getColumn("AGE").greaterThan(new Integer(80))).and(
+ * people.getColumn("NAME").equal("FRED"));
  * int numberOfPeopleUpdated = updater.execute();
  * </PRE> This is equivilent to... <PRE>
  * UPDATE PEOPLE SET FAVOURITE_TEAM='Raiders' WHERE (AGE < 18 OR AGE > 80 ) AND NAME='Fred'
  * </PRE> Note the use of equal(), NOT equals(). To get more fancy, to update
- *  the same group of people to have a favourite team the same as Bill's team,
- *  we use a sub-select... <PRE>
+ * the same group of people to have a favourite team the same as Bill's team,
+ * we use a sub-select... <PRE>
  * DbDatabase db = ...;
  * DbTable people = db.getTable("PEOPLE");
  * DbSelector bills_team = db.selector();
@@ -35,47 +36,48 @@ import java.util.List;
  * DbUpdater updater = people.deleter();
  * updater.addColumn(people.getColumn("FAVOURITE_TEAM"), bills_team);
  * updater.setWhere(people.getColumn("AGE").lessThan(new Integer(18)).or(
- *    people.getColumn("AGE").greaterThan(new Integer(80))).and(
- *    people.getColumn("NAME").equal("FRED"));
+ * people.getColumn("AGE").greaterThan(new Integer(80))).and(
+ * people.getColumn("NAME").equal("FRED"));
  * int numberOfPeopleUpdated = updater.execute();
  * </PRE> This is equivilent to... <PRE>
  * UPDATE PEOPLE SET FAVOURITE_TEAM=(SELECT FAVOURITE_TEAM FROM PEOPLE WHERE NAME='Bill')
- *    WHERE (AGE < 18 OR AGE > 80 ) AND NAME='Fred'
+ * WHERE (AGE < 18 OR AGE > 80 ) AND NAME='Fred'
  * </PRE>
  *
- * @author     Chris Bitmead
- * @created    December 13, 2001
+ * @author Chris Bitmead
+ * @created December 13, 2001
  */
 
 public class DbUpdater {
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DbUpdater.class);
-
   TableProfile table;
   List<ColumnProfile> intoList = new ArrayList<>();
-  /** until we inject some interface we can stick anything into a column */
+  /**
+   * until we inject some interface we can stick anything into a column
+   */
   List<Object> fromList = new ArrayList<>();
   DbExpr where;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DbUpdater.class);
 
   DbUpdater(TableProfile table) {
     this.table = table;
   }
 
   /**
-   *  Set the where condition on which records to update.
+   * Set the where condition on which records to update.
    *
-   * @param  where  The new where value
+   * @param where The new where value
    */
   public void setWhere(DbExpr where) {
     this.where = where;
   }
 
   /**
-   *  Add a column specification to update. The new value can either be a raw
-   *  value - Integer, String, java.sql.Date etc. Or it can be a DbSelector in
-   *  the case of a sub-select.
+   * Add a column specification to update. The new value can either be a raw
+   * value - Integer, String, java.sql.Date etc. Or it can be a DbSelector in
+   * the case of a sub-select.
    *
-   * @param  into  The column to update.
-   * @param  from  The new value.
+   * @param into The column to update.
+   * @param from The new value.
    */
   public void addColumn(ColumnProfile into, Object from) {
     intoList.add(into);
@@ -83,10 +85,10 @@ public class DbUpdater {
   }
 
   /**
-   *  Execute this delete command on a specific connection.
+   * Execute this delete command on a specific connection.
    *
-   * @return                  The number of record affected.
-   * @exception  Exception  Description of Exception
+   * @return The number of record affected.
+   * @throws Exception Description of Exception
    */
   public int execute() {
 //      PreparedStatement stmt = dbcon.con.prepareStatement(getQueryString());
@@ -112,7 +114,8 @@ public class DbUpdater {
   }
 
   String getQueryString() {
-    String rtn = "UPDATE " + table.fullname() + " ";
+    StringBuilder rtn = new StringBuilder(100);
+    rtn.append("UPDATE ").append(table.fullname()).append(" ");
     int i = 0;
     Iterator intoi = intoList.iterator();
     Iterator fromi = fromList.iterator();
@@ -120,24 +123,24 @@ public class DbUpdater {
       ColumnProfile intocol = (ColumnProfile) intoi.next();
       Object fromcol = fromi.next();
       if (i != 0) {
-        rtn += ", ";
+        rtn.append(", ");
       } else {
-        rtn += " SET ";
+        rtn.append(" SET ");
       }
-      rtn += intocol.name() + " = ";
+      rtn.append(intocol.name()).append(" = ");
       if (fromcol instanceof DbSelector) {
-        rtn += "(" + ((DbSelector) fromcol).getQueryString() + ")";
+        rtn.append("(").append(((DbSelector) fromcol).getQueryString()).append(")");
       } else {
-        rtn += "?";
+        rtn.append("?");
       }
       i++;
     }
     if (where != null) {
-      rtn += " WHERE ";
-      rtn += where.getQueryString();
+      rtn.append(" WHERE ");
+      rtn.append(where.getQueryString());
     }
-    dbg.WARNING("getQueryString(): "+ rtn);
-    return rtn;
+    dbg.WARNING("getQueryString(): " + rtn);
+    return String.valueOf(rtn);
   }
 
 }

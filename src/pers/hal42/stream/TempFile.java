@@ -10,25 +10,23 @@ import java.io.OutputStream;
 
 public class TempFile {
 
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(TempFile.class);
-
   protected String fname = "";
   protected File file = null;
   protected FileOutputStream fos = null;
-
   private boolean closed = false;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(TempFile.class);
 
   public String filename() {
     return fname;
   }
 
   public OutputStream outputStream() {
-    if(closed) {
+    if (closed) {
       dbg.VERBOSE("Attempting to reaccess closed stream: " + filename());
       return null;
     }
-    while(fos == null) {
-      while(file == null) {
+    while (fos == null) {
+      while (file == null) {
         // give it a new name and try to create it again
         try {
           file = File.createTempFile("paymate", BaseConverter.itoa(DateX.Now().getTime())); // very random
@@ -46,14 +44,14 @@ public class TempFile {
   }
 
   public void close() {
-    if(!closed) {
+    if (!closed) {
       IOX.Close(fos);
     }
   }
 
   public void finalize() {
     close();
-    if(file != null) {
+    if (file != null) {
       //noinspection ResultOfMethodCallIgnored
       file.delete(); // ignore return value for now
     }

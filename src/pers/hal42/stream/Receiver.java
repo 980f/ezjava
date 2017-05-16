@@ -34,6 +34,24 @@ abstract public class Receiver {
    */
   public static final int TimeoutNow = -11;
 
+  /**
+   * @return timeout for next byte
+   * synchronized with onTimeout
+   */
+  abstract public int onByte(int b);
+
+  /**
+   * called when a wad of bytes are available.
+   */
+  public int onBytes(byte[] b) {
+    synchronized (this) {//ensure block is not interleaved with new input on other threads.
+      int accum = 0;
+      for (byte item : b) {//#PRESERVE order!
+        accum = onByte(item & 255);//lookahead is of bytes alone, no codes will be mebedded
+      }
+      return accum;
+    }
+  }
 
   public static String imageOf(int eventcode) {
     switch (eventcode) {
@@ -53,25 +71,6 @@ abstract public class Receiver {
         return "TimeoutNow";
     }
     return Ascii.bracket(eventcode < 0 ? Integer.toString(eventcode, 16) : Ascii.image(eventcode));
-  }
-
-  /**
-   * @return timeout for next byte
-   * synchronized with onTimeout
-   */
-  abstract public int onByte(int b);
-
-  /**
-   * called when a wad of bytes are available.
-   */
-  public int onBytes(byte[] b) {
-    synchronized (this) {//ensure block is not interleaved with new input on other threads.
-      int accum = 0;
-      for (byte item : b) {//#PRESERVE order!
-        accum = onByte(item & 255);//lookahead is of bytes alone, no codes will be mebedded
-      }
-      return accum;
-    }
   }
 
 }

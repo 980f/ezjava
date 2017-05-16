@@ -9,8 +9,8 @@ public class BitSetIterator {
 
   public BitSetIterator(byte[] bytes) {
     bits = new BitSet(bytes.length * 8);
-    for (int i = 0, bit=0; i < bytes.length; i++) {
-      for(int mask = 128; mask > 0; mask /= 2) {
+    for (int i = 0, bit = 0; i < bytes.length; i++) {
+      for (int mask = 128; mask > 0; mask /= 2) {
         if ((bytes[i] & mask) > 0) {
           bits.set(bit);
         }
@@ -19,8 +19,8 @@ public class BitSetIterator {
     }
   }
 
-  public BitSetIterator rewind(){
-    ptr=0;
+  public BitSetIterator rewind() {
+    ptr = 0;
     return this;
   }
 
@@ -28,21 +28,20 @@ public class BitSetIterator {
     return i < bits.size();
   }
 
-  public boolean haveMore(){
+  public boolean haveMore() {
     return isValid(ptr);
   }
 
-  public boolean next(){
+  public boolean next() {
     try {
       return peek();
-    }
-    finally {
+    } finally {
       ++ptr;
     }
   }
 
-  public boolean peek(){
-    return isValid(ptr)&& bits.get(ptr);
+  public boolean peek() {
+    return isValid(ptr) && bits.get(ptr);
   }
 
 }

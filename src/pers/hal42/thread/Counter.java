@@ -7,6 +7,9 @@ public class Counter {
   private long count = 0; // create a thread-safe counter class so that incrementing and getting are atomic +++
   private long min = 0;
   private long max = Long.MAX_VALUE;
+  // only really valid if you are incrementing
+  private int rollOverCount = 0;
+
   // +_+ make a constructor that starts with a specific value
   public Counter() {
     // default starts at zero
@@ -58,12 +61,13 @@ public class Counter {
 
   /**
    * interlock modify and read operations
+   *
    * @return modified value
    */
   public final long chg(long by) {
     try {
       mon.getMonitor();
-      count+=by;
+      count += by;
       norm();
     } catch (Exception ex) {
       // +++ bitch !!!
@@ -79,31 +83,28 @@ public class Counter {
   /**
    * @return object after clearing
    */
-  public final long Clear(){
+  public final long Clear() {
     try {
       mon.getMonitor();
-      count=min;
+      count = min;
     } catch (Exception ex) {
       // +++ bitch !!!
       return norm();
     } finally {
-      long retval= norm();
+      long retval = norm();
       mon.freeMonitor();
       return retval;
     }
   }
 
-  // only really valid if you are incrementing
-  private int rollOverCount = 0;
-
   /**
    * normalize
    */
   private long norm() {
-    if(count < min) {
+    if (count < min) {
       count = max; // ??? roll over ???
       ++rollOverCount;
-    } else if(count > max) {
+    } else if (count > max) {
       count = min; // roll over
       ++rollOverCount;
     }

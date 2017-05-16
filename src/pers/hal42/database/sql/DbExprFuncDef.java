@@ -1,12 +1,14 @@
 package pers.hal42.database.sql;
-import java.sql.*;
-import java.util.*;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Set;
 
 /**
- *  An SQL expression of the form FUNCNAME(parameter....).
+ * An SQL expression of the form FUNCNAME(parameter....).
  *
- *@author     Chris Bitmead
- *@created    October 18, 2001
+ * @author Chris Bitmead
+ * @created October 18, 2001
  */
 public class DbExprFuncDef extends DbExpr {
   String func;
@@ -14,24 +16,13 @@ public class DbExprFuncDef extends DbExpr {
 
 
   /**
-   *  Constructor for the DbExprFuncDef object
-   *
-   *@param  db    Description of Parameter
-   *@param  func  Description of Parameter
+   * @param func function name
    */
   public DbExprFuncDef(String func) {
     super();
     this.func = func;
   }
 
-
-  /**
-   *  Constructor for the DbExprFuncDef object
-   *
-   *@param  db    Description of Parameter
-   *@param  func  Description of Parameter
-   *@param  arg1  Description of Parameter
-   */
   public DbExprFuncDef(String func, Object arg1) {
     super();
     this.func = func;
@@ -39,15 +30,6 @@ public class DbExprFuncDef extends DbExpr {
     args[0] = arg1;
   }
 
-
-  /**
-   *  Constructor for the DbExprFuncDef object
-   *
-   *@param  db    Description of Parameter
-   *@param  func  Description of Parameter
-   *@param  arg1  Description of Parameter
-   *@param  arg2  Description of Parameter
-   */
   public DbExprFuncDef(String func, Object arg1, Object arg2) {
     super();
     this.func = func;
@@ -58,49 +40,48 @@ public class DbExprFuncDef extends DbExpr {
 
 
   /**
-   *  Sets the sqlValues attribute of the DbExprFuncDef object
+   * Sets the sqlValues attribute of the DbExprFuncDef object
    *
-   *@param  ps                The new sqlValues value
-   *@param  i                 The new sqlValues value
-   *@return                   Description of the Returned Value
-   *@exception  Exception   Description of Exception
-   *@exception  SQLException  Description of Exception
+   * @param ps a prepared statement
+   * @param i  The new sqlValues value
+   * @return index of next (potential) substitution parameter
+   * @throws SQLException Description of Exception
    */
   public int setSqlValues(PreparedStatement ps, int i) throws SQLException {
-    for (int c = 0; c < args.length; c++) {
-      i = setSqlValue(ps, i, args[c], null);
+    for (Object arg : args) {
+      i = setSqlValue(ps, i, arg, null);
     }
     return i;
   }
 
 
   /**
-   *  Gets the queryString attribute of the DbExprFuncDef object
+   * Gets the queryString attribute of the DbExprFuncDef object
    *
-   *@return                  The queryString value
-   *@exception  Exception  Description of Exception
+   * @return The queryString value
    */
-  public String getQueryString() {
-    String rtn = func + "(";
+  public StringBuilder getQueryString() {
+    StringBuilder rtn = new StringBuilder(100);
+    rtn.append(func).append("(");
     for (int c = 0; c < args.length; c++) {
       if (c != 0) {
-        rtn += ", ";
+        rtn.append(", ");
       }
-      rtn += getString(args[c]);
+      rtn.append(getString(args[c]));
     }
-    rtn += ")";
-    return rtn;
+    rtn.append(")");
+    return String.valueOf(rtn);
   }
 
 
   /**
-   *  Description of the Method
+   * Description of the Method
    *
-   *@param  coll  Description of Parameter
+   * @param coll Description of Parameter
    */
   public void usesTables(Set coll) {
-    for (int c = 0; c < args.length; c++) {
-      usesTables(coll, args[c]);
+    for (Object arg : args) {
+      usesTables(coll, arg);
     }
   }
 }

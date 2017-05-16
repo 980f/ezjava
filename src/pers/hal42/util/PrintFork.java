@@ -10,10 +10,10 @@ import java.io.PrintStream;
 import java.util.Vector;
 
 public class PrintFork {
-  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF.level;//set for server, which has a harder time configuring than the client
   public LogSwitch myLevel;
   protected PrintStream ps;
   protected boolean registered = false;
+  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF.level;//set for server, which has a harder time configuring than the client
 
   protected PrintFork(String name, PrintStream primary, int startLevel, boolean register) {
     setPrintStream(primary);
@@ -31,6 +31,56 @@ public class PrintFork {
     this(name, primary, 0);//todo:1 access project default level
   }
 
+  // self unregister
+  protected void finalize() { // +++ does this ever get called?
+    unFork(this);
+    // +++ report !
+  }
+
+  //onConstruction:
+  protected void register() {
+    registered = Fork(this);
+  }
+
+  public void setPrintStream(PrintStream primary) {
+    ps = primary;
+  }
+
+  /////////////////////////////////////////////
+
+  public String Name() {
+    return myLevel.Name();
+  }
+
+  /**
+   * this stream's gated  print
+   */
+  public void VERBOSE(String s) {
+    println(s, LogLevelEnum.VERBOSE.level);
+  }
+
+  public void WARNING(String s) {
+    println(s, LogLevelEnum.WARNING.level);
+  }
+
+  public void ERROR(String s) {
+    println(s, LogLevelEnum.ERROR.level);
+  }
+
+  public void println(String s, int printLevel) {
+    if ((s != null) && myLevel.passes(printLevel)) {
+      if (StringX.lastChar(s) == ',') {//allows for packing multiple outputs on one line.
+        ps.print(s);
+      } else {
+        ps.println(s);
+      }
+    }
+  }
+
+  public void println(String s) {
+    println(s, myLevel.Level());
+  }
+
   public static PrintFork Fork(int i) {
     return LogSwitchRegistry.printForkRegistry.elementAt(i);
   }
@@ -41,6 +91,7 @@ public class PrintFork {
     }
     return true;
   }
+  //////////////////////////////////////////////
 
   protected static boolean Fork(PrintFork ps) {
     if (ps == null) { // don't do this
@@ -52,8 +103,6 @@ public class PrintFork {
       return true;
     }
   }
-
-  /////////////////////////////////////////////
 
   /////////////////////////////////////////////
   public static void SetAll(LogLevelEnum lle) {
@@ -109,55 +158,6 @@ public class PrintFork {
 
   public static void DUMPDEBUG() {
     System.out.println(PrintFork.asProperties().toString());
-  }
-  //////////////////////////////////////////////
-
-  // self unregister
-  protected void finalize() { // +++ does this ever get called?
-    unFork(this);
-    // +++ report !
-  }
-
-  //onConstruction:
-  protected void register() {
-    registered = Fork(this);
-  }
-
-  public void setPrintStream(PrintStream primary) {
-    ps = primary;
-  }
-
-  public String Name() {
-    return myLevel.Name();
-  }
-
-  /**
-   * this stream's gated  print
-   */
-  public void VERBOSE(String s) {
-    println(s, LogLevelEnum.VERBOSE.level);
-  }
-
-  public void WARNING(String s) {
-    println(s, LogLevelEnum.WARNING.level);
-  }
-
-  public void ERROR(String s) {
-    println(s, LogLevelEnum.ERROR.level);
-  }
-
-  public void println(String s, int printLevel) {
-    if ((s != null) && myLevel.passes(printLevel)) {
-      if (StringX.lastChar(s) == ',') {//allows for packing multiple outputs on one line.
-        ps.print(s);
-      } else {
-        ps.println(s);
-      }
-    }
-  }
-
-  public void println(String s) {
-    println(s, myLevel.Level());
   }
 }
 

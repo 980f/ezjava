@@ -12,9 +12,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 
-/** run a shell command, recording its output and displaying a progress bar on the debug console */
+/**
+ * run a shell command, recording its output and displaying a progress bar on the debug console
+ */
 public class Executor {
+  public int displayUpdateSeconds;
+  public int timeoutSeconds;
+  public TextList msgs; //need to use a PrintStream
+  public boolean verbose;
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(Executor.class);
+  public Executor(int displayUpdateSeconds, int timeoutSeconds, TextList msgs, boolean verbose) {
+    this.displayUpdateSeconds = displayUpdateSeconds;
+    this.timeoutSeconds = timeoutSeconds;
+    this.msgs = msgs;
+    this.verbose = verbose;
+  }
 
   private void pStream(BufferedReader in, TextList msgs) { // hehe
     try {
@@ -28,18 +40,6 @@ public class Executor {
     }
   }
 
-  public int displayUpdateSeconds;
-  public int timeoutSeconds;
-  public TextList msgs; //need to use a PrintStream
-  public boolean verbose;
-
-  public Executor(int displayUpdateSeconds, int timeoutSeconds, TextList msgs, boolean verbose) {
-    this.displayUpdateSeconds = displayUpdateSeconds;
-    this.timeoutSeconds = timeoutSeconds;
-    this.msgs = msgs;
-    this.verbose = verbose;
-  }
-
   public void runFiles(String wildCommand, TextList fileset) {
     String commandLine = wildCommand; //in case there are no substitutions...
     int F2 = wildCommand.indexOf(2);  //^PB on my editor.
@@ -50,44 +50,6 @@ public class Executor {
       int retcode = runProcess(commandLine, "run :" + fileset.itemAt(i), null);
       //report retcode to the nonexistent reporting stream...
     }
-  }
-
-
-  /**
-   * +++ make this accept a character on the commandline (System.in) that will kill it without killing the whole thread/process so that errors will get printed
-   * <p>
-   * +++ divide this up some!!!!
-   * <p>
-   * +++ make some of the display stuff parameterized? (in constructor?)
-   */
-
-  public static int runProcess(String commandline, String startMsg, int displayUpdateSeconds, int timeoutSeconds, TextList msgs) {
-    return runProcess(commandline, startMsg, displayUpdateSeconds, timeoutSeconds, msgs, false, null);
-  }
-
-  public static int runProcessSilently(String commandline, int timeoutSeconds, TextList msgs) {
-    dbg.WARNING("runProcessSilently:" + commandline);
-    return runProcess(commandline, commandline, 0, timeoutSeconds, msgs, false, null);
-  }
-
-  public static int ezExec(String commandline, int timeoutSeconds) {
-    dbg.WARNING("ezExec:" + commandline);
-    return runProcess(commandline, "timeout:" + timeoutSeconds, 0, timeoutSeconds, null, false, null);
-  }
-
-
-  /*
-  if timeoutSeconds == 0 and updateSeconds == 0,
-  the process will not be watched at all  and there won't be any output to the screen until it's done
-  if displayUpdateSeconds == 0, the display will not be shown
-  if timeoutSeconds == 0, the process won't be killed; will run until done
-  for display purposes, it's best to make displayUpdateSeconds == 1
-  it's also best if they are both even, or if displayUpdateSeconds == 1
-  */
-
-  public static int runProcess(String commandline, String startMsg, int displayUpdateSeconds, int timeoutSeconds, TextList msgs, boolean verbose, String primer) {
-    Executor legacy = new Executor(displayUpdateSeconds, timeoutSeconds, msgs, verbose);
-    return legacy.runProcess(commandline, startMsg, primer);
   }
 
   public int runProcess(String commandline, String startMsg, String primer) {
@@ -193,6 +155,43 @@ public class Executor {
       // just quit
       return -1;
     }
+  }
+
+  /**
+   * +++ make this accept a character on the commandline (System.in) that will kill it without killing the whole thread/process so that errors will get printed
+   * <p>
+   * +++ divide this up some!!!!
+   * <p>
+   * +++ make some of the display stuff parameterized? (in constructor?)
+   */
+
+  public static int runProcess(String commandline, String startMsg, int displayUpdateSeconds, int timeoutSeconds, TextList msgs) {
+    return runProcess(commandline, startMsg, displayUpdateSeconds, timeoutSeconds, msgs, false, null);
+  }
+
+  public static int runProcessSilently(String commandline, int timeoutSeconds, TextList msgs) {
+    dbg.WARNING("runProcessSilently:" + commandline);
+    return runProcess(commandline, commandline, 0, timeoutSeconds, msgs, false, null);
+  }
+
+
+  /*
+  if timeoutSeconds == 0 and updateSeconds == 0,
+  the process will not be watched at all  and there won't be any output to the screen until it's done
+  if displayUpdateSeconds == 0, the display will not be shown
+  if timeoutSeconds == 0, the process won't be killed; will run until done
+  for display purposes, it's best to make displayUpdateSeconds == 1
+  it's also best if they are both even, or if displayUpdateSeconds == 1
+  */
+
+  public static int ezExec(String commandline, int timeoutSeconds) {
+    dbg.WARNING("ezExec:" + commandline);
+    return runProcess(commandline, "timeout:" + timeoutSeconds, 0, timeoutSeconds, null, false, null);
+  }
+
+  public static int runProcess(String commandline, String startMsg, int displayUpdateSeconds, int timeoutSeconds, TextList msgs, boolean verbose, String primer) {
+    Executor legacy = new Executor(displayUpdateSeconds, timeoutSeconds, msgs, verbose);
+    return legacy.runProcess(commandline, startMsg, primer);
   }
 }
 

@@ -6,7 +6,7 @@ A log table's rows rarely get updates (usually only in the same transaction) and
 * */
 
 public enum TableType {
-  cfg,log;
+  cfg, log
 
 
 }

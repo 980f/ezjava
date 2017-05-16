@@ -14,53 +14,19 @@ import java.util.zip.GZIPOutputStream;
 
 /**
  * To zip a file in the background, just call:
- *    backgroundZipFile(String filename);
+ * backgroundZipFile(String filename);
  * where filename is the original filename.
  * It will be copied (zipped) to filename.gz
  * and the original will get deleted (if it can).
  */
 public class FileZipper extends Thread implements AtExit {
 
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FileZipper.class);
-  private static final FileZipperRegistry registry = new FileZipperRegistry();
-
-  // call these last so that they don't starve the other threads ???
-  public void AtExit() {
-    setPriority(Thread.NORM_PRIORITY); // hurry up and get it done.
-  }
-  public boolean IsDown() {
-    return !isAlive();
-  }
-
-  /**
-   * How to report errors?
-   */
-  public static FileZipper zipFile(String filename, int threadPriority) {
-    FileZipper fz = new FileZipper(filename, threadPriority);
-    fz.start();
-    return fz;
-  }
-
-  public static FileZipper zipFile(String filename) {
-    FileZipper fz = new FileZipper(filename, Thread.currentThread().getPriority()); // defaults to current priority
-    fz.start();
-    return fz;
-  }
-
-  public static FileZipper backgroundZipFile(String filename) {
-    return zipFile(filename, Thread.MIN_PRIORITY);
-  }
-
-  public static FileZipper zipFileNow(String filename) {
-    FileZipper fz = new FileZipper(filename, 0); // defaults to current priority
-    fz.run();
-    return fz;
-  }
-
-  private String inFilename = null;
-
   public String outFilename = null;
   public TextList errors = new TextList();
+  private String inFilename = null;
+  private boolean done = false;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FileZipper.class);
+  private static final FileZipperRegistry registry = new FileZipperRegistry();
 
   private FileZipper(String inFilename, int threadPriority) {
     super(FileZipper.class.getName() + ": " + inFilename);
@@ -69,32 +35,18 @@ public class FileZipper extends Thread implements AtExit {
     registry.register(this);
   }
 
-  private boolean done = false;
+  // call these last so that they don't starve the other threads ???
+  public void AtExit() {
+    setPriority(Thread.NORM_PRIORITY); // hurry up and get it done.
+  }
+
+  public boolean IsDown() {
+    return !isAlive();
+  }
 
   public boolean isDone() {
     return done;
   }
-
-  public static String Usage() {
-    return "Usage: util.FileZipper filename";
-  }
-
-  public static void Test(String[] args) {
-    if(args.length != 1) {
-      System.out.println(Usage());
-    } else {
-      FileZipper zipper = backgroundZipFile(args[0]);
-      while(!zipper.done) {
-        ThreadX.sleepFor(200);
-      }
-    }
-  }
-
-//  // it has its own main in case someone wants to use it,
-//  // but it just uses Tester
-//  public static void main(String[] args) {
-//    Tester.main(args);
-//  }
 
   public void run() {
     try {
@@ -130,6 +82,52 @@ public class FileZipper extends Thread implements AtExit {
       done = true;
     }
   }
+
+  /**
+   * How to report errors?
+   */
+  public static FileZipper zipFile(String filename, int threadPriority) {
+    FileZipper fz = new FileZipper(filename, threadPriority);
+    fz.start();
+    return fz;
+  }
+
+  public static FileZipper zipFile(String filename) {
+    FileZipper fz = new FileZipper(filename, Thread.currentThread().getPriority()); // defaults to current priority
+    fz.start();
+    return fz;
+  }
+
+  public static FileZipper backgroundZipFile(String filename) {
+    return zipFile(filename, Thread.MIN_PRIORITY);
+  }
+
+  public static FileZipper zipFileNow(String filename) {
+    FileZipper fz = new FileZipper(filename, 0); // defaults to current priority
+    fz.run();
+    return fz;
+  }
+
+  public static String Usage() {
+    return "Usage: util.FileZipper filename";
+  }
+
+//  // it has its own main in case someone wants to use it,
+//  // but it just uses Tester
+//  public static void main(String[] args) {
+//    Tester.main(args);
+//  }
+
+  public static void Test(String[] args) {
+    if (args.length != 1) {
+      System.out.println(Usage());
+    } else {
+      FileZipper zipper = backgroundZipFile(args[0]);
+      while (!zipper.done) {
+        ThreadX.sleepFor(200);
+      }
+    }
+  }
 }
 
 /**
@@ -142,6 +140,7 @@ class FileZipperRegistry extends Vector {
   public void register(FileZipper item) {
     add(item);
   }
+
   public void unregister(FileZipper item) {
     remove(item);
   }

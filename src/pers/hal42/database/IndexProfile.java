@@ -7,6 +7,7 @@ import pers.hal42.text.TextList;
  * Description:
  * Copyright:    Copyright (c) 2001
  * Company:      PayMate.net
+ *
  * @author PayMate.net
  * @version $Revision: 1.7 $
  */
@@ -14,19 +15,19 @@ import pers.hal42.text.TextList;
 public class IndexProfile {
   public String name = "uninitialized";
   public TableProfile table = null;
-  public ColumnProfile [] fields = new ColumnProfile[0];
+  public ColumnProfile[] fields = new ColumnProfile[0];
   public boolean unique = false;
   public QueryString whereclause = null;
 
-  public IndexProfile(String name, TableProfile table, ColumnProfile [] fields) {
+  public IndexProfile(String name, TableProfile table, ColumnProfile[] fields) {
     this(name, table, fields, false);
   }
 
-  public IndexProfile(String name, TableProfile table, ColumnProfile [] fields, boolean unique) {
+  public IndexProfile(String name, TableProfile table, ColumnProfile[] fields, boolean unique) {
     this(name, table, fields, unique, null);
   }
 
-  public IndexProfile(String name, TableProfile table, ColumnProfile [] fields, boolean unique, QueryString whereclause) {
+  public IndexProfile(String name, TableProfile table, ColumnProfile[] fields, boolean unique, QueryString whereclause) {
     this.name = name;
     this.table = table;
     this.fields = fields;
@@ -53,7 +54,7 @@ public class IndexProfile {
 
   public TextList columnNames() {
     TextList tl = new TextList();
-    for(int i = 0; i < fields.length; i++) {
+    for (int i = 0; i < fields.length; i++) {
       tl.add(fields[i].name());
     }
     return tl;

@@ -5,6 +5,7 @@ package pers.hal42.database;
  * Description:
  * Copyright:    Copyright (c) 2001
  * Company:      PayMate.net
+ *
  * @author PayMate.net
  * @version $Revision: 1.2 $
  */
@@ -16,7 +17,7 @@ public class Constraint {
   public ColumnProfile field = null;
 
   public Constraint(String name, TableProfile table, ColumnProfile field) {
-    this.name = (name != null) ? name.toLowerCase() : name;
+    this.name = (name != null) ? name.toLowerCase() : "erroneousnull";
     this.table = table;
     this.field = field;
   }

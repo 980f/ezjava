@@ -1,22 +1,15 @@
 package pers.hal42.lang;
 
-import java.lang.ref.WeakReference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 
 public final class WeakObject<T> extends WeakReference<T> {
   private WeakObject(T k) {
     super(k);
   }
-  private static <T> WeakObject<T> create(T k) {
-    return (k == null) ? null : new WeakObject<>(k);
-  }
 
-  private WeakObject(T k, ReferenceQueue q) {
+  private WeakObject(T k, ReferenceQueue<T> q) {
     super(k, q);
-  }
-
-  public static <T> WeakObject<T> create(T k, ReferenceQueue q) {
-    return (k == null) ? null : new WeakObject<>(k, q);
   }
 
   /* A WeakObject is equal to another WeakObject iff they both refer to objects
@@ -28,15 +21,21 @@ public final class WeakObject<T> extends WeakReference<T> {
     if (!(o instanceof WeakObject)) {
       return false;
     }
-    Object t = this.get();
-    Object u = ((WeakObject)o).get(); //todo:0 relax this to accept non-weak T's
+    T t = this.get();
+    Object u = ((WeakObject) o).get(); //todo:0 relax this to accept non-weak T's
     if ((t == null) || (u == null)) {
       return false;
     }
-    if (t == u) {
-      return true;
-    }
-    return t.equals(u);
+    //test for same actual object, expedite the compare
+    return t == u || t.equals(u);
+  }
+
+  private static <T> WeakObject<T> create(T k) {
+    return (k == null) ? null : new WeakObject<>(k);
+  }
+
+  public static <T> WeakObject<T> create(T k, ReferenceQueue<T> q) {
+    return (k == null) ? null : new WeakObject<>(k, q);
   }
 }
 

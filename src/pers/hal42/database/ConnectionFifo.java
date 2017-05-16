@@ -1,30 +1,25 @@
 package pers.hal42.database;
 
-/**
- * <p>Title: $Source: /cvs/src/net/paymate/database/ConnectionFifo.java,v $</p>
- * <p>Description: </p>
- * <p>Copyright: Copyright (c) 2002</p>
- * <p>Company: PayMate.net</p>
- * @author PayMate.net
- * @version $Revision: 1.1 $
- */
-
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.stream.ObjectFifo;
 
 import java.sql.Connection;
 
+/**
+ * a fifo of connections, but for some reason with a more restricted interface than the ObjectFifo it iss built from.
+ * alh thinks that is because of uncertainty of how it should be implemented so the implemenation is forcefully hidden.
+ */
+
 public class ConnectionFifo {
 
+  private ObjectFifo<Connection> content = new ObjectFifo<>(100); //todo:2 use a stack instead?
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ConnectionFifo.class);
 
   public ConnectionFifo() {
   }
 
-  private ObjectFifo content = new ObjectFifo(100); // +++ use a stack instead
-
   public synchronized Connection next() {
-    return (Connection) content.next();
+    return content.next();
   }
 
   public synchronized void put(Connection cnxn) {

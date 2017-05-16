@@ -1,4 +1,3 @@
-
 package pers.hal42.database;
 
 import pers.hal42.logging.ErrorLogStream;
@@ -9,18 +8,18 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class DBConn {
-  public static ErrorLogStream dbg=ErrorLogStream.getForClass(DBConn.class);
-
   DBConnInfo connInfo;
   Connection dbConnection;
-  public Connection makeConnection(DBConnInfo connInfo){
-    if(dbConnection!=null){
+  public static ErrorLogStream dbg = ErrorLogStream.getForClass(DBConn.class);
+
+  public Connection makeConnection(DBConnInfo connInfo) {
+    if (dbConnection != null) {
       try {
         dbConnection.close();//don't trust finalizer
       } catch (SQLException e) {
         dbg.Caught(e, "Closing an abandoned database connection");
       }
-      dbConnection=null;
+      dbConnection = null;
     }
     try {
       dbg.Enter("checkOut()");

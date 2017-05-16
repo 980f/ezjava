@@ -10,7 +10,10 @@ import java.sql.DatabaseMetaData;
 
 public class GenericDB {
 
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(GenericDB.class);
+  /**
+   * replaced pool with a regenerator
+   */
+  DBConn dbConnector;
 
 //  protected boolean validated() {
 //    return (cpool != null) && cpool.validated;
@@ -42,15 +45,14 @@ public class GenericDB {
 //    list.startCaretakers();
 //  }
 //private ConnectionPool cpool;
-  /** replaced pool with a regenerator */
-  DBConn dbConnector;
-  private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
-
-  private static final Counter metaDataCounter = new Counter();
-
   private DBConnInfo connInfo;
   private Connection conn;
   private String myThreadName = "NOTSETYET";
+  private Monitor connMonitor = null;
+  private DatabaseMetaData dbmd; // the metadata for the database
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(GenericDB.class);
+  private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
+  private static final Counter metaDataCounter = new Counter();
 
   // +++ eventually package the connDataSource, username, and password into a single object
   public GenericDB(DBConnInfo connInfo, String threadname) {
@@ -58,7 +60,7 @@ public class GenericDB {
     try {
       this.myThreadName = threadname;
       this.connInfo = connInfo;
-      connMonitor = new Monitor(GenericDB.class.getName()+".MetaData."+metaDataCounter.incr());
+      connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
 //      cpool = list.get(connInfo);
       getCon();
     } finally {
@@ -72,7 +74,7 @@ public class GenericDB {
 
   public void releaseConn() {
     try {
-      if(conn != null) {
+      if (conn != null) {
 //        list.get(connInfo).checkIn(conn);
         conn = null;
         dbg.WARNING("releasing connection for thread \"" + myThreadName + "\" !");
@@ -82,13 +84,11 @@ public class GenericDB {
     }
   }
 
-  private Monitor connMonitor = null;
-  private DatabaseMetaData dbmd; // the metadata for the database
   public final DatabaseMetaData getDatabaseMetadata() {
     try {
       dbg.Enter("getDatabaseMetadata");
       Connection mycon = getCon();
-      if(mycon != null) {
+      if (mycon != null) {
         connMonitor.getMonitor();
         try {
           dbg.VERBOSE("Calling Connection.getMetaData() ...");
@@ -112,7 +112,7 @@ public class GenericDB {
   public final Connection getCon() {
     connMonitor.getMonitor();
     try {
-      if(conn == null) {
+      if (conn == null) {
         dbg.WARNING("conn is null, so getting new connection for thread \"" + myThreadName + "\" !");
 //        conn = cpool.checkOut();
         conn = dbConnector.makeConnection(connInfo);

@@ -8,10 +8,59 @@ import static pers.hal42.ext.PushedParser.Phase.*;
 
 /**
  * Created by andyh on 4/3/17.
+ * <p>
+ * Inner loop of parsing logic, identifies strings separated by the given separators.
+ * This reacts to quotes, and should have an option for slash escapes.
+ * It doesn't actually extract the token strings, it returns where they are by index into the stream that is passed to it a character at a time.
  */
 public class PushedParser {
 
-  protected String seperators;
+  public Diag d = new Diag();
+  protected String separators;
+  /**
+   * used to skip over utf extended chars
+   */
+  protected CountDown utfFollowers = new CountDown(0);
+  protected Phase phase = Before;
+  protected boolean inQuote;
+  /**
+   * 'cursor' recorded at start and end of token
+   */
+  protected Span value = new Span();
+  /**
+   * whether value was found with quotes around it
+   */
+  protected boolean wasQuoted;
+
+  /**
+   * lexer states and events
+   * <table border="1"> <tbody>
+   * <tr> <td>from\to</td> <td>Before</td>            <td>Inside</td>       <td>After</td>      </tr>
+   * <tr> <td>Before</td>  <td>empty item</td>        <td>begin token</td>  <td>--</td>         </tr>
+   * <tr> <td>Inside</td>  <td>end item and token</td><td>(no event)</td>   <td>end token</td>  </tr>
+   * <tr> <td>After</td>   <td>end item</td>          <td>--</td>           <td>(no event)</td> </tr>
+   * </tbody>     </table>
+   */
+  protected enum Phase {
+    Before, //nothing known, expect name or value
+    Inside, //inside quotes
+    After, //inside unquoted text: we're tolerant so this can be a name or a symbolic value
+  }
+
+  public enum Action {
+    //these tend to pass through all layers, to where the character source is:
+    Continue,   //continue scanning
+    Illegal,    //not a valid char given state, user must decide how to recover.
+    Done,     //pass through EOF
+    //the next two tend to be lumped together:
+    EndItem,   //well separated seperator
+    EndValueAndItem,  //seperator ended item.
+
+    //no-one seems to care about these events, we'll keep them in case value must be extracted immediatley after the terminating character
+    BeginValue, //record cursor, it is first char of something.
+    EndValue,  //just end the token
+
+  }
 
   public static class Diag {
     public int location = 0;//number of chars total
@@ -35,53 +84,8 @@ public class PushedParser {
 
   }
 
-  public Diag d=new Diag();
-
-  /**
-   * used to skip over utf extended chars
-   */
-  protected CountDown utfFollowers=new CountDown(0);
-
-  /**
-   * lexer states and events
-   * <table border="1"> <tbody>
-   * <tr> <td>from\to</td> <td>Before</td>            <td>Inside</td>       <td>After</td>      </tr>
-   * <tr> <td>Before</td>  <td>empty item</td>        <td>begin token</td>  <td>--</td>         </tr>
-   * <tr> <td>Inside</td>  <td>end item and token</td><td>(no event)</td>   <td>end token</td>  </tr>
-   * <tr> <td>After</td>   <td>end item</td>          <td>--</td>           <td>(no event)</td> </tr>
-   * </tbody>     </table>
-   */
-  protected enum Phase {
-    Before, //nothing known, expect name or value
-    Inside, //inside quotes
-    After, //inside unquoted text: we're tolerant so this can be a name or a symbolic value
-  }
-
-  protected Phase phase=Before;
-  protected boolean inQuote;
-
-  /**
-   * 'cursor' recorded at start and end of token
-   */
-  protected Span value=new Span();
-  /**
-   * whether value was found with quotes around it
-   */
-  protected boolean wasQuoted;
-
-  public enum Action {
-    //these tend to pass through all layers, to where the character source is:
-    Continue,   //continue scanning
-    Illegal,    //not a valid char given state, user must decide how to recover.
-    Done,     //pass through EOF
-    //the next two tend to be lumped together:
-    EndItem,   //well separated seperator
-    EndValueAndItem,  //seperator ended item.
-
-    //no-one seems to care about these events, we'll keep them in case value must be extracted immediatley after the terminating character
-    BeginValue, //record cursor, it is first char of something.
-    EndValue,  //just end the token
-
+  public PushedParser() {
+    reset(true);
   }
 
   protected void itemCompleted() {
@@ -101,23 +105,26 @@ public class PushedParser {
     }
   }
 
+  /**
+   * call this when you have shifted the data in the buffer that these indices are offsets in to.
+   * Intended use is to support the input stream being read in blocks. When you physically remove bytes that are no longer in scope to make room for more you call this so that any field that is partially scanned will stay coordinated.
+   */
   public void shift(int offset) {
-    d.column = d.location - offset;//only correct for normal use cases
+    //this line did not make sense, column and row should always reflect absolute indexes: d.column = d.location - offset;//only correct for normal use cases
     value.shift(offset);
     d.location -= offset;
   }
 
-  public PushedParser() {
-    reset(true);
-  }
-
   protected void lookFor(String seps) {
-    seperators = seps;
+    separators = seps;
   }
 
   private Action endValue(boolean andItem) {
     wasQuoted = inQuote;
     inQuote = false;
+    //if a field ends with whitespace we are still looking for a seperator. If the seperator ends the field then pass andItem==true.
+    //this is relevant if fields are separate by just whitespace, we don't support that.
+    //someone should document what adjacent quoted strings do, hopefully this just appends the text like in C source code. IE "abc""def" abc"def" should be the same as "abcdef"
     phase = andItem ? Before : After;
     value.highest = d.location;
     return andItem ? EndValueAndItem : EndValue;
@@ -144,21 +151,21 @@ public class PushedParser {
       if (pushed == 0) {//end of stream
         if (inQuote) {
           switch (phase) {
-          case Before: //file ended with a start quote.
-            return Illegal;
-          case Inside: //act like endquote was missing
-            return endValue(true);
-          case After:
-            return Illegal;//shouldn't be able to get here.
+            case Before: //file ended with a start quote.
+              return Illegal;
+            case Inside: //act like endquote was missing
+              return endValue(true);
+            case After:
+              return Illegal;//shouldn't be able to get here.
           }
         } else {
           switch (phase) {
-          case Before:
-            return Done;
-          case Inside:
-            return endValue(true);
-          case After:
-            return EndItem; //eof push out any partial node
+            case Before:
+              return Done;
+            case Inside:
+              return endValue(true);
+            case After:
+              return EndItem; //eof push out any partial node
           }
         }
         return Illegal;//can't get here
@@ -188,39 +195,39 @@ public class PushedParser {
       }
 
       switch (phase) {
-      case Inside:
-        if (ch.isWhite()) {
-          return endValue(false);
-        }
-        if (ch.in(seperators)) {
-          return endValue(true);
-        }
-        return Continue;//end Inside
+        case Inside:
+          if (ch.isWhite()) {
+            return endValue(false);
+          }
+          if (ch.in(separators)) {
+            return endValue(true);
+          }
+          return Continue;//end Inside
 
-      case After:
-        if (ch.isWhite()) {
-          return Continue;
-        }
-        if (ch.in(seperators)) {
-          phase = Before;
-          return EndItem;
-        }
-        return Illegal;
+        case After:
+          if (ch.isWhite()) {
+            return Continue;
+          }
+          if (ch.in(separators)) {
+            phase = Before;
+            return EndItem;
+          }
+          return Illegal;
 
-      case Before:  //expecting name or value
-        if (ch.isWhite()) {
-          return Continue;
-        }
-        if (ch.in(seperators)) {
-          endValue(true);
-          return EndValueAndItem;//a null one
-        }
-        if (ch.is('"')) {
-          inQuote = true;
-          return Continue;//but not yet started in chunk, see if(inQuote)
-        }
-        beginValue();
-        return BeginValue;
+        case Before:  //expecting name or value
+          if (ch.isWhite()) {
+            return Continue;
+          }
+          if (ch.in(separators)) {
+            endValue(true);
+            return EndValueAndItem;//a null one
+          }
+          if (ch.is('"')) {
+            inQuote = true;
+            return Continue;//but not yet started in chunk, see if(inQuote)
+          }
+          beginValue();
+          return BeginValue;
       } // switch
       return Illegal;// in case we have a missing case above, should never get here.
     } finally {

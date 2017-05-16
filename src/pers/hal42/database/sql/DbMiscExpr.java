@@ -1,6 +1,9 @@
 package pers.hal42.database.sql;
-import java.sql.*;
-import java.util.*;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Set;
+import java.util.StringTokenizer;
 
 /**
  * An SQL expression of the form FUNCNAME(parameter....).
@@ -17,21 +20,21 @@ public class DbMiscExpr extends DbExpr {
   }
 
   public DbMiscExpr(String func, Object arg1) {
-      super();
+    super();
     this.func = func;
     args = new Object[1];
     args[0] = arg1;
   }
 
   public DbMiscExpr(String func, Object arg1, Object arg2) {
-      super();
+    super();
     this.func = func;
     args = new Object[2];
     args[0] = arg1;
     args[1] = arg2;
   }
 
-  public String getQueryString() {
+  public StringBuilder getQueryString() {
     StringTokenizer st = new StringTokenizer(func, "?");
     StringBuilder rtn = new StringBuilder();
     int c = 0;
@@ -44,7 +47,7 @@ public class DbMiscExpr extends DbExpr {
     return rtn.toString();
   }
 
-  public int setSqlValues(PreparedStatement ps, int i) throws  SQLException {
+  public int setSqlValues(PreparedStatement ps, int i) throws SQLException {
     for (Object arg : args) {
       i = setSqlValue(ps, i, arg, null);
     }

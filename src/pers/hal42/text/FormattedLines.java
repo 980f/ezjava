@@ -11,12 +11,23 @@ import pers.hal42.transport.isEasy;
 import java.util.Vector;
 
 public class FormattedLines implements isEasy {
+  protected char fillChar = ' '; //for converting raw strings
+  Vector<FormattedLineItem> storage = new Vector<>();
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(FormattedLines.class, LogLevelEnum.VERBOSE);
   private static final String countKey = "count";
 
-  protected char fillChar = ' '; //for converting raw strings
+  public FormattedLines() {
+    storage = new Vector<>();
+  }
 
-  Vector<FormattedLineItem> storage = new Vector<>();
+  public FormattedLines(Object arf) {
+    this();
+    add(arf);
+  }
+
+  public FormattedLines(int initialCapacity) {
+    storage = new Vector<>(initialCapacity);
+  }
 
   public int size() {
     return storage != null ? storage.size() : 0;
@@ -24,10 +35,6 @@ public class FormattedLines implements isEasy {
 
   public boolean NonTrivial() {
     return size() > 0;
-  }
-
-  public static int Sizeof(FormattedLines probate) {
-    return probate != null ? probate.size() : 0;
   }
 
   public FormattedLines reverse() {
@@ -95,24 +102,30 @@ public class FormattedLines implements isEasy {
     return (index < storage.size()) ? storage.elementAt(index) : null;
   }
 
-  public FormattedLines() {
-    storage = new Vector<>();
+  /* isEasy and other transport related items */
+  public EasyCursor asProperties() {
+    EasyCursor ezp = new EasyCursor();
+    save(ezp);
+    return ezp;
   }
 
-  public FormattedLines(Object arf) {
-    this();
-    add(arf);
+  public void save(EasyCursor ezc) {
+    ezc.setVector(storage);
+  }
+///////////////////////////////////////////////
+// this had to go somewhere... here for when we can do two columns
+
+  public void load(EasyCursor ezc) {
+    storage = ezc.getVector(FormattedLineItem.class);
   }
 
-  public FormattedLines(int initialCapacity) {
-    storage = new Vector<>(initialCapacity);
+  public static int Sizeof(FormattedLines probate) {
+    return probate != null ? probate.size() : 0;
   }
 
   public static FormattedLines Empty() {
     return new FormattedLines();
   }
-///////////////////////////////////////////////
-// this had to go somewhere... here for when we can do two columns
 
   /**
    * @param te value will get destroyed! it is for getting to the underlying class
@@ -129,21 +142,6 @@ public class FormattedLines implements isEasy {
       newone.add(pool.getEnumConstants()[i].toString());
     }
     return newone;
-  }
-
-  /* isEasy and other transport related items */
-  public EasyCursor asProperties() {
-    EasyCursor ezp = new EasyCursor();
-    save(ezp);
-    return ezp;
-  }
-
-  public void save(EasyCursor ezc) {
-    ezc.setVector(storage);
-  }
-
-  public void load(EasyCursor ezc) {
-    storage = ezc.getVector(FormattedLineItem.class);
   }
 
 }

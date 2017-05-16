@@ -5,33 +5,35 @@ import pers.hal42.timer.Alarmer;
 import pers.hal42.timer.Alarmum;
 import pers.hal42.timer.TimeBomb;
 
-import static pers.hal42.logging.LogLevelEnum.*;
+import static pers.hal42.logging.LogLevelEnum.ERROR;
+import static pers.hal42.logging.LogLevelEnum.VERBOSE;
 
 public class PeriodicGC implements TimeBomb {
   Alarmum myperiod;
   static ErrorLogStream dbg;
 
-  public boolean enabled(boolean beenabled){
+  private PeriodicGC(int periodinticks) {
+    if (dbg == null) {
+      dbg = ErrorLogStream.getForClass(PeriodicGC.class);
+    }
+    myperiod = Alarmer.New(periodinticks, this);
+  }
+
+  public boolean enabled(boolean beenabled) {
     try {
       return dbg.levelIs(ERROR);
-    }
-    finally {
-      dbg.setLevel(beenabled?VERBOSE: ERROR);
+    } finally {
+      dbg.setLevel(beenabled ? VERBOSE : ERROR);
     }
   }
 
-  public void onTimeout(){
+  public void onTimeout() {
     //Main.gc(dbg);//only does it if level is verbose
-    Alarmer.reset(myperiod.ticks,myperiod);
+    Alarmer.reset(myperiod.ticks, myperiod);
   }
 
-  public static PeriodicGC Every(long ticks){
-    return new PeriodicGC((int)ticks);
-  }
-
-  private PeriodicGC(int periodinticks) {
-    if(dbg==null) dbg=ErrorLogStream.getForClass(PeriodicGC.class);
-    myperiod=Alarmer.New(periodinticks,this);
+  public static PeriodicGC Every(long ticks) {
+    return new PeriodicGC((int) ticks);
   }
 
 }

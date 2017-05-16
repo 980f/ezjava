@@ -11,21 +11,16 @@ import java.util.*;
  * <p>
  * The comments here were badly copied from an actual WeakMap implementation.
  *
- * @version 1.12, 02/02/00
  * @author Mark Reinhold
+ * @version 1.12, 02/02/00
+ * @see java.util.HashMap
+ * @see java.lang.ref.WeakReference
  * @since 1.2
- * @see    java.util.HashMap
- * @see    java.lang.ref.WeakReference
  */
 
 public class WeakSet<T> extends AbstractSet<T> {
 
   Map<Integer, WeakReference<T>> hash = null;
-
-  private void purge() {
-    Set<Map.Entry<Integer, WeakReference<T>>> set = hash.entrySet();
-    set.removeIf(item -> item.getValue().get() == null);
-  }
 
   public WeakSet(int initialCapacity, float loadFactor) {
     hash = Collections.synchronizedMap(new HashMap<Integer, WeakReference<T>>(initialCapacity, loadFactor));
@@ -37,6 +32,11 @@ public class WeakSet<T> extends AbstractSet<T> {
 
   public WeakSet() {
     this(100);
+  }
+
+  private void purge() {
+    Set<Map.Entry<Integer, WeakReference<T>>> set = hash.entrySet();
+    set.removeIf(item -> item.getValue().get() == null);
   }
 
   public int size() {
@@ -82,7 +82,7 @@ public class WeakSet<T> extends AbstractSet<T> {
       public boolean hasNext() {
         while (mapIterator.hasNext()) {
           Map.Entry<Integer, WeakReference<T>> nref = mapIterator.next();
-          next=nref.getValue().get();
+          next = nref.getValue().get();
           if (next != null) {
             return true;
           }

@@ -1,4 +1,3 @@
-
 // +++ rewrite this as a filterstream !!!
 
 // if you are doing pieces of a larger block of data (file for instance),
@@ -18,79 +17,81 @@ public class Base64Codec {
   private static final char XX = 255;
   // Table for decoding base64
   private static final char codes[] = {
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,62, XX,XX,XX,63,
-    52,53,54,55, 56,57,58,59, 60,61,XX,XX, XX,XX,XX,XX,
-    XX, 0, 1, 2,  3, 4, 5, 6,  7, 8, 9,10, 11,12,13,14,
-    15,16,17,18, 19,20,21,22, 23,24,25,XX, XX,XX,XX,XX,
-    XX,26,27,28, 29,30,31,32, 33,34,35,36, 37,38,39,40,
-    41,42,43,44, 45,46,47,48, 49,50,51,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
-    XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX, XX,XX,XX,XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, 62, XX, XX, XX, 63,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, XX, XX, XX, XX, XX, XX,
+    XX, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, XX, XX, XX, XX, XX,
+    XX, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
+    XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX, XX,
   };
 
-  public static String toString(byte dataX3[]){
-    char []ncoded=encode(dataX3);
+  public static String toString(byte dataX3[]) {
+    char[] ncoded = encode(dataX3);
     return new String(ncoded);
   }
 
   // returns an array of base64-encoded characters to represent the passed data array.
-  public static char[] encode(byte dataX3[])
-  {
+  public static char[] encode(byte dataX3[]) {
     int length = dataX3.length;
     int len = ((length + 2) / 3) * 4;
     char out[] = new char[len];
 
     // 3 bytes encode to 4 chars.  Output is always an even multiple of 4 characters.
-    for (int i=0, index=0; i<length; i+=3, index+=4) {
+    for (int i = 0, index = 0; i < length; i += 3, index += 4) {
       boolean quad = false;
       boolean trip = false;
 
       int val = (0xFF & (int) dataX3[i]);
       val <<= 8;
-      if ((i+1) < length) {
-        val |= (0xFF & (int) dataX3[i+1]);
+      if ((i + 1) < length) {
+        val |= (0xFF & (int) dataX3[i + 1]);
         trip = true;
       }
       val <<= 8;
-      if ((i+2) < length) {
-        val |= (0xFF & (int) dataX3[i+2]);
+      if ((i + 2) < length) {
+        val |= (0xFF & (int) dataX3[i + 2]);
         quad = true;
       }
-      out[index+3] = alphabet[(quad? (val & 0x3F): 64)];
+      out[index + 3] = alphabet[(quad ? (val & 0x3F) : 64)];
       val >>= 6;
-      out[index+2] = alphabet[(trip? (val & 0x3F): 64)];
+      out[index + 2] = alphabet[(trip ? (val & 0x3F) : 64)];
       val >>= 6;
-      out[index+1] = alphabet[val & 0x3F];
+      out[index + 1] = alphabet[val & 0x3F];
       val >>= 6;
-      out[index+0] = alphabet[val & 0x3F];
+      out[index + 0] = alphabet[val & 0x3F];
     }
     return out;
   }
 
-  public static byte[] fromString(String s){
-    char [] caster = new char[s.length()];
-    for(int i=caster.length;i-->0;){
-      caster[i]= s.charAt(i);
+  public static byte[] fromString(String s) {
+    char[] caster = new char[s.length()];
+    for (int i = caster.length; i-- > 0; ) {
+      caster[i] = s.charAt(i);
     }
     return decode(caster);
   }
 
 
   // Returns an array of bytes which were encoded in the passed character array.
-  public static byte[] decode(char dataX4[])
-  {
+  public static byte[] decode(char dataX4[]) {
     int length = dataX4.length;
     int len = ((length + 3) / 4) * 3;
-    if (length>0 && dataX4[length-1] == '=') --len;
-    if (length>1 && dataX4[length-2] == '=') --len;
+    if (length > 0 && dataX4[length - 1] == '=') {
+      --len;
+    }
+    if (length > 1 && dataX4[length - 2] == '=') {
+      --len;
+    }
     byte out[] = new byte[len];
 
     int shift = 0;   // # of excess bits stored in accum
@@ -122,15 +123,19 @@ public class Base64Codec {
 
   public static void Test(String[] argv) {
     try {
-      int argc=argv.length;
+      int argc = argv.length;
       boolean deen = true;
-      String str  = "!_!";
-      switch (argc){
-        case 2: str  = argv[--argc];
-        case 1: deen = !argv[--argc].equals("-");
+      String str = "!_!";
+      switch (argc) {
+        case 2:
+          str = argv[--argc];
+        case 1:
+          deen = !argv[--argc].equals("-");
           break;
-        default: System.out.println("Excess command line args\n");
-        case 0:  System.out.println(Usage());
+        default:
+          System.out.println("Excess command line args\n");
+        case 0:
+          System.out.println(Usage());
           return;
       }
       System.out.println((deen ? "En" : "De") + "coding '" + str + "' \nresulted in '" +

@@ -4,6 +4,12 @@ package pers.hal42.text;
 import pers.hal42.lang.StringX;
 
 public class Formatter {
+  public static final String scihexponent = " KMGTPEZY"; //for sizeLong
+  private static final long Base1K = 1024;
+  private static final long MSB1K = Base1K / 2;
+  //below: 64 is bits in a long, 50 is bits we are going to discard, make a mask that retains the 14 that are left
+  private static final long mask14bits = (2 << ((64 - 50) - 1)) - 1;//inline so that we don't have to access other packages
+
   private Formatter() {
     // I'm here for static purposes
   }
@@ -23,11 +29,11 @@ public class Formatter {
    * @return hex representation of lsbyte.
    */
   public static String ox2(int i) {
-    return ox2( (byte) (i & 255));
+    return ox2((byte) (i & 255));
   }
 
   public static String ox2(long l) {
-    return ox2( (byte) (l & 255));
+    return ox2((byte) (l & 255));
   }
 
   public static char hexDigit(int b) {
@@ -83,12 +89,6 @@ public class Formatter {
     return ratioText("(", num, denom);
   }
 
-  public static final String scihexponent = " KMGTPEZY"; //for sizeLong
-  private static final long Base1K = 1024;
-  private static final long MSB1K = Base1K / 2;
-  //below: 64 is bits in a long, 50 is bits we are going to discard, make a mask that retains the 14 that are left
-  private static final long mask14bits=(2 << ((64-50) - 1)) - 1;//inline so that we don't have to access other packages
-
   /**
    * @return exponential representation of @param size in base 1024.
    * 0..1023 print as is, for other numbers drop bits in multiples of 10
@@ -109,7 +109,7 @@ public class Formatter {
     }
     while (divided >= Base1K) {
       roundup = (divided & MSB1K) != 0; //the 10 bits we are about to toss into oblivion
-      divided>>=10;
+      divided >>= 10;
       ++hexponent;
     }
     if (roundup) {

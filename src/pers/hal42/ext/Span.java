@@ -22,8 +22,10 @@ public class Span {
     clear();
   }
 
-  /** set the low bound, invalidate the high one */
-  public void begin(int low){
+  /**
+   * set the low bound, invalidate the high one
+   */
+  public void begin(int low) {
     highest = ObjectX.INVALIDINDEX; //for safety
     lowest = low;
   }
@@ -33,7 +35,7 @@ public class Span {
   }
 
   /**
-   * quantity to operate upon
+   * quantity to operate upon, 0 for an empty or otherwise useless span.
    */
   public int span() {
     return (isValid() && ordered()) ? (highest - lowest) : 0;
@@ -75,13 +77,13 @@ public class Span {
     other.clear();
   }
 
-  public String subString(String tocut,int skip){
-    if(lowest==INVALIDINDEX){
+  public String subString(String tocut, int skip) {
+    if (lowest == INVALIDINDEX) {
       return "";
       //and skipping doesn't make sense
     }
     try {
-      if(highest==INVALIDINDEX){//then take tail
+      if (highest == INVALIDINDEX) {//then take tail
         return tocut.substring(lowest);
       } else {
         return tocut.substring(lowest, highest);
@@ -93,13 +95,13 @@ public class Span {
 
   @Override
   public String toString() {
-    return "Span{" +
-      "lowest=" + lowest +
-      ", highest=" + highest +
+    return "Span:{" +
+      "lowest:" + lowest +
+      ", highest:" + highest +
       '}';
   }
 
   public void end(int probe) {
-    this.highest=probe;
+    highest = probe;
   }
 }

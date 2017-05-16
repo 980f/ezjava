@@ -5,15 +5,15 @@ package pers.hal42.data;
  * Description:
  * Copyright:    Copyright (c) 200?
  * Company:      PayMate.net
+ *
  * @author PayMate.net
  * @version $Revision: 1.2 $
  */
 
-import java.lang.Long;
-public class LongRange extends ObjectRange {
+public class LongRange extends ObjectRange<Long> {
 
   public LongRange() {
-    setBoth(0,0);
+    setBoth(0, 0);
   }
 
   public LongRange setBoth(long one, long two) {
@@ -21,11 +21,11 @@ public class LongRange extends ObjectRange {
   }
 
   public long low() {
-    return ((Long)one).longValue();
+    return (long) one;
   }
 
   public long high() {
-    return ((Long)two).longValue();
+    return (Long) two;
   }
 
 }

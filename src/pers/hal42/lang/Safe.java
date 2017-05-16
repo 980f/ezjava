@@ -1,10 +1,6 @@
 package pers.hal42.lang;
 
 
-/**
- * Much of what is in here seems to have been later broken out to seperate classes.
- */
-
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.timer.LocalTimeFormat;
 import pers.hal42.timer.Ticks;
@@ -20,17 +16,24 @@ import java.text.NumberFormat;
 import java.util.Date;
 import java.util.Vector;
 
-import static pers.hal42.lang.DateX.timeStampNow;
 import static pers.hal42.lang.StringX.parseLong;
 import static pers.hal42.stream.IOX.makeWritable;
-
-//import pers.hal42.util.LocalTimeFormat;
-//import pers.hal42.util.Ticks;
 
 public class Safe {
   // not a good idea to have a dbg in here --- see preLoadClass
   public static final int INVALIDINDEX = -1;
   public static final int INVALIDINTEGER = -1; //are likely to change this one
+  static final LocalTimeFormat LinuxDateCommand = LocalTimeFormat.Utc("MMddHHmmyyyy.ss");
+  ////////////////////
+//  create a separate class for this ???
+  private static final DecimalFormat secsNMillis = new DecimalFormat("#########0.000");
+  private static final Monitor secsNMillisMonitor = new Monitor("secsNMillis");
+  private static final StringBuffer sbsnm = new StringBuffer();
+  // feel free to optimize this
+  private static final double K = 1024;
+  private static final double M = K * K;
+  private static final double G = M * K;
+  private static final double T = G * K;
 
   //extract a signed number from set of bits within an integer.
   public static int getSignedField(int datum, int start, int end) {
@@ -40,152 +43,6 @@ public class Safe {
 
   public static String ObjectInfo(Object obj) {
     return obj == null ? " null!" : " type: " + obj.getClass().getName();//+" "+obj.toString();
-  }
-
-  /** if 1st object is null return second else return it. Kotlin has an operator for this.*/
-  public static <T> T deNull(T nullish, T def) {
-    return (nullish != null) ? nullish : def;
-  }
-
-
-  public static int enumSize(Class <? extends Enum> eclass){
-    return eclass.getEnumConstants().length;
-  }
-
-  public static int enumSize(Enum eg) {
-    return enumSize(eg.getClass());
-  }
-
-  //todo:1 move these to IOx
-  public static File[] listFiles(File dir) {
-    File[] list = dir.listFiles();
-    return list != null ? list : new File[0];
-  }
-
-  public static File[] listFiles(File dir, FileFilter filter) {
-    File[] list = dir.listFiles(filter);
-    return list != null ? list : new File[0];
-  }
-
-///**
-// * quickie DOSlike file attribute control
-// * @return true if file was made read/write.
-// * just CREATING a FilePermission object modifies the underlying file,
-// * that is really bogus syntax. Need to wrap all of that in a FileAttr class.
-// */
-//
-//  public static boolean makeWritable(File f){
-//    try {
-//      FilePermission attr=new FilePermission(f.getAbsolutePath(),"read,write,delete");
-//      return true;
-//    } catch(Exception oops){
-//      return false; //errors get us here
-//    }
-//  }
-///**
-// * @see makeWritable for bitches
-// * @return true if file was made readonly.
-// */
-//  public static boolean makeReadonly(File f){
-//    try {
-//      FilePermission attr=new FilePermission(f.getAbsolutePath(),"read");
-//      return true;
-//    } catch(Exception oops){
-//      return false; //errors get us here
-//    }
-//  }
-
-  /**
-   * returns true is something actively was deleted.
-   */
-  public static boolean deleteFile(File f) {
-    try {
-      return f != null && f.exists() && makeWritable(f) && f.delete();
-    } catch (Exception oops) {
-      return false; //errors get us here
-    }
-  }
-
-
-  /**
-   *
-   */
-  public static int packNibbles(int high, int low) {
-    return ((high & 15) << 4) + (low & 15);
-  }
-
-///**
-// * create new array inserting byte @param toinsert into @param src byte array at @param offset cursor
-// */
-//  public static byte[] insert(byte [] src, int toinsert,int offset){
-//    byte []target;
-//    if(src!=null){
-//      if(offset<=src.length){
-//        target=new byte[src.length+1];
-//        System.arraycopy(src,0,target,0,offset);
-//        System.arraycopy(src,offset,target,offset+1,src.length-offset);
-//      } else {//stretch until new offset is a legal position.
-//        target=new byte[offset+1];
-//        System.arraycopy(src,0,target,0,src.length);
-//        //new byte[] will have filled the rest with 0.
-//      }
-//      target[offset]=(byte)toinsert;
-//    } else {
-//      target= new byte[1];
-//      target[0]=(byte)toinsert;
-//    }
-//    return target;
-//  }
-//
-//  public static  byte[] insert(byte [] src, int toinsert){
-//    return insert(src, toinsert,0);
-//  }
-
-//  public static  long utcNow(){
-//    return System.currentTimeMillis();//+_+ wrapped to simplify use analysis
-//  }
-
-//  public static  long fileSize(String filename){
-//    try {
-//      return (new File(filename)).length();
-//    } catch(Exception anything){
-//      return -1;
-//    }
-//  }
-//
-//  public static long fileModTicks(String filename){
-//    try {
-//      return (new File(filename)).lastModified();
-//    } catch(Exception anything){
-//      return -1;
-//    }
-//  }
-//
-//  public static Date fileModTime(String filename){
-//    return new Date(fileModTicks(filename));
-//  }
-
-//  /**
-//   * returns true if dir now exists
-//   */
-//  public static boolean createDir(String filename) {
-//    return createDir(new File(filename));
-//  }
-//  public static boolean createDir(File file) {
-//    if(!file.exists()) {
-//      return file.mkdir();
-//    }
-//    return true;
-//  }
-
-//  public static Date Now(){// got tired of looking this up.
-//    return new Date();//default Date constructor returns "now"
-//  }
-
-  public static String fromStream(ByteArrayInputStream bais, int len) {
-    byte[] chunk = new byte[len];
-    bais.read(chunk, 0, len);
-    return new String(chunk);
   }
 
 
@@ -211,6 +68,58 @@ public class Safe {
     return v;
   }
 */
+
+  /**
+   * if 1st object is null return second else return it. Kotlin has an operator for this.
+   */
+  public static <T> T deNull(T nullish, T def) {
+    return (nullish != null) ? nullish : def;
+  }
+
+  public static int enumSize(Class<? extends Enum> eclass) {
+    return eclass.getEnumConstants().length;
+  }
+
+  public static int enumSize(Enum eg) {
+    return enumSize(eg.getClass());
+  }
+
+  //todo:1 move these to IOx
+  public static File[] listFiles(File dir) {
+    File[] list = dir.listFiles();
+    return list != null ? list : new File[0];
+  }
+
+  // some byte stuff
+
+  public static File[] listFiles(File dir, FileFilter filter) {
+    File[] list = dir.listFiles(filter);
+    return list != null ? list : new File[0];
+  }
+
+  /**
+   * returns true is something actively was deleted.
+   */
+  public static boolean deleteFile(File f) {
+    try {
+      return f != null && f.exists() && makeWritable(f) && f.delete();
+    } catch (Exception oops) {
+      return false; //errors get us here
+    }
+  }
+
+  /**
+   *
+   */
+  public static int packNibbles(int high, int low) {
+    return ((high & 15) << 4) + (low & 15);
+  }
+
+  public static String fromStream(ByteArrayInputStream bais, int len) {
+    byte[] chunk = new byte[len];
+    bais.read(chunk, 0, len);
+    return new String(chunk);
+  }
 
   /**
    * debug was removed from the following function as it is called during the initialization
@@ -251,8 +160,6 @@ public class Safe {
     return (s != null) ? s.length() : -1;
   }
 
-  // some byte stuff
-
   public static byte[] newBytes(int length, byte filler) {
     byte[] bytes = new byte[length];
     return fillBytes(bytes, filler);
@@ -265,95 +172,6 @@ public class Safe {
     }
     return bytes;
   }
-//
-//  public static final byte [] subString(byte [] s,int start,int end){
-//    int length;
-//    if(s!=null && start>=0 && end>start && start<(length=s.length)){
-//      if(end>start+length){
-//        end=length;
-//      }
-//      length=end-start;
-//      if(length>0){
-//        byte [] sub=new byte[length];
-//        System.arraycopy(s,start,sub,0,length);
-//        return sub;
-//      }
-//    }
-//    return new byte[0];
-//  }
-
-//  /**
-//   * I believe this either prepends or appends characters to extend a string to length
-//   */
-//  public static  String fill(String source, char filler, int length, boolean left) {
-//    source.trim();
-//    if(length == source.length()) {
-//      return source;
-//    }
-//    int more = length - source.length();
-//    if(more < 1) {
-//      return source.substring(0, length); // +++ check
-//    }
-//    StringBuffer str = new StringBuffer(source);
-//    if(left) {
-//      for(int i = more; i-->0;) {
-//        str.insert(0, filler);
-//      }
-//    } else {
-//      for(int i = more; i-->0;) {
-//        str.append(filler);
-//      }
-//    }
-//    return str.toString();
-//  }
-
-
-//  /** java.lang.Long.parseLong throws spurious exceptions,
-//  *  and doesn't accept unsigned hex numbers that are otherwise acceptible to java.
-//  */
-//  public static long parseLong(String s,int radix){
-//    long acc=0;
-//    boolean hadSign=false;
-//    if(NonTrivial(s)){
-//      s=s.trim();
-//      int numchars=lengthOf(s);
-//
-//      if( numchars<=0 || radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
-//        return 0;
-//      }
-//
-//      int nextChar=0;
-//      if(s.charAt(nextChar)=='-'){
-//        ++nextChar;
-//        hadSign=true;
-//      }
-//
-//      while(nextChar<numchars){
-//        int digit = Character.digit(s.charAt(nextChar++),radix);
-//        if(digit<0){
-//          break; //give em what we got so far
-//        }
-//        acc*=radix;
-//        acc+=digit;
-//        /* could throw overflow:
-//        if(acc<0){//marginal overflow)
-//          if(!hadSign){
-//            hadSign=true;
-//            acc=80000...000 - acc;
-//          } else {
-//            real overflow...
-//          }
-//        }
-//        */
-//      }
-//      return hadSign? -acc : acc;
-//    }
-//    return 0;
-//  }
-//
-//  public static final long parseLong(String s){//default radix 10
-//    return parseLong(s,10);
-//  }
 
   public static long littleEndian(byte[] msfirst, int offset, int length) {
     long ell = 0;
@@ -402,7 +220,6 @@ public class Safe {
     }
   }
 
-
   public static String restOfString(String s, int start) {
     if (s != null && start >= 0 && start < s.length()) {
       return s.substring(start);
@@ -450,10 +267,10 @@ public class Safe {
   }
 
   /**
+   * @param s      is a string that we wish to cut out a piece of
+   * @param cutter is the separator character
    * @return an index safe for the second operand of string::subString, if the cutter
    * char is not found then we will cut at the end of the string.
-   * @param s is a string that we wish to cut out a piece of
-   * @param cutter is the separator character
    */
   public static int cutPoint(String s, char cutter) {
     try {
@@ -471,9 +288,11 @@ public class Safe {
     return sb;
   }
 
-  /** simple minded string parser
-   *  @param parsee words get removed from the front of this
-   *  @return the next contiguous non-white character grouping.
+  /**
+   * simple minded string parser
+   *
+   * @param parsee words get removed from the front of this
+   * @return the next contiguous non-white character grouping.
    */
   public static String cutWord(StringBuffer parsee) {
     String retval = "";//so that we can easily read past the end without getting nulls
@@ -506,6 +325,7 @@ public class Safe {
     return s != null && s.length() > 0;
   }
 
+
   public static boolean hasSubstance(String s) {
     return s != null && s.trim().length() > 0;
   }
@@ -514,13 +334,16 @@ public class Safe {
     return d != null && d.getTime() != 0;
   }
 
+
   public static boolean NonTrivial(StringBuffer sb) {
-    return sb != null && NonTrivial((String) sb.toString());
+    return sb != null && NonTrivial(sb.toString());
   }
 
   public static boolean NonTrivial(byte[] ba) {//oh for templates ....
     return ba != null && ba.length > 0;
   }
+
+///////////////////////////////
 
   public static boolean NonTrivial(Vector v) {
     return v != null && v.size() > 0;
@@ -553,108 +376,6 @@ public class Safe {
     return NonTrivial(o) ? o.toString() : (TrivialDefault(def, ""));
   }
 
-//  public static boolean equalStrings(String one, String two){
-//    return equalStrings(one, two, false);
-//  }
-
-//  public static boolean equalStrings(String one, String two, boolean ignoreCase){
-//    if(NonTrivial(one)){
-//      if(NonTrivial(two)){
-//        return ignoreCase ? one.equalsIgnoreCase(two) : one.equals(two);
-//      } else {
-//        return false;
-//      }
-//    } else {
-//      return !NonTrivial(two);//both trivial is a match
-//    }
-//  }
-//
-//  /**
-//   * trivial strings are sorted to start of list?
-//   */
-//  public static int compareStrings(String one, String two){
-//    if(NonTrivial(one)){
-//      if(NonTrivial(two)){
-//        return one.compareTo(two);
-//      } else {
-//        return -1;
-//      }
-//    } else {
-//      return +1;
-//    }
-//  }
-//
-
-//
-//  //////////
-//  public static  boolean FileExists(File f){
-//    return f!=null && f.exists();
-//  }
-//
-//  /** enhanced TrivialDefault
-//  * @return a string that is not zero length
-//  * @param s proposed string, usually from an untrusted variable
-//  * @param defaultReplacement fallback string, usually a constant
-//  */
-//  public static String OnTrivial(String s, String defaultReplacement) {
-//    //this would of course be an infinite loop if the constant below were changed to be trivial...
-//    return NonTrivial(s) ? s : OnTrivial(defaultReplacement," ");
-//  }
-//
-//  public static String unNull(String s) {
-//    return TrivialDefault(s, ""); // kinda redundant
-//  }
-//
-//  public static String TrivialDefault(String s, String defaultReplacement) {
-//    return NonTrivial(s) ? s : defaultReplacement;
-//  }
-//
-//  public static String clipEOL(String s, String EOL) {
-//    //if final eol is undesirable clip it off.
-//    String returner = unNull(s);
-//    if(returner.length() > 0) {
-//      int index = returner.lastIndexOf(EOL);
-//      if(index == (returner.length()-EOL.length())) {
-//        returner = returner.substring(0, index);
-//      }
-//    }
-//    return returner;
-//  }
-//
-//  public final static String removeAll(String badchars,String source){
-//    if(!NonTrivial(badchars)) {
-//      return source;
-//    }
-//    StringBuffer copy=new StringBuffer(source.length());
-//    for(int i=0;i<source.length();i++){
-//      char c=source.charAt(i);
-//      if(badchars.indexOf(c)<0){
-//        copy.append(c);
-//      }
-//    }
-//    return copy.toString();
-//  }
-//
-//  protected static final String [][] replacers = {
-//      { "\\\\", "\\" },
-//        { "\\b", "\b" },
-//        { "\\t", "\t" },
-//        { "\\n", "\n" },
-//        { "\\f", "\f" },
-//        { "\\\"", "\"" },
-//        { "\\r", "\r" },
-//      { "\\'", "\'" },
-//  };
-//
-//  public static final String unescapeAll(String source) {
-//    if(NonTrivial(source)) {
-//      for(int i = replacers.length; i-->0;) {
-//        source = Safe.replace(source, replacers[i][0], replacers[i][1]); // not really efficient, but a kludge anyway ---
-//      }
-//    }
-//    return source;
-//  }
-
   // --- extremely inefficient.  improve!
   //alh has a state machine in some old C code, til then this is nicely compact source.
   public static String replace(String source, String toReplace, String with) {
@@ -686,50 +407,6 @@ public class Safe {
     return source.toString();
   }
 
-//  // +++ why promote to only float, but then promote to double later?
-//  public static double ratio(int num, int denom){
-//    return (denom==0)?0:((float)num)/((float)denom);//+_+ crude, need to get spectro's spec
-//  }
-//
-//  public static double ratio(long num, long denom){
-//    return (denom==0)?0:((float)num)/((float)denom);//+_+ crude, need to get spectro's spec
-//  }
-////
-//  public static final long percent(long dividend, long divisor) {
-//    return Math.round(Safe.ratio(dividend * 100, divisor));
-//  }
-//
-
-//  /////////////////////////////////////////////////////////////////////////////
-//  // date / time stuff
-//  static final LocalTimeFormat stamper= LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS");
-//
-//  public static String timeStampNow() {
-//    return timeStamp(Now());
-//  }
-//
-//  private static final Monitor timeMon = new Monitor("Safe.timeStamp");
-//  public static  String timeStamp(Date today) {
-//    String ret = "";
-//    try {
-//      timeMon.getMonitor();
-//      ret = stamper.format(today);
-//    } catch (Exception e) {
-//      // +++ deal with this
-//      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
-//    } finally {
-//      timeMon.freeMonitor();
-//    }
-//    return ret;
-//  }
-//
-//  public static final String timeStamp(long millis) {
-//    return timeStamp(new Date(millis));
-//  }
-
-
-  static final LocalTimeFormat LinuxDateCommand = LocalTimeFormat.Utc("MMddHHmmyyyy.ss");
-
   public static void setSystemClock(long millsfromepoch) { //exec something to set the system clock
     String forlinuxdateprogram = LinuxDateCommand.format(new Date(millsfromepoch));   //todo:1 move this line into DateX
     ErrorLogStream.Global().ERROR("setting time to:" + forlinuxdateprogram);
@@ -737,14 +414,6 @@ public class Safe {
     // Executor.runProcess("date -s -u "+busybox.format(now),"fixing clock",0,0,null,false);
     Executor.ezExec(progname + forlinuxdateprogram, 0);
   }
-
-///////////////////////////////
-
-  ////////////////////
-//  create a separate class for this ???
-  private static final DecimalFormat secsNMillis = new DecimalFormat("#########0.000");
-  private static final Monitor secsNMillisMonitor = new Monitor("secsNMillis");
-  private static final StringBuffer sbsnm = new StringBuffer();
 
   public static String millisToSecsPlus(long millis) {
     String retval = "";
@@ -771,38 +440,6 @@ public class Safe {
     return fos;
   }
 
-  /**
-   * Creates a unique filename given a particular pattern
-   *
-   * @param pathedPrefix - the path (just directory) where the file will be located + the first part of the filename
-   * @param suffix - the last part of the filename
-   *
-   * ie: filename = path + datetimestamp + suffix
-   *
-   * eg: createUniqueFilename("c:\temp", "myfile", ".txt") = c:\temp\myfile987654321.txt"
-   *
-   * todo:0 reconcile with TempFile, share at least the opening stuff.
-   */
-  public static String createUniqueFilename(String pathedPrefix, String suffix) {
-    File file = null;
-    String filename = null;
-    int attempts = 0;
-    try {
-      do {
-        filename = pathedPrefix + timeStampNow() + suffix;
-        file = new File(filename);
-      } while (((file != null) || file.exists()) && (++attempts < 20));//no infinite loops
-    } catch (Exception e) {
-      // +++ bitch
-    }
-    return filename;
-  }
-
-  // feel free to optimize this
-  private static final double K = 1024;
-  private static final double M = K * K;
-  private static final double G = M * K;
-  private static final double T = G * K;
 
   public static String sizeLong(long size) {
     // size is always positive

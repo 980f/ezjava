@@ -1,5 +1,6 @@
 package pers.hal42.database.sql;
-import java.sql.*;
+
+import java.sql.PreparedStatement;
 
 /**
  * An expression of the form A AND B. The reason we have this class as well as
@@ -9,6 +10,7 @@ import java.sql.*;
  * Of course we could just leave the dummy true expressions in the final SQL
  * and presumably the dbms can optimise it away fine, but it looks a bit ugly
  * and nasty to have these dummy expressions in the result.
+ *
  * @see DbTrueExpr
  */
 
@@ -17,7 +19,8 @@ public class DbAndExpr extends DbCriterion {
   public DbAndExpr(Object o1, Object o2) {
     super(o1, "AND", o2);
   }
-  public String getQueryString() {
+
+  public StringBuilder getQueryString() {
     // An optimisation hack
     if (c1 instanceof DbFalseExpr || c2 instanceof DbFalseExpr) {
       return "";
@@ -29,6 +32,7 @@ public class DbAndExpr extends DbCriterion {
       return super.getQueryString();
     }
   }
+
   public int setSqlValues(PreparedStatement ps, int i) throws java.sql.SQLException {
     if (c1 instanceof DbFalseExpr || c2 instanceof DbFalseExpr) {
       return i;
@@ -37,7 +41,7 @@ public class DbAndExpr extends DbCriterion {
     } else if (c2 instanceof DbTrueExpr) {
       return setSqlValue(ps, i, c1, null);
     } else {
-      return super.setSqlValues( ps,  i);
+      return super.setSqlValues(ps, i);
     }
   }
 }

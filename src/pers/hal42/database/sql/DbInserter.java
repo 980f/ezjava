@@ -1,13 +1,19 @@
 package pers.hal42.database.sql;
-import java.util.*;
-import java.sql.*;
-import pers.hal42.database.*;
+
+import pers.hal42.database.ColumnProfile;
+import pers.hal42.database.TableProfile;
 import pers.hal42.logging.ErrorLogStream;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
 /**
- *  A class used to insert records into SQL tables. The constructor is not
- *  public. To obtain a DbInserter call DbTable.inserter(); Example: To insert a
- *  record into the people table... <PRE>
+ * A class used to insert records into SQL tables. The constructor is not
+ * public. To obtain a DbInserter call DbTable.inserter(); Example: To insert a
+ * record into the people table... <PRE>
  * DbDatabase db = ...;
  * DbTable people = db.getTable("PEOPLE");
  * DbInserter inserter = people.inserter();
@@ -18,7 +24,7 @@ import pers.hal42.logging.ErrorLogStream;
  * </PRE> This is equivilent to... <PRE>
  * INSERT INTO PEOPLE(NAME, FAVOURITE_TEAM, AGE) VALUES('Fred', 'Raiders', 30)
  * </PRE> The same thing as above can be achieved using a SELECT clause, and
- *  this can lead us to creating much more complex expressions... <PRE>
+ * this can lead us to creating much more complex expressions... <PRE>
  * DbDatabase db = ...;
  * DbSelector selector = db.selector();
  * DbTable people = db.getTable("PEOPLE");
@@ -30,9 +36,9 @@ import pers.hal42.logging.ErrorLogStream;
  * </PRE> This is equivilent to... <PRE>
  * INSERT INTO PEOPLE(NAME, FAVOURITE_TEAM, AGE) SELECT 'Fred', 'Raiders', 30
  * </PRE> To get more fancy we can insert data that has been selected from
- *  another table. To insert all the people from the PLAYERS table into the
- *  PEOPLE table who are older than 20, and we set their favourite team to be
- *  the team they play for... <PRE>
+ * another table. To insert all the people from the PLAYERS table into the
+ * PEOPLE table who are older than 20, and we set their favourite team to be
+ * the team they play for... <PRE>
  * DbDatabase db = ...;
  * DbSelector selector = db.selector();
  * DbTable people = db.getTable("PEOPLE");
@@ -47,17 +53,16 @@ import pers.hal42.logging.ErrorLogStream;
  * INSERT INTO PEOPLE(NAME, FAVOURITE_TEAM, AGE) SELECT NAME, TEAM, AGE FROM PLAYERS WHERE AGE > 20
  * </PRE>
  *
- * @author     Chris Bitmead
- * @created    December 13, 2001
+ * @author Chris Bitmead
+ * @created December 13, 2001
  */
 
 public class DbInserter {
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DbInserter.class);
-
   TableProfile table;
   DbSelector selector;
-  List intoList = new ArrayList();
-  List fromList = new ArrayList();
+  List<ColumnProfile> intoList = new ArrayList<>();
+  List<Object> fromList = new ArrayList<>();
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DbInserter.class);
 
   DbInserter(TableProfile table, DbSelector selector) {
     this.table = table;
@@ -66,15 +71,15 @@ public class DbInserter {
 
   DbInserter(TableProfile table) {
     this.table = table;
-    this.selector = selector;
+    this.selector = null;
   }
 
   public int setSqlValues(PreparedStatement stmt, int i) throws SQLException {
     if (selector == null) {
-      Iterator it = fromList.iterator();
-      Iterator intoit = intoList.iterator();
+      Iterator<Object> it = fromList.iterator();
+      Iterator<ColumnProfile> intoit = intoList.iterator();
       while (it.hasNext()) {
-        DbSelector.setSqlValue(stmt, i++, it.next(), (ColumnProfile) intoit.next());
+        DbSelector.setSqlValue(stmt, i++, it.next(), intoit.next());
       }
     } else {
       selector.setSqlValues(stmt, 1, intoList);
@@ -83,10 +88,10 @@ public class DbInserter {
   }
 
   /**
-   *  Specify the value of a column to add.
+   * Specify the value of a column to add.
    *
-   * @param  into  The column we are inserting into.
-   * @param  from  The column from a selector that we are getting a value from.
+   * @param into The column we are inserting into.
+   * @param from The column from a selector that we are getting a value from.
    */
   public void addColumn(ColumnProfile into, Object from) {
     intoList.add(into);
@@ -94,51 +99,49 @@ public class DbInserter {
   }
 
   /**
-   *  Execute this command on a specific connection.
-   *
-   * @param  dbcon            Description of Parameter
-   * @return                  The number of record affected.
-   * @exception  Exception  Description of Exception
+   * Execute this command on a specific connection.
+
+   * @return The number of record affected.
+   * @throws Exception Description of Exception
    */
   public int execute() {
 //      PreparedStatement stmt = dbcon.con.prepareStatement(getQueryString());
 //      setSqlValues(stmt, 1);
 //      return stmt.executeUpdate();
-      return -1;//
+    return -1;//
   }
 
   String getValuesQueryString() {
-    String rtn = " VALUES (";
+    StringBuilder rtn = new StringBuilder(" VALUES (");
     for (int i = 0; i < fromList.size(); i++) {
       if (i != 0) {
-        rtn += ", ";
+        rtn.append(", ");
       }
-      rtn += "?";
+      rtn.append("?");
     }
-    rtn += ")";
-    return rtn;
+    rtn.append(")");
+    return String.valueOf(rtn);
   }
 
   String getQueryString() {
-    String rtn = "INSERT INTO " + table.fullname() + " (";
+    StringBuilder rtn = new StringBuilder(100);
+    rtn.append("INSERT INTO ").append(table.fullname()).append(" (");
     int i = 0;
-    Iterator fieldi = intoList.iterator();
-    while (fieldi.hasNext()) {
-      ColumnProfile col = (ColumnProfile) fieldi.next();
+    for (ColumnProfile col : intoList) {
       if (i != 0) {
-        rtn += ", ";
+        rtn.append(", ");
       }
-      rtn += col.name();
+      rtn.append(col.name());
       i++;
     }
-    rtn += ") ";
-    if (selector == null) {
-      rtn += getValuesQueryString();
+    rtn.append(") ");
+    if (null != selector) {
+      rtn.append(selector.getQueryString());
     } else {
-      rtn += selector.getQueryString();
+      rtn.append(getValuesQueryString());
     }
     dbg.WARNING("getQueryString(): " + rtn);
-    return rtn;
+    return String.valueOf(rtn);
   }
 
 }

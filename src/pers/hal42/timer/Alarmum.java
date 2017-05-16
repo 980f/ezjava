@@ -4,6 +4,8 @@ import pers.hal42.lang.DateX;
 import pers.hal42.lang.ReflectX;
 
 public class Alarmum {
+  public //todo:1 make protected after tests are put someplace sane.
+    int ticks = 0; //what we were asked to wait for
   /**
    * what to do when time is up
    */
@@ -16,8 +18,6 @@ public class Alarmum {
    * absolute time that dynamite should execute
    */
   long blowtime;//gets compared to System.currentTimeMillis()
-  public //todo:1 make protected after tests are put someplace sane.
-  int ticks = 0; //what we were asked to wait for
   /**
    * to execute dyanmite at priority that was active when alarm was set.
    */
@@ -30,6 +30,16 @@ public class Alarmum {
 
   private Alarmum() {
     //for cloner
+  }
+
+  public Alarmum(TimeBomb dynamite, int fuse, int priority) {
+    this.dynamite = dynamite;
+    refuse(fuse);
+    ThreadPriority = priority;
+  }
+
+  public Alarmum(TimeBomb dynamite, int fuse) {
+    this(dynamite, fuse, Thread.currentThread().getPriority());
   }
 
   /**
@@ -77,16 +87,6 @@ public class Alarmum {
     defused = ticks <= 0;
     blowtime = defused ? 0 : ticks + DateX.utcNow();
     return this;
-  }
-
-  public Alarmum(TimeBomb dynamite, int fuse, int priority) {
-    this.dynamite = dynamite;
-    refuse(fuse);
-    ThreadPriority = priority;
-  }
-
-  public Alarmum(TimeBomb dynamite, int fuse) {
-    this(dynamite, fuse, Thread.currentThread().getPriority());
   }
 
   public String toSpam() {

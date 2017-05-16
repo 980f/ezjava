@@ -11,11 +11,6 @@ import java.util.TimeZone;
 
 public class DateInput {
 
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DateInput.class);
-
-  private static final String NAUGHT = "00";
-  private static final String MYFORMAT = LocalTimeFormat.DESCENDINGTIMEFORMAT;
-
   public String year;
   public String month;
   public String day;
@@ -23,6 +18,9 @@ public class DateInput {
   public String minute;
   public String second;
   private LocalTimeFormat ltf;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DateInput.class);
+  private static final String NAUGHT = "00";
+  private static final String MYFORMAT = LocalTimeFormat.DESCENDINGTIMEFORMAT;
 
   private DateInput(TimeZone tz) {
     setTz(tz);
@@ -31,10 +29,6 @@ public class DateInput {
   public DateInput(UTC utc, TimeZone tz) {
     this(tz);
     setFromUTC(utc);
-  }
-
-  private void setTz(TimeZone tz) {
-    this.ltf = LocalTimeFormat.New(tz, MYFORMAT);
   }
 
   public DateInput(String year, String month, String day, String hour, String minute, String second, TimeZone tz) {
@@ -57,32 +51,12 @@ public class DateInput {
     this.second = copy.second;
   }
 
-  public static DateInput Now(TimeZone tz) {
-    DateInput di = new DateInput(tz);
-    LocalTimeFormat ltftemp = LocalTimeFormat.New(tz, MYFORMAT);
-    return di.fromString(ltftemp.format(UTC.Now()));
+  private void setTz(TimeZone tz) {
+    this.ltf = LocalTimeFormat.New(tz, MYFORMAT);
   }
 
   private DateInput fromString(String datestr) {
     return FromString(this, datestr);
-  }
-
-  // convert from a LocalTimeFormat.DESCENDINGTIMEFORMAT to a DateInput
-  private static DateInput FromString(DateInput di, String datestr) {
-    // "yyyyMMddHHmmssSSS"
-    if(!StringX.NonTrivial(datestr)) {
-      datestr = "";
-    }
-    // make sure it is the right length, exactly
-    datestr = StringX.fill(datestr, '0', 14, false);
-    // now take it apart
-    di.year  = StringX.subString(datestr, 2,  4); // assumes 20XX
-    di.month = StringX.subString(datestr, 4,  6);
-    di.day   = StringX.subString(datestr, 6,  8);
-    di.hour  = StringX.subString(datestr, 8,  10);
-    di.minute= StringX.subString(datestr, 10, 12);
-    di.second= StringX.subString(datestr, 12, 14);
-    return di;
   }
 
   /**
@@ -92,7 +66,7 @@ public class DateInput {
     hour = minute = second = NAUGHT;
   }
 
-//  private static final String EODHOUR = "23";
+  //  private static final String EODHOUR = "23";
 //  private static final String EODMINSEC = "59";
 //  public void endOfDay() {
 //    hour = EODHOUR;
@@ -117,6 +91,74 @@ public class DateInput {
     FromString(this, ltf.format(utc));
   }
 
+  public UTC toUTC() {
+    // if the date is not trivial, fix its format, convert to a Date, and stuff it in the range
+    if (nonTrivial()) {
+      twoDigitFix(); // make them all at least 2 digits wide
+      // +++ NOT Y21C-compliant!
+      if (StringX.NonTrivial(year) && (year.length() < 3)) {
+        year = "20" + year;
+      }
+      String b4 = year + month + day + hour + minute + second + "000";
+      if (StringX.parseLong(b4) == 0) {
+        return null;
+      }
+      UTC ret = ltf.parseUtc(b4);
+      dbg.VERBOSE("b4=" + b4 + ", LTF=" + ltf + ", UTC=" + ret);
+      return ret;
+    }
+    return null;
+  }
+
+  private void twoDigitFix() {
+    year = Formatter.twoDigitFixed(year);
+    month = Formatter.twoDigitFixed(month);
+    day = Formatter.twoDigitFixed(day);
+    hour = Formatter.twoDigitFixed(hour);
+    minute = Formatter.twoDigitFixed(minute);
+    second = Formatter.twoDigitFixed(second);
+  }
+
+  public boolean nonTrivial() {
+    return nonTrivialDate() || nonTrivialTime();
+  }
+
+  public boolean nonTrivialDate() {
+    return StringX.NonTrivial(year) || StringX.NonTrivial(month) || StringX.NonTrivial(day);
+  }
+
+  public boolean nonTrivialTime() {
+    return StringX.NonTrivial(hour) || StringX.NonTrivial(minute) || StringX.NonTrivial(second);
+  }
+
+  public void nullTime() {
+    hour = minute = second = null;
+  }
+
+  public static DateInput Now(TimeZone tz) {
+    DateInput di = new DateInput(tz);
+    LocalTimeFormat ltftemp = LocalTimeFormat.New(tz, MYFORMAT);
+    return di.fromString(ltftemp.format(UTC.Now()));
+  }
+
+  // convert from a LocalTimeFormat.DESCENDINGTIMEFORMAT to a DateInput
+  private static DateInput FromString(DateInput di, String datestr) {
+    // "yyyyMMddHHmmssSSS"
+    if (!StringX.NonTrivial(datestr)) {
+      datestr = "";
+    }
+    // make sure it is the right length, exactly
+    datestr = StringX.fill(datestr, '0', 14, false);
+    // now take it apart
+    di.year = StringX.subString(datestr, 2, 4); // assumes 20XX
+    di.month = StringX.subString(datestr, 4, 6);
+    di.day = StringX.subString(datestr, 6, 8);
+    di.hour = StringX.subString(datestr, 8, 10);
+    di.minute = StringX.subString(datestr, 10, 12);
+    di.second = StringX.subString(datestr, 12, 14);
+    return di;
+  }
+
   public static DateInput fromUTC(UTC utc, TimeZone tz) {
     return new DateInput(utc, tz);
   }
@@ -125,48 +167,7 @@ public class DateInput {
     return nonTrivial(date) ? date.toUTC() : null;
   }
 
-  public UTC toUTC() {
-    // if the date is not trivial, fix its format, convert to a Date, and stuff it in the range
-    if(nonTrivial()) {
-      twoDigitFix(); // make them all at least 2 digits wide
-      // +++ NOT Y21C-compliant!
-      if(StringX.NonTrivial(year) && (year.length() < 3)) {
-        year = "20" + year;
-      }
-      String b4 = year + month + day + hour + minute + second + "000";
-      if(StringX.parseLong(b4) == 0) {
-        return null;
-      }
-      UTC ret = ltf.parseUtc(b4);
-      dbg.VERBOSE("b4="+b4+", LTF="+ltf+", UTC="+ret);
-      return ret;
-    }
-    return null;
-  }
-
-  private void twoDigitFix() {
-    year   = Formatter.twoDigitFixed(year);
-    month  = Formatter.twoDigitFixed(month);
-    day    = Formatter.twoDigitFixed(day);
-    hour   = Formatter.twoDigitFixed(hour);
-    minute = Formatter.twoDigitFixed(minute);
-    second = Formatter.twoDigitFixed(second);
-  }
-
   public static boolean nonTrivial(DateInput date) {
-    return (date != null) ? date.nonTrivial() : false;
-  }
-
-  public boolean nonTrivial() {
-    return  nonTrivialDate() || nonTrivialTime();
-  }
-  public boolean nonTrivialDate() {
-    return StringX.NonTrivial(year) || StringX.NonTrivial(month) || StringX.NonTrivial(day);
-  }
-  public boolean nonTrivialTime() {
-    return StringX.NonTrivial(hour) || StringX.NonTrivial(minute) || StringX.NonTrivial(second);
-  }
-  public void nullTime() {
-    hour = minute = second = null;
+    return (date != null) && date.nonTrivial();
   }
 }

@@ -1,7 +1,5 @@
 package pers.hal42.transport;
 
-/** hierarchy traverser, over property set that it is derived from */
-
 import pers.hal42.lang.OS;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
@@ -17,15 +15,32 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
+/**
+ * hierarchy traverser, over property set that it is derived from
+ */
 public class EasyCursor extends EasyProperties {
-  static final ErrorLogStream dbg = ErrorLogStream.getForClass(EasyCursor.class);
   protected String context = "";
   protected StringStack tree = new StringStack(ReflectX.shortClassName(this));
-
   public final static char SEP = '.';
+  static final ErrorLogStream dbg = ErrorLogStream.getForClass(EasyCursor.class);
+  final static String nullString = "(null)";
 
-  public static String makeKey(String morekey) {
-    return StringX.NonTrivial(morekey) ? morekey + SEP : "";
+  public EasyCursor() {
+    super();
+  }
+
+  public EasyCursor(Properties rhs) {
+    super(rhs);
+  }
+
+  public EasyCursor(String context, String from) {
+    super(from);
+    setKey(context);
+  }
+
+  public EasyCursor(String from) {
+    super(from);
+    //    this.fromString(from, false /* not needed */);
   }
 
   public EasyCursor setKey(String newcontext) {
@@ -70,46 +85,10 @@ public class EasyCursor extends EasyProperties {
     return context != null ? context : "";
   }
 
-  public static EasyCursor New(InputStream is) {
-    EasyCursor newone = new EasyCursor();
-    newone.Load(is);
-    return newone;
-  }
-
-  /**
-   * make from url'd string made from a properties streamed output
-   */
-  public static EasyCursor fromUrl(String s) {
-    EasyCursor newone = new EasyCursor();
-    newone.fromURLdString(s, true);
-    return newone;
-  }
-
-  public EasyCursor() {
-    super();
-  }
-
-  public EasyCursor(Properties rhs) {
-    super(rhs);
-  }
-
-
-  public EasyCursor(String context, String from) {
-    super(from);
-    setKey(context);
-  }
-
-  public EasyCursor(String from) {
-    super(from);
-    //    this.fromString(from, false /* not needed */);
-  }
-
   public String fullKey(String key) {
     boolean rooted = StringX.NonTrivial(key) && (key.charAt(0) == SEP);
     return (!rooted && StringX.NonTrivial(context)) ? (context + key) : key;
   }
-
-  final static String nullString = "(null)";
 
   /**
    * overloading the get and set property is all we need to overload as they are
@@ -184,22 +163,18 @@ public class EasyCursor extends EasyProperties {
         newone = act.newInstance();
         push(key);
         try {
-          return (T) helper.helpload(this, newone);
+          return helper.helpload(this, newone);
         } finally {
           pop();
         }
       } else {
-        return (T) super.getObject(key, act);
+        return super.getObject(key, act);
       }
     } catch (Exception ex) {
       dbg.Caught(ex, "EasyCursor.getObject:" + act.getName());
       return null;
     }
   }
-
-//  public <T> T getObject(String key, Class<? extends T> act) {
-//    return getObject(key, act, null);
-//  }
 
   /**
    * the remainder is an object, usually called while internal cursor is at root of storage
@@ -255,6 +230,10 @@ public class EasyCursor extends EasyProperties {
     return branch.uniqueify();
   }
 
+//  public <T> T getObject(String key, Class<? extends T> act) {
+//    return getObject(key, act, null);
+//  }
+
   /**
    * @param branchcontext if null is current node, else we copy starting with that subnode.
    * @return an EasyProperties that is a subset of this one
@@ -305,8 +284,6 @@ public class EasyCursor extends EasyProperties {
   public String toSpam() {
     return preFix() + " has " + super.propertyList().size() + " items, defs has " + (defaults != null ? defaults.size() : 0);
   }
-  /////////////////////////////////////
-  // isEasy utilities
 
   /**
    * save a vector of objects.
@@ -314,14 +291,14 @@ public class EasyCursor extends EasyProperties {
    * or a later load will fail
    */
 
-  public void setVector(Vector v, EasyHelper helper) {
+  public <T> void setVector(Vector<T> v, EasyHelper<T> helper) {
     int i = VectorX.size(v);
     setInt("size", i);//even if zero.
     while (i-- > 0) {
       try {
         setObject(Integer.toString(i), v.elementAt(i), helper);
       } catch (Exception e) {
-        continue; //try to finish iteration.
+        //continue; //try to finish iteration.
       }
     }
   }
@@ -333,7 +310,7 @@ public class EasyCursor extends EasyProperties {
   /**
    * save @param v vector content under branch @param key, using @param helper to convert objects to text.
    */
-  public EasyCursor saveVector(String key, Vector v, EasyHelper helper) {
+  public <T> EasyCursor saveVector(String key, Vector<T> v, EasyHelper<T> helper) {
     push(key);
     try {
       setVector(v, helper);
@@ -341,9 +318,10 @@ public class EasyCursor extends EasyProperties {
       return pop();
     }
   }
+  /////////////////////////////////////
+  // isEasy utilities
 
-
-  public EasyCursor saveVector(String key, Vector v) {
+  public <T> EasyCursor saveVector(String key, Vector<T> v) {
     return saveVector(key, v, null);
   }
 
@@ -361,7 +339,7 @@ public class EasyCursor extends EasyProperties {
       try {
         v.set(i, getObject(Integer.toString(i), act, helper));
       } catch (Exception any) {
-        continue;
+//        continue;
       }
     }
     return v;
@@ -380,7 +358,7 @@ public class EasyCursor extends EasyProperties {
     }
   }
 
-  public Vector loadVector(String key, Class act) {
+  public <T> Vector<T> loadVector(String key, Class<? extends T> act) {
     return loadVector(key, act, null);
   }
 
@@ -416,6 +394,65 @@ public class EasyCursor extends EasyProperties {
 
   public void setTextList(String key, TextList tl) {
     this.saveVector(key, tl.Vector(), null);
+  }
+
+  /**
+   * save a hashTable, using the keys as labels
+   * the map's keys must be convertible to and from strings
+   */
+  public EasyCursor saveMap(String tablename, Map table) {
+    if (!table.isEmpty()) {
+      push(tablename);
+      try {
+        for (Object key : table.keySet()) {
+          try {
+            setObject(String.valueOf(key), table.get(key));
+          } catch (Exception ignored) {
+            //silently omit defectively keyed or non-savable entries.
+          }
+        }
+      } finally {
+        return pop();
+      }
+    }
+    return this;
+  }
+
+  /**
+   * @param act is type of object
+   * @return map
+   * todo:1 convert to actually using a map. All map users were hashtables....
+   */
+  public <T> Hashtable<String, T> getMap(String mapname, Class<? extends T> act) {
+    Hashtable<String, T> table = new Hashtable<>();
+    push(mapname);
+    try {
+      //for each item on branch its key becomes the hashtable key, we make an object out of its value.
+      TextList keys = topKeys();
+      for (String key : keys.Vector()) {
+        try {
+          table.put(key, getObject(key, act));
+        } catch (Exception ex) {
+//          continue; //recover as much as possible.
+        }
+      }
+    } finally {
+      pop();
+      return table;
+    }
+  }
+
+  public TextList toSpam(TextList tl) {
+    if (tl == null) {
+      tl = new TextList();
+    }
+    TextList keys = branchKeys();
+    keys.sort();
+    for (int i = 0; i < keys.size(); i++) {
+      String name = keys.itemAt(i);
+      tl.add(name, getString(name));
+    }
+    return tl;
   }
 
 //  /**
@@ -474,77 +511,6 @@ public class EasyCursor extends EasyProperties {
 //    }
 //  }
 
-
-  /**
-   * save a hashTable, using the keys as labels
-   * the map's keys must be convertible to and from strings
-   */
-  public EasyCursor saveMap(String tablename, Map table) {
-    if (!table.isEmpty()) {
-      push(tablename);
-      try {
-        for (Object key : table.keySet()) {
-          try {
-            setObject(String.valueOf(key), table.get(key));
-          } catch (Exception ignored) {
-            //silently omit defectively keyed or non-savable entries.
-          }
-        }
-      } finally {
-        return pop();
-      }
-    }
-    return this;
-  }
-
-  /**
-   * @param act is type of object
-   * @return map
-   * @todo convert to actually using a map. All map users were hashtables....
-   */
-  public <T> Hashtable<String,T> getMap(String mapname, Class<? extends T> act) {
-    Hashtable<String,T> table = new Hashtable<>();
-    push(mapname);
-    try {
-      //for each item on branch its key becomes the hashtable key, we make an object out of its value.
-      TextList keys = topKeys();
-      for (int i = keys.size(); i-- > 0; ) {
-        try {
-          String key = keys.itemAt(i);
-          table.put(key, (T)getObject(key, act));
-        } catch (Exception ex) {
-          continue; //recover as much as possible.
-        }
-      }
-    } finally {
-      pop();
-      return table;
-    }
-  }
-
-  public static EasyCursor makeFrom(isEasy object) {
-    EasyCursor spammy = new EasyCursor();
-    object.save(spammy);
-    return spammy;
-  }
-
-  public TextList toSpam(TextList tl) {
-    if (tl == null) {
-      tl = new TextList();
-    }
-    TextList keys = branchKeys();
-    keys.sort();
-    for (int i = 0; i < keys.size(); i++) {
-      String name = keys.itemAt(i);
-      tl.add(name, getString(name));
-    }
-    return tl;
-  }
-
-  public static String spamFrom(isEasy object) {
-    return makeFrom(object).asParagraph();
-  }
-
   /**
    * fill object from a subset named @param key via calling @param ezo's load()
    *
@@ -582,6 +548,42 @@ public class EasyCursor extends EasyProperties {
     }
   }
 
+  /**
+   * this exists to let asParagraph dump only the items currently in view.
+   */
+  public Enumeration propertyNames() {
+    return TextListIterator.New(branchKeys());
+  }
+
+  public static String makeKey(String morekey) {
+    return StringX.NonTrivial(morekey) ? morekey + SEP : "";
+  }
+
+  public static EasyCursor New(InputStream is) {
+    EasyCursor newone = new EasyCursor();
+    newone.Load(is);
+    return newone;
+  }
+
+  /**
+   * make from url'd string made from a properties streamed output
+   */
+  public static EasyCursor fromUrl(String s) {
+    EasyCursor newone = new EasyCursor();
+    newone.fromURLdString(s, true);
+    return newone;
+  }
+
+  public static EasyCursor makeFrom(isEasy object) {
+    EasyCursor spammy = new EasyCursor();
+    object.save(spammy);
+    return spammy;
+  }
+
+  public static String spamFrom(isEasy object) {
+    return makeFrom(object).asParagraph();
+  }
+
   public static EasyCursor FromDisk(String filePath) {
     return FromDisk(new File(filePath));
   }
@@ -604,13 +606,6 @@ public class EasyCursor extends EasyProperties {
       }
       return fromdisk;
     }
-  }
-
-  /**
-   * this exists to let asParagraph dump only the items currently in view.
-   */
-  public Enumeration propertyNames() {
-    return TextListIterator.New(branchKeys());
   }
 
   public static String dump(isEasy ez) {

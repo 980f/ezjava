@@ -2,11 +2,16 @@ package pers.hal42.transport;
 
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.text.TextList;
-import pers.hal42.text.Ascii;
 import pers.hal42.math.Base64Codec;
+import pers.hal42.text.Ascii;
+import pers.hal42.text.TextList;
 
 public class EasyUrlString implements isEasy {
+
+  private String key;
+  private String rawcontent;
+  private String encodedcontent;
+  private static final String DEFAULTKEY = "EasyUrlStringContent";
 
   public EasyUrlString() {
     this(DEFAULTKEY);
@@ -25,8 +30,8 @@ public class EasyUrlString implements isEasy {
     return this;
   }
 
-  public EasyUrlString setrawto(byte []ascii){
-    return setrawto(new String( ascii));
+  public EasyUrlString setrawto(byte[] ascii) {
+    return setrawto(new String(ascii));
   }
 
   public EasyUrlString setencodedto(String encodedcontent) {
@@ -43,18 +48,9 @@ public class EasyUrlString implements isEasy {
     return encodedcontent;
   }
 
-  public static boolean NonTrivial(EasyUrlString eus) {
-    return (eus != null) && eus.NonTrivial();
-  }
-
   public boolean NonTrivial() {
     return StringX.NonTrivial(rawcontent);
   }
-
-  private static final String DEFAULTKEY = "EasyUrlStringContent";
-  private String key;
-  private String rawcontent;
-  private String encodedcontent;
 
   private void encode() {
     encodedcontent = encode(rawcontent);
@@ -64,6 +60,21 @@ public class EasyUrlString implements isEasy {
     rawcontent = decode(encodedcontent);
   }
 
+  public void load(EasyCursor ezp) {
+    setencodedto(ezp.getString(key, ""));
+  }
+
+  public void save(EasyCursor ezp) {
+    ezp.setString(key, StringX.TrivialDefault(encodedcontent, null)); // this prevents the item getting into the ezp if it is trivial (to prevent excess
+  }
+
+  public String toString() {
+    return encodedValue();
+  }
+
+  public static boolean NonTrivial(EasyUrlString eus) {
+    return (eus != null) && eus.NonTrivial();
+  }
 
   // base64 is generally compressed better than URL encoding
   public static String encode(String raw) {
@@ -84,18 +95,6 @@ public class EasyUrlString implements isEasy {
     }
   }
 
-  public void load(EasyCursor ezp){
-    setencodedto(ezp.getString(key, ""));
-  }
-
-  public void save(EasyCursor ezp){
-    ezp.setString(key, StringX.TrivialDefault(encodedcontent, null)); // this prevents the item getting into the ezp if it is trivial (to prevent excess
-  }
-
-  public String toString() {
-    return encodedValue();
-  }
-
   ////////////
   // command line utility to demo this class
   private static void barf() {
@@ -103,13 +102,13 @@ public class EasyUrlString implements isEasy {
   }
 
   // for finding out what the values would be, if you could read them.  :)
-  public static void main(String [] args) {
-    if(args.length < 2) {
+  public static void main(String[] args) {
+    if (args.length < 2) {
       barf();
     } else {
-      if(StringX.equalStrings(args[0],"encode")){
+      if (StringX.equalStrings(args[0], "encode")) {
         System.out.println("ascii " + Ascii.bracket(args[1].getBytes()) + " encoded to " + EasyUrlString.encode(args[1]));
-      } else if(StringX.equalStrings(args[0], "decode")) {
+      } else if (StringX.equalStrings(args[0], "decode")) {
         System.out.println(args[1] + " decoded to " + Ascii.bracket(EasyUrlString.decode(args[1]).getBytes()));
       } else {
         System.out.println("args = " + TextList.CreateFrom(args));

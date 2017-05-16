@@ -9,25 +9,25 @@ import java.io.InputStream;
 
 public class URLDecoderFilterInputStream extends FilterInputStream {
 
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(URLDecoderFilterInputStream.class);
-
   protected StringBuffer tmpBuff = new StringBuffer(3); // really shouldn't use "String" anything
+  private Monitor thisMonitor = new Monitor("URLDecoderFilterInputStream");
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(URLDecoderFilterInputStream.class);
 
   /**
    * Creates a new URLEncoded input stream to write data to the specified underlying output stream.
    *
-   * @param   in   the underlying output stream.
+   * @param in the underlying output stream.
    */
   public URLDecoderFilterInputStream(InputStream in) {
     super(in);
   }
 
-  public int available() throws IOException{
+  public int available() throws IOException {
     return super.available() + tmpBuff.length();
   }
 
-  public void reset() throws IOException /* literally */{
-    throw(new IOException("Can't reset a " + URLDecoderFilterInputStream.class.getName()));
+  public void reset() throws IOException /* literally */ {
+    throw (new IOException("Can't reset a " + URLDecoderFilterInputStream.class.getName()));
   }
 
   public void mark(int readlimit) {
@@ -41,8 +41,8 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
 
   public long skip(long n) throws IOException {
     long count = 0;  // probably cleaner way -- i'm in a hurry; works
-    for(long i = 0; i < n; i++) {
-      if(read() == -1) {
+    for (long i = 0; i < n; i++) {
+      if (read() == -1) {
         break;
       } else {
         count++;
@@ -56,25 +56,23 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
   }
 
   public int read(byte[] b, int off, int len) throws IOException {
-    int end = off+ len;
+    int end = off + len;
     int count = 0;
-    for(int i = off; i < end; i++) {
+    for (int i = off; i < end; i++) {
       int c = read();
-      if(c == -1) {
+      if (c == -1) {
         break;
       }
-      b[i] = (byte)((char)c);
+      b[i] = (byte) ((char) c);
       count++;
     }
     return ((count == 0) && (len > 0)) ? -1 : count;
   }
 
-  private Monitor thisMonitor = new Monitor("URLDecoderFilterInputStream");
-
   /**
    * Reads the specified byte from this URLEncoded input stream.
    *
-   * @exception  IOException  if an I/O error occurs.
+   * @throws IOException if an I/O error occurs.
    */
   public int read() throws IOException {
     int retval = 0;
@@ -82,31 +80,31 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
       thisMonitor.getMonitor();
       int c = -1;
       // be sure we have at least one character in the buffer
-      if(tmpBuff.length() == 0) {
+      if (tmpBuff.length() == 0) {
         getOne();
       }
       // after attempting to read one, if it is still empty, return -1
-      if(tmpBuff.length() > 0) {
+      if (tmpBuff.length() > 0) {
         // otherwise, something's in the buffer; see if it needs conversion
-        if(tmpBuff.charAt(0) == '%') {
-          while((tmpBuff.length() < 3) && getOne()) {
+        if (tmpBuff.charAt(0) == '%') {
+          while ((tmpBuff.length() < 3) && getOne()) {
           }
           // we got what we could; so attempt the conversion
-          if(tmpBuff.length() >= 3) {
+          if (tmpBuff.length() >= 3) {
             int chr = -1;
             try {
-              String toParse = tmpBuff.substring(1,3);
-              chr = Integer.parseInt(toParse,16);
+              String toParse = tmpBuff.substring(1, 3);
+              chr = Integer.parseInt(toParse, 16);
             } catch (NumberFormatException e) {
               // if it is misformatted, just spew as normal
             }
-            if(chr != -1) { // conversion took
+            if (chr != -1) { // conversion took
               tmpBuff.delete(0, 3);   // shouldn't except (deletes the 3 chars starting at position 1)
-              tmpBuff.insert(0, (char)chr); // prepend the converted character
+              tmpBuff.insert(0, (char) chr); // prepend the converted character
             }
           }
         } else {
-          if(tmpBuff.charAt(0) == '+') {
+          if (tmpBuff.charAt(0) == '+') {
             tmpBuff.setCharAt(0, ' ');
           }
         }
@@ -118,7 +116,7 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
 //      if(c == '+') {
 //        c = ' ';
 //      }
-      retval = (byte)c; // one exit point
+      retval = (byte) c; // one exit point
     } finally {
       thisMonitor.freeMonitor();
       return retval;
@@ -127,8 +125,8 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
 
   private boolean getOne() throws IOException {
     int chr = super.read();
-    if(chr != -1) {
-      tmpBuff.append((char)chr);
+    if (chr != -1) {
+      tmpBuff.append((char) chr);
       return true;
     }
     return false;

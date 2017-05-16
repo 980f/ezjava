@@ -1,31 +1,27 @@
-/**
- *
- * This class implements an output stream in which the data is written into and read from a byte array.
- * The buffer automatically grows as data is written to it.
- *
- * This class implements an input stream which contains an internal buffer that contains bytes that may be read from the stream.
- * An internal counter keeps track of the next byte to be supplied by the <code>read</code> method.
- *
- * todo:2 use a circular buffer to reduce the copying overhead. Reference C code is available.
- * todo:0 replace synchronized methods with synchronizing on some object, to refine scope.
- * todo:0 make blocking read work. Users desiring unblocked reads can check size.
- * todo:1 add refinements to 'ensureCapacity' mimicking ju.Vector class.
- */
-
 
 package pers.hal42.stream;
 
+import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.thread.Waiter;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
-public class ByteFifo {
-// !!! Can't use this here since the ByteFifo is used in one!  Causes infinite loop!
-//alh: loop must be deeply embedded, we are using classes that use ELS...
-//  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ByteFifo.class);
+/**
+ * This class implements an output stream in which the data is written into and read from a byte array.
+ * The buffer automatically grows as data is written to it.
+ * <p>
+ * This class implements an input stream which contains an internal buffer that contains bytes that may be read from the stream.
+ * An internal counter keeps track of the next byte to be supplied by the <code>read</code> method.
+ * <p>
+ * todo:2 use a circular buffer to reduce the copying overhead. Reference C code is available.
+ * todo:0 replace synchronized methods with synchronizing on some object, to refine scope.
+ * todo:0 make blocking read work. Users desiring unblocked reads can check size.
+ * todo:1 add refinements to 'ensureCapacity' mimicking ju.Vector class.
+ */
 
+public class ByteFifo {
   /**
    * The buffer where data is stored.
    */
@@ -34,12 +30,12 @@ public class ByteFifo {
    * The number of valid bytes in the buffer.
    */
   protected int count;
-
   // the stream stuff
   protected ByteFifoOutputStream bafos = null;
+  protected ByteFifoInputStream bafis = null;
   private boolean bafosClosed = false;
-  protected ByteFifoInputStream  bafis = null;
   private boolean bafisClosed = false;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ByteFifo.class);
 
   /**
    * Creates a new byte array output stream. The buffer capacity is
@@ -50,7 +46,6 @@ public class ByteFifo {
   }
 
 
-
   /**
    * Creates a new byte array output stream, giving the buffer the initial
    * capacity specified by the <code>size</code> parameter,
@@ -59,12 +54,12 @@ public class ByteFifo {
   public ByteFifo(int size, boolean blocking) {
     if (size < 0) {
       //throw new IllegalArgumentException("Negative initial size: " + size);
-      size=0; //value is just advisory, exceptions are for fatal conditions.
+      size = 0; //value is just advisory, exceptions are for fatal conditions.
     }
     buf = new byte[size];
     count = 0;
     bafos = new ByteFifoOutputStream(this);
-    bafis = blocking ?new ByteFifoBlockingInputStream(this) : new ByteFifoNonBlockingInputStream(this);
+    bafis = blocking ? new ByteFifoBlockingInputStream(this) : new ByteFifoNonBlockingInputStream(this);
   }
 
   /**
@@ -81,7 +76,7 @@ public class ByteFifo {
   /**
    * Returns the current size of the buffer.
    *
-   * @return  the value of the <code>count</code> field, which is the number
+   * @return the value of the <code>count</code> field, which is the number
    *          of valid bytes in this output stream.
    */
   public int size() {
@@ -93,9 +88,9 @@ public class ByteFifo {
    * size of this object, and the valid contents of the buffer
    * have been copied into it.
    *
-   * @return  the current contents of this object, as a byte array.
+   * @return the current contents of this object, as a byte array.
    */
-  public synchronized byte [] toByteArray() {
+  public synchronized byte[] toByteArray() {
     byte newbuf[] = new byte[count];
     System.arraycopy(buf, 0, newbuf, 0, count);
     return newbuf;
@@ -115,11 +110,12 @@ public class ByteFifo {
 // stream-based stuff
 ///////////////////////////////////////
 
-  /*package*/ synchronized void write(int b) { // package since it should only be written to by the OutputStream.
+  /*package*/
+  synchronized void write(int b) { // package since it should only be written to by the OutputStream.
 // mutex starting here ...
     int newcount = count + 1;
     ensureCapacity(newcount);
-    buf[count] = (byte)b;
+    buf[count] = (byte) b;
     count = newcount;
     //notify read() that bytes have come in!
     bafis.wakeup();
@@ -127,7 +123,7 @@ public class ByteFifo {
   }
 
   private synchronized void ensureCapacity(int newcount) {
-    if(newcount > buf.length) {
+    if (newcount > buf.length) {
       int oldcapacity = buf.length; // for reporting
       byte newbuf[] = new byte[Math.max(buf.length << 1, newcount)];
       System.arraycopy(buf, 0, newbuf, 0, count);
@@ -141,10 +137,11 @@ public class ByteFifo {
    */
 
 //MAKE THIS BLOCK !!! ??? NO! put blocking in stream class.
-  /*package*/ synchronized int simpleRead() { // only supposed to be used by the inputstream
+  /*package*/
+  synchronized int simpleRead() { // only supposed to be used by the inputstream
     int ret = -1;
 // mutex starting here ...
-    if(count > 0) {
+    if (count > 0) {
       ret = buf[0] & 255;
       System.arraycopy(buf, 1, buf, 0, --count);
     }
@@ -175,7 +172,7 @@ class ByteFifoOutputStream extends OutputStream {
   }
 
   public synchronized void write(int b) throws IOException {
-    if(isClosed) {
+    if (isClosed) {
       throw new IOException("Stream is closed");
     } else {
       fifo.write(b);
@@ -183,7 +180,7 @@ class ByteFifoOutputStream extends OutputStream {
   }
 
   public synchronized void close() throws IOException {
-    if(isClosed) {
+    if (isClosed) {
       throw new IOException("Stream already closed");
     } else {
       isClosed = true;
@@ -203,27 +200,27 @@ class ByteFifoBlockingInputStream extends ByteFifoInputStream {
 
   public ByteFifoBlockingInputStream(ByteFifo fifo) {
     super(fifo);
-    forData=Waiter.Create(0,false,null);
+    forData = Waiter.Create(0, false, null);
   }
 
-  /*package*/ void wakeup(){ //write data has arrived.
+  /*package*/ void wakeup() { //write data has arrived.
     forData.Stop();
   }
 
   public synchronized void close() throws IOException {
     boolean except = !isClosed;
     super.close();
-    if(except) {
+    if (except) {
       forData.forceException();
     }
   }
 
   public int read() throws IOException {
-    if(!isClosed) {
-      synchronized(this){//must enclose all references to fifo object in a single synch
-        if(available()==0){
+    if (!isClosed) {
+      synchronized (this) {//must enclose all references to fifo object in a single synch
+        if (available() == 0) {
           forData.Start(Long.MAX_VALUE);//doesn't actually start, just configs
-          switch(forData.run()){
+          switch (forData.run()) {
             default://should never happen
             case Waiter.Ready://should never happen
               throw new IOException("Input Logic Error");
@@ -247,8 +244,9 @@ class ByteFifoBlockingInputStream extends ByteFifoInputStream {
 }
 
 abstract class ByteFifoInputStream extends InputStream {
-  private ByteFifo fifo = null;
   protected boolean isClosed = false;
+  private ByteFifo fifo = null;
+
   public ByteFifoInputStream(ByteFifo fifo) {
     this.fifo = fifo;
   }
@@ -259,21 +257,21 @@ abstract class ByteFifoInputStream extends InputStream {
    * @throws IOException when stream closed while waiting for input. all other exceptions are pathological.
    */
   public int read() throws IOException {
-    if(isClosed) {
+    if (isClosed) {
       throw new IOException("Stream is closed");
     } else {
-      synchronized(this){//must enclose all references to fifo object in a single synch
+      synchronized (this) {//must enclose all references to fifo object in a single synch
         return fifo.simpleRead();
       }
     }
   }
 
-  /*package*/ void wakeup(){ //write data has arrived.
+  /*package*/ void wakeup() { //write data has arrived.
     // stub
   }
 
   public int available() throws IOException {
-    if(isClosed) {
+    if (isClosed) {
       throw new IOException("Stream is closed");
     } else {
       return fifo.available();
@@ -281,7 +279,7 @@ abstract class ByteFifoInputStream extends InputStream {
   }
 
   public synchronized void close() throws IOException {
-    if(isClosed) {
+    if (isClosed) {
       throw new IOException("Stream already closed");//must we? why is this an error condition?
     } else {
       isClosed = true;

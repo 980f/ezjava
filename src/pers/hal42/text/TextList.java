@@ -17,13 +17,12 @@ import java.util.Vector;
  */
 
 public class TextList {
+  public Vector<String> storage;
+  public boolean allowStretch = true;//only is set to false when debugging blowups
   public static final boolean SMARTWRAP_ON = true;
-
   //wrap all of Vector's functions that we preserve:
   public static final boolean SMARTWRAP_OFF = false;
   private static final String[] trashArray = new String[0];
-  public Vector<String> storage;
-  public boolean allowStretch = true;//only is set to false when debugging blowups
 
   //////////////////////
   public TextList(int initialCapacity, int capacityIncrement) {
@@ -72,39 +71,6 @@ public class TextList {
 
   public TextList(EasyUrlString toSplit) {
     this(toSplit, 40, true);
-  }
-
-  public static String safe(String o) {
-    return StringX.TrivialDefault(o, ""); //# DO NOT USE StringX.OnTrivial: It turns "" into " ", which is NOT what we need here.
-  }
-
-  /**
-   * @return new textlist made from @param array of strings
-   */
-  public static TextList CreateFrom(String[] array) {
-    TextList newone = new TextList();
-    newone.fromStringArray(array);
-    return newone;
-  }
-
-  public static TextList CreateFrom(String csvLine) {
-    TextList newone = new TextList();
-    newone.simpleCsv(csvLine);
-    return newone;
-  }
-
-  public static boolean NonTrivial(TextList arf) {
-    return arf != null && arf.size() > 0;
-  }
-
-  public static TextList Empty() {
-    return new TextList();
-  }
-
-  public static TextList clone(TextList from) {
-    TextList ret = Empty();
-    ret.appendMore(from);
-    return ret;
   }
 
   public TextList add(String o) {
@@ -530,9 +496,8 @@ public class TextList {
    *  Append strings from @param csv separating at commas. Empty fields are retained.
    */
   public TextList simpleCsv(String csv) {
-    return simpleParse(csv, ',',true);
+    return simpleParse(csv, ',', true);
   }
-
 
   /***
    * @return this after appending strings cut at splitchar
@@ -589,7 +554,7 @@ public class TextList {
     return asParagraph();//tl
   }
 
-  public Vector Vector() {
+  public Vector<String> Vector() {
     return storage;
   }
 
@@ -673,6 +638,39 @@ public class TextList {
       }
     }
     return demux;
+  }
+
+  public static String safe(String o) {
+    return StringX.TrivialDefault(o, ""); //# DO NOT USE StringX.OnTrivial: It turns "" into " ", which is NOT what we need here.
+  }
+
+  /**
+   * @return new textlist made from @param array of strings
+   */
+  public static TextList CreateFrom(String[] array) {
+    TextList newone = new TextList();
+    newone.fromStringArray(array);
+    return newone;
+  }
+
+  public static TextList CreateFrom(String csvLine) {
+    TextList newone = new TextList();
+    newone.simpleCsv(csvLine);
+    return newone;
+  }
+
+  public static boolean NonTrivial(TextList arf) {
+    return arf != null && arf.size() > 0;
+  }
+
+  public static TextList Empty() {
+    return new TextList();
+  }
+
+  public static TextList clone(TextList from) {
+    TextList ret = Empty();
+    ret.appendMore(from);
+    return ret;
   }
 
   //todo: add intermediate base class to enum so that we can get to the peer values.
