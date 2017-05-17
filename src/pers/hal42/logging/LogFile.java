@@ -1,5 +1,6 @@
 package pers.hal42.logging;
 
+import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.*;
 import pers.hal42.math.Accumulator;
 import pers.hal42.stream.StringFIFO;
@@ -16,7 +17,7 @@ import java.util.Vector;
 
 import static java.util.Collections.sort;
 
-public class LogFile extends Thread implements AtExit, Comparable {
+public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
 
   public PrintStream backupStream = System.out;
   public long maxFileLength = DEFAULTMAXFILELENGTH;
@@ -112,14 +113,13 @@ public class LogFile extends Thread implements AtExit, Comparable {
     close();
   }
 
-  public int compareTo(Object o) {
-    int i = 0;
+  @Override
+  public int compareTo(@NotNull LogFile logFile) {
     try {
-      i = getName().compareTo(((LogFile) o).getName());
+      return getName().compareTo(logFile.getName());
     } catch (Exception e) {
-      /// +++ bitch
+      return 0;
     }
-    return i;
   }
 
   public PrintFork getPrintFork() {
@@ -254,10 +254,8 @@ public class LogFile extends Thread implements AtExit, Comparable {
             }
             // unless it is time to do more ...
             if (((System.currentTimeMillis() - bafifo.lastWrite) > queueMaxageMS) || flushHint) {
-              // +++ bump the thread priority and flush the buffer
+              // bump the thread priority and flush the buffer
               Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-              // This record goes with the time out of sync, hope noone will notice
-              //pw.println("!! Log queue age limit exceeded, flushing ... !!");
               internalFlush();
               bafifo.lastWrite = System.currentTimeMillis();
               flushHint = false;
@@ -285,7 +283,6 @@ public class LogFile extends Thread implements AtExit, Comparable {
       } catch (Exception ez) {
         // this is mostly for catching interruptedExceptions and looping
         Thread.interrupted(); // clears interrupted bits
-        continue;
       }
     }
     backupStream.println("LogFile:" + filename + " leaving run loop (keepRunning=" + keepRunning + ").");
@@ -293,8 +290,8 @@ public class LogFile extends Thread implements AtExit, Comparable {
 
   private void close() {
     try {
-      // close it all up!
-      internalFlush();// --- testing
+      internalFlush();
+      //# don't use IOX.Close, to avoid circular package dependencies
       if (pw != null) {
         pw.flush();
         pw.close();
@@ -317,10 +314,9 @@ public class LogFile extends Thread implements AtExit, Comparable {
    * Flush the log record queue.
    */
   public void internalFlush() {
-    String next = null;
     StopWatch sw = new StopWatch();
+    String next = null;
     do {
-      next = null;
       try {
         next = reader.readLine();
       } catch (Exception e) {
@@ -346,6 +342,7 @@ public class LogFile extends Thread implements AtExit, Comparable {
     }
   }
 
+
   // presume only used one time by one thread
   public static boolean setPath(String defaultPath) {
     // +++ check to make sure the path is good.  If not, find one that is or create it!
@@ -360,6 +357,7 @@ public class LogFile extends Thread implements AtExit, Comparable {
   public static LogFile[] listAll() {
     Vector<LogFile> v = new Vector<>(); // for sorting
     LogFile[] sortedList = new LogFile[0];
+    //noinspection TryWithIdenticalCatches
     try (AutoCloseable free = listMonitor.getMonitor()) {
       v.addAll(lflist);
       sort(v);
@@ -389,8 +387,7 @@ public class LogFile extends Thread implements AtExit, Comparable {
   public static PrintFork makePrintFork(String filename, int defaultLevel, boolean compressed) {
     try {
       LogFile fpf = new LogFile(filename, false);
-      PrintFork mypf = fpf.getPrintFork(defaultLevel);
-      return mypf;
+      return fpf.getPrintFork(defaultLevel);
     } catch (Exception e) {
       e.printStackTrace();//# probably can't use ErrorLogStream as this gets called during setting that up.
       return null;
