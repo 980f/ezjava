@@ -27,7 +27,8 @@ import java.io.OutputStream;
 
 public class URLDecoderFilterOutputStream extends FilterOutputStream {
 
-  protected StringBuffer tmpBuff = new StringBuffer(3); // really shouldn't use "String" anything
+  protected byte[] tmpBuff = new byte[3]; // really shouldn't use "String" anything
+  int used = 0;
   private Monitor tmpBuffMonitor = new Monitor("tmpBuff");
 
   /**
@@ -41,18 +42,15 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
   }
 
   public void flush() throws IOException {
-    try {
-      tmpBuffMonitor.getMonitor();
-      // if anything is left in teh buffer, it is not a valid format,
+    try (AutoCloseable free = tmpBuffMonitor.getMonitor()) {
+      // if anything is left in the buffer, it is not a valid format,
       // so spew it as-is
       // +++ in that case, should we except?
-      for (int i = 0; i < tmpBuff.length(); i++) {
-        super.write(tmpBuff.charAt(i));
-      }
-      tmpBuff.setLength(0);
+      super.write(tmpBuff, 0, used);
+      used = 0;
       super.flush();  // +++ should be out.flush()?
-    } finally {
-      tmpBuffMonitor.freeMonitor();
+    } catch (Exception e) {
+//      e.printStackTrace();
     }
   }
 
@@ -63,20 +61,19 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
    * @throws IOException if an I/O error occurs.
    */
   public synchronized void write(int c) throws IOException {
-    try {
-      tmpBuffMonitor.getMonitor();
-      if ((c == '%') || (tmpBuff.length() > 0)) {
-        tmpBuff.append(c);
-        if (tmpBuff.length() == 3) {
+    try (AutoCloseable free = tmpBuffMonitor.getMonitor()) {
+      if ((c == '%') || used > 0) {
+        tmpBuff[used++] = (byte) c;
+        if (used == 2) {
           // prime for decoding
           int chr;
           try {
-            super.write(Integer.parseInt(tmpBuff.substring(1), 16));
+            super.write(0);//todo:000 apply Char here
           } catch (NumberFormatException e) {
             // if it is misformatted, just spew as normal
             flush();
           } finally {
-            tmpBuff.setLength(0);
+            used = 0;
           }
         }
       } else {
@@ -85,8 +82,8 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
         }
         super.write((byte) c);
       }
-    } finally {
-      tmpBuffMonitor.freeMonitor();
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 }

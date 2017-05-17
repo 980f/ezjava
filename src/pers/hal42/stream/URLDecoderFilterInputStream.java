@@ -76,8 +76,7 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
    */
   public int read() throws IOException {
     int retval = 0;
-    try {
-      thisMonitor.getMonitor();
+    try (AutoCloseable free = thisMonitor.getMonitor()) {
       int c = -1;
       // be sure we have at least one character in the buffer
       if (tmpBuff.length() == 0) {
@@ -118,7 +117,6 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
 //      }
       retval = (byte) c; // one exit point
     } finally {
-      thisMonitor.freeMonitor();
       return retval;
     }
   }

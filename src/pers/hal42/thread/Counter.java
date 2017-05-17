@@ -65,18 +65,11 @@ public class Counter {
    * @return modified value
    */
   public final long chg(long by) {
-    try {
-      mon.getMonitor();
+    try (AutoCloseable free = mon.getMonitor()) {
       count += by;
-      norm();
+      return norm();
     } catch (Exception ex) {
-      // +++ bitch !!!
-    } finally {
-      long ret = count;
-      //we must wait until after setting the return value before freeing the monitor,
-      //because longs are not guaranteed to be atomic.
-      mon.freeMonitor();
-      return ret;
+      return -1;
     }
   }
 
@@ -84,21 +77,17 @@ public class Counter {
    * @return object after clearing
    */
   public final long Clear() {
-    try {
-      mon.getMonitor();
+    try (AutoCloseable free = mon.getMonitor()) {
       count = min;
+      return min;
     } catch (Exception ex) {
-      // +++ bitch !!!
-      return norm();
-    } finally {
-      long retval = norm();
-      mon.freeMonitor();
-      return retval;
+      return min;
     }
   }
 
   /**
    * normalize
+   * NB: only call this while mon is 'gotten', we don't want to pay for a nested lock.
    */
   private long norm() {
     if (count < min) {

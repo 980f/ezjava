@@ -110,22 +110,18 @@ public class UTC implements Comparable<UTC> {
   }
 
   public String toString() {
-    try {
-      formatting.getMonitor();
+    try (AutoCloseable free = formatting.getMonitor()) {
       return hrtf.format(new Date(utc));
     } catch (Exception e) {
       return "";
-    } finally {
-      formatting.freeMonitor();
     }
   }
 
   public UTC setto(String dbvalue) {
-    try {
-      formatting.getMonitor();
+    try (AutoCloseable free = formatting.getMonitor()) {
       utc = hrtf.parse(dbvalue).getTime();
-    } finally {
-      formatting.freeMonitor();
+      return this;
+    } catch (Exception e) {
       return this;
     }
   }

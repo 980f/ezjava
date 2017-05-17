@@ -47,33 +47,26 @@ public class Accumulator implements isEasy {
 
   // add another accumulator in
   public void add(Accumulator that) {
-    try {
-      mon.getMonitor();
-      that.mon.getMonitor();//gotta gain ownersup of both objects
+    try (AutoCloseable free = mon.getMonitor(); AutoCloseable freer = that.mon.getMonitor()) {//gotta gain ownersup of both objects
       count += that.count;
       sum += that.sum;
       max = Math.max(max, that.max);//formerly used average!
       min = Math.min(min, that.min);
     } catch (Exception e) {
       // +++ bitch
-    } finally {
-      that.mon.freeMonitor();
-      mon.freeMonitor();
     }
+    //note TWR releases these two monitors in the reverse order of the original code.
   }
 
   // this is for initializing an Accumulator, so that we can pick up using it where we left off
   private void set(long count, long sum) {
-    try {
-      mon.getMonitor();
+    try (AutoCloseable free = mon.getMonitor()) {
       this.count = count;
       this.sum = sum;
       max = getAverage();// +_+ should make a function for restoring all four members.
       min = getAverage();// +_+ this is nicer than using extreme values.
     } catch (Exception e) {
       // +++ bitch
-    } finally {
-      mon.freeMonitor();
     }
   }
 
@@ -88,89 +81,79 @@ public class Accumulator implements isEasy {
    *                 useful when this is extended into a moving sum rather than an accumulator.
    */
   public void remove(long lasttime) {
-    try {
-      mon.getMonitor();
+    try (AutoCloseable free = mon.getMonitor()) {
       if (count > 0) {
         --count;
         sum -= lasttime;
       }
     } catch (Exception e) {
       // +++ bitch
-    } finally {
-      mon.freeMonitor();
     }
   }
 
   public long getTotal() {
-    try {
-      mon.getMonitor(); // longs are not atomic
+    try (AutoCloseable free = mon.getMonitor()) { // longs are not atomic
       return sum;
-    } finally {
-      mon.freeMonitor();
+    } catch (Exception e) {
+//      e.printStackTrace();
+      return -1;
     }
   }
 
   public long getCount() {
-    try {
-      mon.getMonitor(); // longs are not atomic
+    try (AutoCloseable free = mon.getMonitor()) { // longs are not atomic
       return count;
-    } finally {
-      mon.freeMonitor();
+    } catch (Exception e) {
+//      e.printStackTrace();
+      return -1;
     }
   }
 
   public long getAverage() {
-    try {
-      mon.getMonitor(); // longs are not atomic
+    try (AutoCloseable free = mon.getMonitor()) { // longs are not atomic
       return (count > 0) ? (sum / count) : 0;
     } catch (Exception e) {
-      return -1;//there is NO reaosnable return at this point.
-    } finally {
-      mon.freeMonitor();
+      return -1;//there is NO reasonable return at this point.
     }
   }
 
   public long getMax() {
-    try {
-      mon.getMonitor(); // longs are not atomic
+    try (AutoCloseable free = mon.getMonitor()) { // longs are not atomic
       return max;
-    } finally {
-      mon.freeMonitor();
+    } catch (Exception e) {
+      return -1;
     }
   }
 
   public long getMin() {
-    try {
-      mon.getMonitor(); // longs are not atomic
+    try (AutoCloseable free = mon.getMonitor()) { // longs are not atomic
       return min;
-    } finally {
-      mon.freeMonitor();
+    } catch (Exception e) {
+      return -1;
     }
   }
 
   //////////////////////////
 // isEasy()
   public void save(EasyCursor ezp) {
-    try {
-      mon.getMonitor(); // longs are not atomic
+    try (AutoCloseable free = mon.getMonitor()) {
       ezp.setLong("sum", sum);
       ezp.setLong("num", count);
       ezp.setLong("min", min);
       ezp.setLong("max", max);
-    } finally {
-      mon.freeMonitor();
+    } catch (Exception e) {
+//      e.printStackTrace();
     }
   }
 
   public void load(EasyCursor ezp) {
-    try {
-      mon.getMonitor(); // longs are not atomic
+    try (AutoCloseable free = mon.getMonitor()) {
       sum = ezp.getLong("sum");
       count = ezp.getLong("num");
       min = ezp.getLong("min");
       max = ezp.getLong("max");
-    } finally {
-      mon.freeMonitor();
+    } catch (Exception e) {
+//      e.printStackTrace();
     }
   }
 

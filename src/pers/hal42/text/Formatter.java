@@ -124,6 +124,12 @@ public class Formatter {
     return ret.toString();
   }
 
+  /**
+   * extract numerical value from a CVS/SVN versioned string
+   *
+   * @deprecated since you shouldn't be using either of those any more ;)
+   */
+  @Deprecated
   public static String ValueFromCvstag(String tagged) {
     int first = tagged.indexOf(':');
     if (first >= 0) {
@@ -135,4 +141,3 @@ public class Formatter {
     return tagged.trim();
   }
 }
-//$Id: Formatter.java,v 1.3 2004/01/09 23:45:08 andyh Exp $

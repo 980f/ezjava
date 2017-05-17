@@ -131,7 +131,7 @@ public class FileZipper extends Thread implements AtExit {
 }
 
 /**
- * +++ use the ObjectPool ???
+ * +++ use an ObjectPool ???
  * The registry is used to keep up with which ones are currently running.
  * If you don't remove them when they are done, they will never leave!
  * (Can't force a destroy.)

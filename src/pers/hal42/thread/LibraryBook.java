@@ -15,33 +15,31 @@ public class LibraryBook {
 
   // for standins
   public boolean Checkout() {
-    boolean gotit = false;
-    checkoutMutex.getMonitor();
-    try {
+
+    try (AutoCloseable free = checkoutMutex.getMonitor()) {
       if (!value) {
         value = true;
-        gotit = true;
+        return true;
+      } else {
+        return false;
       }
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      checkoutMutex.freeMonitor();
-      return gotit;
+      return false;
     }
   }
 
-  public void Return() {
-    checkoutMutex.getMonitor();
-    try {
+  public boolean Return() {
+    try (AutoCloseable free = checkoutMutex.getMonitor()) {
       if (value) {
         value = false;
+        return true;
       } else {
-        // +++ ???
+        return false;
       }
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      checkoutMutex.freeMonitor();
+      return false;
     }
   }
 

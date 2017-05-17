@@ -103,30 +103,28 @@ public class URLEncoderFilterInputStream extends FilterInputStream {
    * @throws IOException if an I/O error occurs.
    */
   public int read() throws IOException {
-    int retval = 0;
-    try {
-      thisMonitor.getMonitor();
-      int b;
+    try (AutoCloseable free = thisMonitor.getMonitor()) {
       // if the temp buffer has anything in it, use that, otherwise
       // +++ there is a better way; fixup later
       if (tmpBuff.length() > 0) {
         // do this instead
-        b = (byte) tmpBuff.charAt(0);
+        int b = (byte) tmpBuff.charAt(0);
         tmpBuff.deleteCharAt(0);
-        retval = b;
+        return b;
       } else {
         // check to see if it needs converting.  If so, convert it
         // otherwise, pass it through
-        b = super.read(); // +++ in.read() instead?
+        int b = super.read(); // +++ in.read() instead?
         if (b == -1) {
-          retval = b;
+          return -1;//was a BUG to not return here, a guaranteed irrelevant and serious exception
         }
         if (dontNeedEncoding.get(b)) {
           if (b == ' ') {
             b = '+';
           }
-          retval = b;
+          return b;
         } else {
+          //todo: this is ox2 method.
           for (int i = 0; i < 2; i++) {
             int b2 = (i == 0) ? (b >> 4) : b;
             char ch = Character.forDigit(b2 & 0xF, 16);
@@ -137,14 +135,12 @@ public class URLEncoderFilterInputStream extends FilterInputStream {
             }
             tmpBuff.append(ch);
           }
-          retval = '%';
+          return '%';
         }
       }
-    } finally {
-      thisMonitor.freeMonitor();
-      return retval;
+    } catch (Exception e) {//false alarm
+      e.printStackTrace();
+      return 0;
     }
   }
 }
-
-//$Id: URLEncoderFilterInputStream.java,v 1.7 2003/07/27 05:35:13 mattm Exp $

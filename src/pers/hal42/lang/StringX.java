@@ -4,60 +4,10 @@ package pers.hal42.lang;
 import pers.hal42.math.MathX;
 
 public class StringX {
+  //todo: replace replacers with cppext's logic.
   protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
   private static final String SINGLEQUOTE = "'";
-
-//  public static String twoDigitFixed(long smallNumber) {
-//    return ((smallNumber <= 9) ? "0" : "") + smallNumber;
-//  }
-//
-//  public static String twoDigitFixed(String smallNumber) {
-//    return twoDigitFixed(parseLong(smallNumber));
-//  }
-//
-//  public static char hexDigit(int b) {
-//    return Character.forDigit(b & 15, 16);
-//  }
-//
-//  public static String ox2(byte b) {
-//    char[] chars = new char[2];
-//    chars[0] = hexDigit(b >> 4);
-//    chars[1] = hexDigit(b);
-//    return new String(chars);
-//  }
-//
-//  public static String ox2(int i) {
-//    return ox2((byte) (i & 255));
-//  }
-//
-//  public static String ox2(long l) {
-//    return ox2((byte) (l & 255));
-//  }
-//
-//
-//  public static StringBuffer hexImage(byte[] buffer, int offset, int length) {
-//    //+++ parameter checks needed.
-//    StringBuffer hexy = new StringBuffer(2 * length);
-//    length += offset; //now is end index
-//    for (int i = offset; i < length; i++) {
-//      hexy.append(ox2(buffer[i]));
-//    }
-//    return hexy;
-//  }
-//
-//  public static StringBuffer hexImage(byte[] buffer, int offset) {
-//    return hexImage(buffer, offset, buffer.length - offset);
-//  }
-//
-//  public static StringBuffer hexImage(byte[] buffer) {
-//    return hexImage(buffer, 0, buffer.length);
-//  }
-//
-//  public static StringBuffer hexImage(String s) {
-//    return hexImage(s.getBytes());
-//  }
-//
-private static final char SINGLEQUOTECHAR = '\'';
+  private static final char SINGLEQUOTECHAR = '\'';
 
   private StringX() {
     //#namespace

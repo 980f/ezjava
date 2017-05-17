@@ -1,7 +1,7 @@
 package pers.hal42.util;
 
-import pers.hal42.lang.Safe;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.stream.IOX;
 import pers.hal42.stream.TailFilter;
 import pers.hal42.text.TextList;
 
@@ -73,13 +73,13 @@ public class FindFiles {
     */
     // could also probably do this with a stack and not go recursive
     // find all files in this directory & add to the list
-    File subfiles[] = Safe.listFiles(startDir, filter);
+    File subfiles[] = IOX.listFiles(startDir, filter);
     for (int i = subfiles.length; i-- > 0; ) {
       files.add(subfiles[i].getPath());
     }
     if (df != null) {  // user says to recurse
       // find all directories in this directory, look through them recursively
-      subfiles = Safe.listFiles(startDir, df);
+      subfiles = IOX.listFiles(startDir, df);
       for (int i = subfiles.length; i-- > 0; ) {
         FindFilesFrom(files, subfiles[i], filter, df);
       }

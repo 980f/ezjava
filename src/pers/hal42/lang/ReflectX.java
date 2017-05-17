@@ -178,6 +178,20 @@ public class ReflectX {
     return obj == null ? " null!" : " type: " + shortClassName(obj);
   }
 
+
+  public static Object loadClass(String className) {
+    Object ret = null;
+    try {
+      Class c = Class.forName(className);
+      ret = c.newInstance(); // some drivers don't load completely until you do this
+    } catch (Exception e) {
+      // +++ bitch ?
+    } finally {
+      return ret;
+    }
+  }
+
+
   public static boolean preloadClass(String className, boolean loadObject) {
     try {
       Class c = classForName(className);
