@@ -59,6 +59,11 @@ public class LogFile extends Thread implements AtExit, Comparable {
   public LogFile(String filename, boolean overwrite, PrintStream backupPrintStream, long maxFileLength, long queueMaxageMS, boolean perDay) {
     super(LogFile.class.getName() + "_" + counter.incr());
     ps = bafifo.getPrintStream();
+
+    if (filename.endsWith(".log")) {//check for debug
+      filename = filename.substring(0, filename.lastIndexOf(".log"));
+    }
+
     this.filename = new File(defaultPath, filename).getAbsolutePath();
     this.overwrite = overwrite;
     this.maxFileLength = maxFileLength;
