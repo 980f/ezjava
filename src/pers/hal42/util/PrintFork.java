@@ -4,6 +4,7 @@ import pers.hal42.lang.StringX;
 import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.logging.LogSwitch;
 import pers.hal42.logging.LogSwitchRegistry;
+import pers.hal42.stream.IOX;
 import pers.hal42.transport.EasyCursor;
 
 import java.io.PrintStream;
@@ -13,7 +14,7 @@ public class PrintFork {
   public LogSwitch myLevel;
   protected PrintStream ps;
   protected boolean registered = false;
-  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF.level;//set for server, which has a harder time configuring than the client
+  protected static int DEFAULT_LEVEL = LogLevelEnum.OFF.level;//set for server, which has a harder time configuring than the client. Off means no logging until the server has read its config files.
 
   protected PrintFork(String name, PrintStream primary, int startLevel, boolean register) {
     setPrintStream(primary);
@@ -34,7 +35,8 @@ public class PrintFork {
   // self unregister
   protected void finalize() { // +++ does this ever get called?
     unFork(this);
-    // +++ report !
+    ps.flush();
+    IOX.Close(ps);
   }
 
   //onConstruction:
@@ -74,6 +76,8 @@ public class PrintFork {
       } else {
         ps.println(s);
       }
+    } else {
+      --printLevel;
     }
   }
 
@@ -107,8 +111,8 @@ public class PrintFork {
   /////////////////////////////////////////////
   public static void SetAll(LogLevelEnum lle) {
     DEFAULT_LEVEL = lle.level;
-    for (int i = LogSwitchRegistry.printForkRegistry.size(); i-- > 0; ) {
-      Fork(i).myLevel.setto(DEFAULT_LEVEL);
+    for (PrintFork fork : LogSwitchRegistry.printForkRegistry) {
+      fork.myLevel.setto(DEFAULT_LEVEL);
     }
   }
 
@@ -148,9 +152,8 @@ public class PrintFork {
 
   public static EasyCursor asProperties() {
     EasyCursor blob = new EasyCursor(/* presize to di*/);
-    Vector debuggers = LogSwitchRegistry.printForkRegistry; // get a second list copy to prevent exceptions
-    for (int i = 0; i < debuggers.size(); i++) {
-      PrintFork bugger = (PrintFork) debuggers.elementAt(i);
+    Vector<PrintFork> debuggers = LogSwitchRegistry.printForkRegistry; // get a second list copy to prevent exceptions
+    for (PrintFork bugger : debuggers) {
       blob.setString(bugger.Name(), bugger.myLevel.toString());//todo:0 proper enum vaue saving
     }
     return blob;

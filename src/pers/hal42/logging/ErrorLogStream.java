@@ -575,16 +575,19 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     return tl;
   }
 
+  /**
+   * @param background if true pushes out log information on a background thread, good for debug but bad for performance.
+   */
   public static PrintFork stdLogging(String logName, boolean background, boolean overwrite) {
     PrintFork pf = null;
-
+    PrintFork.SetAll(LogLevelEnum.VERBOSE);
     if (StringX.NonTrivial(logName)) {
       if (background) {
         fpf = new LogFile(logName, overwrite);
-        pf = fpf.getPrintFork(); // this creates it
+        pf = fpf.getPrintFork(logName, LogLevelEnum.VERBOSE, true);  //ancient lore had these not register themselves.
       } else {
         try {
-          PrintFork.New("System.out", System.out);
+          pf = PrintFork.New("System.out", System.out, LogLevelEnum.VERBOSE.level, true);
           pf = PrintFork.New(logName, new PrintStream(new FileOutputStream(logName)));
         } catch (Exception filennotfound) {
           //??? who cares
@@ -600,7 +603,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   }
 
   public static void stdLogging(String logName) {
-    stdLogging(logName, true); //defaulted for server.
+    stdLogging(logName, false); //defaulted for best debug behavior.
   }
 
   // dumpage

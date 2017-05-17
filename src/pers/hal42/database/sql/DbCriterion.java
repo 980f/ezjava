@@ -23,7 +23,7 @@ public class DbCriterion extends DbExpr {
   }
 
   public StringBuilder getQueryString() {
-    return "(" + getString(c1) + " " + op + " " + getString(c2) + ")";
+    return new StringBuilder(100).append("(").append(getString(c1)).append(" ").append(op).append(" ").append(getString(c2)).append(")");
   }
 
   public int setSqlValues(PreparedStatement ps, int i) throws SQLException {

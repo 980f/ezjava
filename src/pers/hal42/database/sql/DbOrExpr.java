@@ -38,7 +38,7 @@ public class DbOrExpr extends DbCriterion {
   public StringBuilder getQueryString() {
     // An optimisation hack
     if (c1 instanceof DbTrueExpr || c2 instanceof DbTrueExpr) {
-      return "";
+      return new StringBuilder("");
     } else if (c1 instanceof DbFalseExpr) {
       return getString(c2);
     } else if (c2 instanceof DbFalseExpr) {

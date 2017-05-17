@@ -39,7 +39,7 @@ public class DbParenthesis extends DbExpr {
    * @throws Exception Description of Exception
    */
   public StringBuilder getQueryString() {
-    return "( " + expr.getQueryString() + " )";
+    return new StringBuilder().append("( ").append(expr.getQueryString()).append(" )");
   }
 
 

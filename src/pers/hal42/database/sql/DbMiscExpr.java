@@ -44,7 +44,7 @@ public class DbMiscExpr extends DbExpr {
         rtn.append(getString(args[c++]));
       }
     }
-    return rtn.toString();
+    return rtn;
   }
 
   public int setSqlValues(PreparedStatement ps, int i) throws SQLException {

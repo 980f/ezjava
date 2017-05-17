@@ -40,31 +40,23 @@ public class DateX {
   }
 
   private static String timeStamp(Date today) {
-    String ret = "";
-    try {
-      timeMon.getMonitor();
-      ret = stamper.format(today);
+    try (AutoCloseable free = timeMon.getMonitor()) {
+      return stamper.format(today);
     } catch (Exception e) {
       // +++ deal with this
       // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
-    } finally {
-      timeMon.freeMonitor();
+      return "oops";
     }
-    return ret;
   }
 
   public static String timeStampYearless(Date today) {
-    String ret = "";
-    try {
-      yearlesstimeMon.getMonitor();
-      ret = yearlessstamper.format(today);
+    try (AutoCloseable free = yearlesstimeMon.getMonitor()) {
+      return yearlessstamper.format(today);
     } catch (Exception e) {
       // +++ deal with this
       // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
-    } finally {
-      yearlesstimeMon.freeMonitor();
+      return "";
     }
-    return ret;
   }
 
   public static String timeStamp(long millis) {
@@ -106,17 +98,13 @@ public class DateX {
   }
 
   public static String millisToSecsPlus(long millis) {
-    String retval = "";
-    try {
-      secsNMillisMonitor.getMonitor();
+    try (AutoCloseable free = secsNMillisMonitor.getMonitor()) {
       sbsnm.setLength(0);
       double secs = 1.0 * millis / Ticks.perSecond;
       secsNMillis.format(secs, sbsnm, new FieldPosition(NumberFormat.INTEGER_FIELD));
-      retval = String.valueOf(sbsnm);
+      return String.valueOf(sbsnm);
     } catch (Exception e) {
-    } finally {
-      secsNMillisMonitor.freeMonitor();
-      return retval;
+      return "";
     }
   }
 

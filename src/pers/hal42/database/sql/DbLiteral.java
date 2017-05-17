@@ -30,6 +30,6 @@ public class DbLiteral extends DbExpr {
    * @return The queryString value
    */
   public StringBuilder getQueryString() {
-    return str;
+    return new StringBuilder(str);
   }
 }

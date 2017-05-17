@@ -272,11 +272,11 @@ public abstract class DbExpr {
    * @return The string value
    * @throws Exception Description of Exception
    */
-  static String getString(Object o) {
+  static StringBuilder getString(Object o) {
     if (o instanceof DbExpr) {
       return ((DbExpr) o).getQueryString();
     } else {
-      return " ? ";
+      return new StringBuilder(" ? ");
     }
   }
 }

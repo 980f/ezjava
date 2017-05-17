@@ -2,7 +2,6 @@ package pers.hal42.logging;
 
 import pers.hal42.lang.*;
 import pers.hal42.math.Accumulator;
-import pers.hal42.stream.NullOutputStream;
 import pers.hal42.stream.StringFIFO;
 import pers.hal42.thread.Counter;
 import pers.hal42.thread.ThreadX;
@@ -390,34 +389,26 @@ public class LogFile extends Thread implements AtExit, Comparable {
   }
 
   public static PrintFork makePrintFork(String filename, int defaultLevel, boolean compressed) {
-    LogFile fpf = null;
-    PrintFork mypf = null;
     try {
-      fpf = new LogFile(filename, false);// ==append
-      if (fpf != null) {
-        mypf = fpf.getPrintFork(defaultLevel);
-      } else {
-        mypf = new PrintFork(filename, new PrintStream(new NullOutputStream())); // a dummy to prevent null pointer exceptions
-      }
-    } catch (Exception e) {
-      // +++ bitch
-    } finally {
+      LogFile fpf = new LogFile(filename, false);
+      PrintFork mypf = fpf.getPrintFork(defaultLevel);
       return mypf;
+    } catch (Exception e) {
+      e.printStackTrace();//# probably can't use ErrorLogStream as this gets called during setting that up.
+      return null;
     }
   }
 
   public static void flushAll() {
-    LogFile[] list = listAll();
-    for (int i = list.length; i-- > 0; ) {
-      list[i].AtExit();
+    for (LogFile logFile : listAll()) {
+      logFile.AtExit();
     }
   }
 
   public static long allPending() {
-    LogFile[] lfs = listAll();
     long counter = 0;
-    for (int i = lfs.length; i-- > 0; ) {
-      counter += lfs[i].pending();
+    for (LogFile logFile : listAll()) {
+      counter += logFile.pending();
     }
     return counter;
   }
@@ -437,12 +428,11 @@ class FileZipperList extends Vector<FileZipper> {
   }
 
   public int cleanup() {
-    for (int i = size(); i-- > 0; ) {
-      FileZipper fz = itemAt(i);
+    forEach((fz) -> {
       if (fz.IsDown()) {
-        remove(i);
+        remove(fz);
       }
-    }
+    });
     return size();
   }
 }

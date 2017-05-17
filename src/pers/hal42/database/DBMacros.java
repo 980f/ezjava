@@ -1468,8 +1468,7 @@ public class DBMacros extends GenericDB {
 
   private static void logQuery(DBFunctionType qt, long millis, int retval, boolean regularLog, long qn) {
     String toLog = "exception attempting to log the query";
-    try {
-      timerStrMon.getMonitor();
+    try (AutoCloseable free = timerStrMon.getMonitor()) {
       // create a pool of DBFunctionTypes and Fstrings that you can reuse [no mutexing == faster].
       toLog = "'can'this figure out what javac doesn't like about the following complex message, ie replace with Message.Format ";
 //        qt.toString()
@@ -1482,8 +1481,6 @@ public class DBMacros extends GenericDB {
       log(toLog);
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      timerStrMon.freeMonitor();
     }
   }
 

@@ -70,7 +70,7 @@ public class DbExprFuncDef extends DbExpr {
       rtn.append(getString(args[c]));
     }
     rtn.append(")");
-    return String.valueOf(rtn);
+    return rtn;
   }
 
 

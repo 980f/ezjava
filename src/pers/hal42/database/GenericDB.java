@@ -56,15 +56,15 @@ public class GenericDB {
 
   // +++ eventually package the connDataSource, username, and password into a single object
   public GenericDB(DBConnInfo connInfo, String threadname) {
-    genericDBclassMonitor.getMonitor();
-    try {
+
+    try (AutoCloseable free = genericDBclassMonitor.getMonitor()) {
       this.myThreadName = threadname;
       this.connInfo = connInfo;
       connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
 //      cpool = list.get(connInfo);
       getCon();
-    } finally {
-      genericDBclassMonitor.freeMonitor();
+    } catch (Exception e) {
+      // can't happen
     }
   }
 
@@ -85,16 +85,13 @@ public class GenericDB {
   }
 
   public final DatabaseMetaData getDatabaseMetadata() {
-    try {
-      dbg.Enter("getDatabaseMetadata");
+    try (AutoCloseable pop = dbg.Enter("getDatabaseMetadata")) {
       Connection mycon = getCon();
       if (mycon != null) {
-        connMonitor.getMonitor();
-        try {
+        try (AutoCloseable monitor = connMonitor.getMonitor()) {
           dbg.VERBOSE("Calling Connection.getMetaData() ...");
           dbmd = mycon.getMetaData();
         } finally {
-          connMonitor.freeMonitor();
           dbg.VERBOSE("Done calling Connection.getMetaData().");
         }
       }
@@ -102,7 +99,6 @@ public class GenericDB {
       dbg.Caught(t);
       dbmd = null;
     } finally {
-      dbg.Exit();
       return dbmd;
     }
   }
@@ -110,8 +106,8 @@ public class GenericDB {
   // there is a mutex in this class, but it should be very fast.
   // +++ @@@ %%% should we put this in a loop so that it doesn't continue UNTIL it gets a connection?
   public final Connection getCon() {
-    connMonitor.getMonitor();
-    try {
+
+    try (AutoCloseable monitor = connMonitor.getMonitor()) {
       if (conn == null) {
         dbg.WARNING("conn is null, so getting new connection for thread \"" + myThreadName + "\" !");
 //        conn = cpool.checkOut();
@@ -120,7 +116,6 @@ public class GenericDB {
     } catch (Exception ex) {
       dbg.Caught(ex);
     } finally {
-      connMonitor.freeMonitor();
       return conn;
     }
   }
