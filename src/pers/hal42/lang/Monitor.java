@@ -1,7 +1,7 @@
 package pers.hal42.lang;
 /* usage pattern when ErrorLogStream and a Monitor are used together:
 void amethod() {
-  try (Autocloseable free=yoreMon.getMonitor();Autocloseable pop=dbg.Enter()){ // if done in reverse the log looks like the monitor didn't work
+  try (Autocloseable free=yoreMon.getMonitor();Autocloseable pop=dbg.Push()){ // if done in reverse the log looks like the monitor didn't work
     //do protected stuff
   }
 }

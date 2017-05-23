@@ -1,6 +1,7 @@
 package pers.hal42.database;
 
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.transport.Storable;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -8,8 +9,9 @@ import java.sql.SQLException;
 import java.util.Properties;
 
 public class DBConn {
-  DBConnInfo connInfo;
-  Connection dbConnection;
+  @Storable.Stored
+  public DBConnInfo connInfo;
+  public Connection dbConnection;
   public static ErrorLogStream dbg = ErrorLogStream.getForClass(DBConn.class);
 
   public Connection makeConnection(DBConnInfo connInfo) {
@@ -21,26 +23,19 @@ public class DBConn {
       }
       dbConnection = null;
     }
-    try {
-      dbg.Enter("checkOut()");
+    try (AutoCloseable pop=dbg.Push("Connect to Database")){
       this.connInfo = connInfo;
       Properties lProp = new java.util.Properties();
       lProp.put("user", connInfo.connUser);
       lProp.put("password", connInfo.connPass);
       dbg.VERBOSE("Attempting connection to: '" + connInfo.connDatasource + "'.");
       dbConnection = DriverManager.getConnection(connInfo.connDatasource, lProp);
-      dbConnection.setAutoCommit(true);
-      //todo: restore some ConnectionPool methods:
-//      logAutocommit(dbConnection);
-//      setEnableSeqScanOff(dbConnection);
+      dbConnection.setAutoCommit(connInfo.autoCommit);
     } catch (Exception e) {
       dbConnection = null;
 //      boolean wasSql = (e.getClass() == SQLException.class);
       dbg.ERROR("Couldn't connect to datasource '" + connInfo.connDatasource + "' via user: '" + connInfo.connUser + "'\n");
       dbg.Caught(e);
-    } finally {
-      dbg.VERBOSE("Done attempting connection.");
-      dbg.Exit();
     }
     return dbConnection;
   }

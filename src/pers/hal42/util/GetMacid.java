@@ -37,7 +37,7 @@ public class GetMacid {
 //      monitor.getMonitor();
 //      if(macids.size() == 0) {
 //        try {
-//          dbg.Enter("getIt");
+//          dbg.Push("getIt");
 //          Runtime rt = Runtime.getRuntime();
 //          String cmd = null;
 //          String [] searches = null;

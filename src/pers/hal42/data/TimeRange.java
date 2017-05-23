@@ -13,7 +13,7 @@ public class TimeRange extends ObjectRange<UTC> {
   private final static String fieldnamekey = "fieldname";
 
   public UTC start() {
-    return (UTC) one();
+    return one();
   }
 
   public UTC end() {
@@ -88,11 +88,11 @@ public class TimeRange extends ObjectRange<UTC> {
     return new TimeRange();
   }
 
-  public static TimeRange NewFrom(String key, EasyCursor ezp) {
-    TimeRange newone = Create();
-    ezp.getBlock(newone, key);
-    return newone;
-  }
+//  public static TimeRange NewFrom(String key, EasyCursor ezp) {
+//    TimeRange newone = Create();
+//    ezp.getBlock(newone, key);
+//    return newone;
+//  }
 
   public static TimeRange Forever() {
     TimeRange newone = Create();
@@ -112,4 +112,3 @@ public class TimeRange extends ObjectRange<UTC> {
   }
 
 }
-//$Id: TimeRange.java,v 1.24 2004/04/08 09:09:51 mattm Exp $

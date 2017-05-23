@@ -29,7 +29,7 @@ public class ThreadX {
   public static boolean waitOn(Object obj, long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
     dbg = ErrorLogStream.NonNull(dbg);//avert NPE
     synchronized (obj) { // +++ in order to make code run faster, this synchronized *might* ought to be placed just around the obj.wait() line.
-      dbg.Enter("waitOn");
+      dbg.Push("waitOn");
       try {
         StopWatch resleeper = new StopWatch();//to shorten successive timeouts when we sleep again after an interrupt
         while (true) {

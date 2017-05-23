@@ -426,7 +426,7 @@ public class DBMacros extends GenericDB {
     boolean needsReattempt = false;
     long qn = queryCounter.incr();
     try {
-      dbg.Enter("query");
+      dbg.Push("query");
       mycon = getCon();
       if (mycon != null) {
         dbg.VERBOSE("Calling Connection.createStatement() ...");
@@ -525,11 +525,11 @@ public class DBMacros extends GenericDB {
     boolean needsReattempt = false;
     long qn = queryCounter.incr();
     try {
-      dbg.Enter("update");
+      dbg.Push("update");
       Statement stmt = null;
       // do the query
       try {
-        dbg.Enter("update" + (throwException ? "(RAW)" : ""));
+        dbg.Push("update" + (throwException ? "(RAW)" : ""));
         mycon = getCon();
         if (mycon != null) {
           dbg.VERBOSE("Calling Connection.createStatement() ...");
@@ -687,7 +687,7 @@ public class DBMacros extends GenericDB {
   private String getTableInfo(ResultSet rs, String info) {
     String ret = "";
     try {
-      dbg.Enter("getTableInfo");
+      dbg.Push("getTableInfo");
       dbg.VERBOSE("Calling ResultSet.getString() regarding: " + info + "...");
       ret = rs.getString(info);
     } catch (Exception e) {
@@ -950,7 +950,7 @@ public class DBMacros extends GenericDB {
   protected final boolean dropField(ColumnProfile column) {
     boolean ret = false;
     try {
-      dbg.Enter("dropField");
+      dbg.Push("dropField");
       if (fieldExists(column.table().name(), column.name())) {
         boolean supports = false;
         try {
@@ -1054,7 +1054,7 @@ public class DBMacros extends GenericDB {
   protected final boolean dropIndex(String indexname, String tablename) {
     int i = -1;
     try {
-      dbg.Enter("dropIndex");
+      dbg.Push("dropIndex");
       if (indexExists(indexname, tablename)) {
         i = update(QueryString.genDropIndex(indexname));
       } else {
@@ -1075,7 +1075,7 @@ public class DBMacros extends GenericDB {
   protected final boolean dropTable(String tablename) {
     boolean ret = false;
     try {
-      dbg.Enter("dropTable");
+      dbg.Push("dropTable");
       if (tableExists(tablename)) {
         dbg.ERROR("dropTable" + tablename + " returned " +
           update(QueryString.genDropTable(tablename)));
@@ -1096,7 +1096,7 @@ public class DBMacros extends GenericDB {
   protected final boolean addField(ColumnProfile column) {
     boolean ret = false;
     try {
-      dbg.Enter("addField");
+      dbg.Push("addField");
       if (!fieldExists(column.table().name(), column.name())) {
         dbg.ERROR("addField" + column.fullName() + " returned " + update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
           QueryString.genAddField(column)));
@@ -1114,7 +1114,7 @@ public class DBMacros extends GenericDB {
 
   protected final boolean changeFieldType(ColumnProfile from, ColumnProfile to) {
     try {
-      dbg.Enter("changeFieldType");
+      dbg.Push("changeFieldType");
 //      dbg.ERROR("changeFieldType " + to.fullName() + " returned " + update(QueryString.genChangeFieldType(to)));
       dbg.ERROR("changeFieldType is not yet supported.  Write code in the content validator to handle this!");
       return false;//fieldExists(to.table().name(), to.name()); // +++ instead, need to do the things you do to check that a column is correct, not just check to see if it is added!
@@ -1129,7 +1129,7 @@ public class DBMacros extends GenericDB {
   protected final boolean changeFieldNullable(ColumnProfile to) {
     boolean ret = false;
     try {
-      dbg.Enter("changeFieldNullable");
+      dbg.Push("changeFieldNullable");
       dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
       TableProfile afterTable = profileTable(to.table().name());
       ColumnProfile aftercolumn = afterTable.column(to.name());
@@ -1145,7 +1145,7 @@ public class DBMacros extends GenericDB {
   protected final boolean changeFieldDefault(ColumnProfile to) {
     boolean ret = false;
     try {
-      dbg.Enter("changeFieldDefault");
+      dbg.Push("changeFieldDefault");
       dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(QueryString.genChangeFieldDefault(to)));
       TableProfile afterTable = profileTable(to.table().name());
       ColumnProfile aftercolumn = afterTable.column(to.name());
@@ -1180,7 +1180,7 @@ public class DBMacros extends GenericDB {
     String fieldExpression = index.columnNamesCommad();
 
     try {
-      dbv.Enter(functionName);//#gc
+      dbv.Push(functionName);//#gc
       dbv.mark("Add Index " + indexName + " for " + tableName + ":" + fieldExpression);
       if (!indexExists(index)) {
         QueryString qs = QueryString.genCreateIndex(index);
@@ -1210,7 +1210,7 @@ public class DBMacros extends GenericDB {
     String functionName = "validateAddField(fromProfile)";
     int success = FAILED;
     try {
-      dbv.Enter(functionName);//#gc
+      dbv.Push(functionName);//#gc
       dbv.mark("Add field " + column.fullName());
       if (!fieldExists(column.table().name(), column.name())) {
         boolean did = addField(column);
@@ -1286,7 +1286,7 @@ public class DBMacros extends GenericDB {
     String functionName = "validateAddPrimaryKey";
     int success = FAILED;
     try {
-      dbv.Enter(functionName);//#gc
+      dbv.Push(functionName);//#gc
       String blurb = "Primary Key " + primaryKey.name + " for " + primaryKey.table.name() + "." + primaryKey.field.name();
       dbv.mark("Add " + blurb);
       if (!primaryKeyExists(primaryKey)) {
@@ -1316,7 +1316,7 @@ public class DBMacros extends GenericDB {
     String functionName = "validateAddForeignKey";
     int success = FAILED;
     try {
-      dbv.Enter(functionName);//#gc
+      dbv.Push(functionName);//#gc
       String blurb = "Foreign Key " + foreignKey.name + " for " + foreignKey.table.name() + "." + foreignKey.field.name() + " against " + foreignKey.referenceTable.name();
       dbv.mark("Add " + blurb);
       if (!foreignKeyExists(foreignKey)) {
@@ -1345,7 +1345,7 @@ public class DBMacros extends GenericDB {
     String functionName = "validateAddTable";
     int success = FAILED;
     try {
-      dbv.Enter(functionName);//#gc
+      dbv.Push(functionName);//#gc
       dbv.mark("Add table " + table.name());
       if (!tableExists(table.name())) {
         boolean did = createTable(table);
@@ -1374,7 +1374,7 @@ public class DBMacros extends GenericDB {
     int success = FAILED;
     String toDrop = "drop constraint " + tablename + "." + constraintname;
     try {
-      dbv.Enter(functionName);//#gc
+      dbv.Push(functionName);//#gc
       dbv.mark(toDrop);
       TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
       success = (tableExists(tablename)) ?
@@ -1408,7 +1408,7 @@ public class DBMacros extends GenericDB {
   protected final boolean createTable(TableProfile tp) {
     boolean ret = false;
     try {
-      dbg.Enter("createTable");
+      dbg.Push("createTable");
       if (!tableExists(tp.name())) {
         dbg.ERROR("createTable " + tp.name() + " returned " + update(QueryString.genCreateTable(tp)));
         ret = tableExists(tp.name());

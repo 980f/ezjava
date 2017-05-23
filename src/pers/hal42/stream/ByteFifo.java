@@ -222,15 +222,15 @@ class ByteFifoBlockingInputStream extends ByteFifoInputStream {
           forData.Start(Long.MAX_VALUE);//doesn't actually start, just configs
           switch (forData.run()) {
             default://should never happen
-            case Waiter.Ready://should never happen
+            case Ready://should never happen
               throw new IOException("Input Logic Error");
-            case Waiter.Notified://data available, from wakeup()
+            case Notified://data available, from wakeup()
               break;//flow throuogh to simple read().
-            case Waiter.Timedout://should never happen under normal use, could return "endOfStream" condition
+            case Timedout://should never happen under normal use, could return "endOfStream" condition
               throw new IOException("Input Timed Out");
 //              break;
-            case Waiter.Interrupted://should never happen, perhaps reserve for stream close
-            case Waiter.Excepted://should never happen, reserved for problems starting the wait.
+            case Interrupted://should never happen, perhaps reserve for stream close
+            case Excepted://should never happen, reserved for problems starting the wait.
               throw new IOException("Stream Closed while waiting for input");  //throw something different than timedout
 //              break;
           }
@@ -287,4 +287,3 @@ abstract class ByteFifoInputStream extends InputStream {
   }
 
 }
-//$Id: ByteFifo.java,v 1.10 2004/01/19 17:03:25 mattm Exp $

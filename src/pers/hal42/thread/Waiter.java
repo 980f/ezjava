@@ -18,15 +18,17 @@ import pers.hal42.text.Ascii;
 import pers.hal42.text.Formatter;
 import pers.hal42.timer.StopWatch;
 
+import static pers.hal42.thread.Waiter.State.*;
+
 public class Waiter {
   /**
    * waitOnMe, safe object to do actual thread wait's on.
    */
   private final Object waitOnMe = new Object();
-  long millisecs;
-  boolean allowInterrupt;
-  ErrorLogStream dbg;
-  private int state = Ready;
+  private long millisecs;
+  private boolean allowInterrupt;
+  public ErrorLogStream dbg;
+  private State state = Ready;
   /**
    * originally made a member instead of a local to reduce startup overhead in
    * Wait. primary use is to shorten successive timeouts when we sleep again
@@ -34,12 +36,9 @@ public class Waiter {
    */
   private StopWatch resleeper = new StopWatch();
   ////////////////////
-  public static final int Ready = 0;
-  public static final int Notified = 1;
-  public static final int Timedout = 2;
-  public static final int Interrupted = 3;
-  public static final int Excepted = 4;
-  public static final int Extending = 5;
+  public enum State {
+    Ready, Notified, Timedout, Interrupted, Excepted, Extending
+  }
   ///////////////////
 
   /**
@@ -60,7 +59,7 @@ public class Waiter {
    * @return internal state as human readable String
    */
   public String toString() {
-    return stateString(state);
+    return state.toString();
   }
 
   /**
@@ -70,7 +69,7 @@ public class Waiter {
    *
    * @return psuedo enumeration of internal state
    */
-  public int state() {
+  public State state() {
     return state;
   }
 
@@ -79,7 +78,7 @@ public class Waiter {
    *
    * @return whether present state matches @param possiblestate int
    */
-  public boolean is(int possiblestate) {
+  public boolean is(State possiblestate) {
     return state == possiblestate;
   }
 
@@ -154,13 +153,13 @@ public class Waiter {
   /**
    * starts waiting
    *
-   * @return state when waiting is done.
+   * @return state when waiting is waiter.
    */
-  public int run() {
+  public State run() {
     synchronized (waitOnMe) {
-      dbg.Enter("Wait");
+
       dbg.VERBOSE("waiter state is:" + this + " toat:" + millisecs);
-      try {
+      try (AutoCloseable pop=dbg.Push("Wait")){
         resleeper.Start(); //always a fresh start, no "lap time" on our stopwatches.
         if (state == Extending) {//allow for extending before starting.
           state = Ready;
@@ -204,12 +203,17 @@ public class Waiter {
         state = Excepted;
       } finally {
         resleeper.Stop();//valiant attempt at figuring out when a problem occured.
-        dbg.Exit();
         return state();
       }
     }//end synch
   }
 
+  /** ensure a decent wait time by replacing a horribly short one with @param failsafeKeepAlive */
+  public void ensure(long failsafeKeepAlive){
+    if (millisecs <= 0) {//we will spin hard if this is true!
+      set(failsafeKeepAlive);
+    }
+  }
   /**
    * stretch a wait in progress, or set wait time for next wait.
    *
@@ -217,7 +221,7 @@ public class Waiter {
    * @return the state, if not 'extending' then wasn't in a state legal to extend
    * note: if you use this you should always give an argument to prepare().
    */
-  public int Extend(long milliseconds) {
+  public State Extend(long milliseconds) {
     synchronized (waitOnMe) {
       dbg.WARNING("trying to extend from: " + this.millisecs + " to: " + milliseconds);
       if (state == Ready || state == Extending) { //can only extend when already running or extending
@@ -245,7 +249,7 @@ public class Waiter {
    * @param dbg            ErrorLogStream @see set(ErrorLogStream)
    * @return what caused wait to terminate, @see run()
    */
-  public int Start(long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
+  public State Start(long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
     setto(millisecs, allowInterrupt, dbg);
     //it is ok if any of the notification functions is called by another thread between these lines of code.
     return run();
@@ -258,7 +262,7 @@ public class Waiter {
    * @param somedbg   ErrorLogStream @see set(ErrorLogStream)
    * @return what caused wait to terminate, @see run()
    */
-  public final int Start(long millisecs, ErrorLogStream somedbg) {
+  public final State Start(long millisecs, ErrorLogStream somedbg) {
     return Start(millisecs, this.allowInterrupt, somedbg);
   }
 
@@ -268,7 +272,7 @@ public class Waiter {
    * @param millisecs long @see set(long)
    * @return what caused wait to terminate, @see run()
    */
-  public final int Start(long millisecs) {
+  public final State Start(long millisecs) {
     return Start(millisecs, this.allowInterrupt, this.dbg);
   }
 
@@ -301,14 +305,14 @@ public class Waiter {
    * @param newstate what a pending run() will return
    * @return true if notify did NOT happen, mostly of academic interest.
    */
-  private boolean notifyThis(int newstate) {
+  private boolean notifyThis(State newstate) {
     synchronized (waitOnMe) {
       state = newstate;
       try {
         waitOnMe.notify();
         return false;
       } catch (Exception ex) {//especially null pointer exceptions
-        state = Excepted;
+        state = State.Excepted;
         return true;
       } finally {
         resleeper.Stop(); //owner gets a repsonse time from this.
@@ -322,7 +326,7 @@ public class Waiter {
    * @return true if notify did NOT happen, mostly of academic interest.
    */
   public boolean Stop() {
-    return notifyThis(Notified); //yes, overrides Interrupted and all other states.
+    return notifyThis(State.Notified); //yes, overrides Interrupted and all other states.
   }
 
   /**
@@ -340,7 +344,7 @@ public class Waiter {
    * @return true if notify did NOT happen, mostly of academic interest.
    */
   public boolean forceException() {
-    return notifyThis(Excepted); //terminates wait and indicates things are screwed
+    return notifyThis(State.Excepted); //terminates wait and indicates things are screwed
   }
 
   /**
@@ -369,24 +373,24 @@ public class Waiter {
     return Ascii.bracket(this.toString() + " elapsed:" + this.elapsedTime());
   }
 
-  public static String stateString(int state) {
-    switch (state) {
-      case Ready:
-        return "Ready";
-      case Notified:
-        return "Notified";
-      case Timedout:
-        return "Timedout";
-      case Interrupted:
-        return "Interrupted";
-      case Excepted:
-        return "Excepted";
-      case Extending:
-        return "Extending";
-      default:
-        return "Unknown";
-    }
-  }
+//  public static String stateString(State state) {
+//    switch (state) {
+//      case Ready:
+//        return "Ready";
+//      case Notified:
+//        return "Notified";
+//      case Timedout:
+//        return "Timedout";
+//      case Interrupted:
+//        return "Interrupted";
+//      case Excepted:
+//        return "Excepted";
+//      case Extending:
+//        return "Extending";
+//      default:
+//        return "Unknown";
+//    }
+//  }
 
   /**
    * Create

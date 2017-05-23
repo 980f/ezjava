@@ -13,7 +13,7 @@ public class GenericDB {
   /**
    * replaced pool with a regenerator
    */
-  DBConn dbConnector;
+  protected DBConn dbConnector;
 
 //  protected boolean validated() {
 //    return (cpool != null) && cpool.validated;
@@ -49,12 +49,14 @@ public class GenericDB {
   private Connection conn;
   private String myThreadName = "NOTSETYET";
   private Monitor connMonitor = null;
-  private DatabaseMetaData dbmd; // the metadata for the database
+
+  /** last fetched metadata */
+  private DatabaseMetaData dbmd; // saved for debug
+
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(GenericDB.class);
   private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
   private static final Counter metaDataCounter = new Counter();
 
-  // +++ eventually package the connDataSource, username, and password into a single object
   public GenericDB(DBConnInfo connInfo, String threadname) {
 
     try (AutoCloseable free = genericDBclassMonitor.getMonitor()) {
@@ -85,29 +87,25 @@ public class GenericDB {
   }
 
   public final DatabaseMetaData getDatabaseMetadata() {
-    try (AutoCloseable pop = dbg.Enter("getDatabaseMetadata")) {
+    try (AutoCloseable pop = dbg.Push("getDatabaseMetadata")) {
       Connection mycon = getCon();
       if (mycon != null) {
         try (AutoCloseable monitor = connMonitor.getMonitor()) {
           dbg.VERBOSE("Calling Connection.getMetaData() ...");
           dbmd = mycon.getMetaData();
-        } finally {
-          dbg.VERBOSE("Done calling Connection.getMetaData().");
+          return dbmd;
         }
       }
+      return dbmd;//return a stale instance.
     } catch (Exception t) {
       dbg.Caught(t);
-      dbmd = null;
-    } finally {
-      return dbmd;
+      return null;
     }
   }
 
-  // there is a mutex in this class, but it should be very fast.
-  // +++ @@@ %%% should we put this in a loop so that it doesn't continue UNTIL it gets a connection?
   public final Connection getCon() {
 
-    try (AutoCloseable monitor = connMonitor.getMonitor()) {
+    try (AutoCloseable monitor = connMonitor.getMonitor()) {//mutex for when we restore connection pooling
       if (conn == null) {
         dbg.WARNING("conn is null, so getting new connection for thread \"" + myThreadName + "\" !");
 //        conn = cpool.checkOut();

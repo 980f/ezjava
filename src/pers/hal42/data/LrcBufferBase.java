@@ -84,7 +84,7 @@ public class LrcBufferBase extends Packet {
    * @return whether character successfully went into buffer
    */
   public boolean append(byte b) {
-    dbg.Enter("LrcBB.append");//gc
+    dbg.Push("LrcBB.append");//gc
     try {
       if (expectinglrc) {
         expectinglrc = false;

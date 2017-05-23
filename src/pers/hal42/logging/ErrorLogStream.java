@@ -20,14 +20,14 @@ import java.util.Vector;
 import static pers.hal42.logging.LogLevelEnum.*;
 /**
  * WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
- * this was done to improve efficiency the rest of the time.
+ * this was waiter to improve efficiency the rest of the time.
  *
  * @todo: finish applying logswitch
  */
 
 
 /**
- * auto closeable for Enter/Exit context stack
+ * auto closeable for Push/Exit context stack
  */
 public class ErrorLogStream implements AtExit, AutoCloseable {
 
@@ -235,7 +235,8 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     Exit();
   }
 
-  public AutoCloseable Enter(String methodName) {
+  /** push teh context stack, @returns object that will pop it when 'closed' */
+  public ErrorLogStream Push(String methodName) {
     context.push(ActiveMethod);
     ActiveMethod = methodName;
     VERBOSE("Entered");
@@ -290,24 +291,26 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     boolean logit = (tl == null);
     Class[] paramTypes = {Object.class, String.class, TextList.class};
     try {
-      Method method = c.getMethod("toSpam");
-      try {
-        Object result = method.invoke(o);
-        if (result instanceof TextList) {
-          TextList tlResult = (TextList) result;
-          for (int i = 0; i < tlResult.size(); i++) {
-            tl.add(path + "." + tlResult.itemAt(i));
-          }
-        } else {
-          String resultStr = String.valueOf(result);
-          if (resultStr.indexOf('=') > -1) {
-            tl.add(path + "." + resultStr);
+      if(logit) {
+        Method method = c.getMethod("toSpam");
+        try {
+          Object result = method.invoke(o);
+          if (result instanceof TextList) {
+            TextList tlResult = (TextList) result;
+            for (int i = 0; i < tlResult.size(); i++) {
+              tl.add(path + "." + tlResult.itemAt(i));
+            }
           } else {
-            tl.add(path + "=" + resultStr);
+            String resultStr = String.valueOf(result);
+            if (resultStr.indexOf('=') > -1) {
+              tl.add(path + "." + resultStr);
+            } else {
+              tl.add(path + "=" + resultStr);
+            }
           }
+        } catch (Exception e) {
+          Caught(e);
         }
-      } catch (Exception e) {
-        Caught(e);
       }
     } catch (NoSuchMethodException e) {
       WARNING("{0} does not have a method 'toSpam()'", c.getName());
@@ -324,8 +327,8 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
           // if not, recurse through the class's supers and members
           Field[] fields1 = c.getFields();
           Field[] fields2 = c.getDeclaredFields();
-          java.util.ArrayList list1 = new java.util.ArrayList(java.util.Arrays.asList(fields1));
-          java.util.ArrayList list2 = new java.util.ArrayList(java.util.Arrays.asList(fields2));
+          java.util.ArrayList<Field> list1 = new java.util.ArrayList<>(java.util.Arrays.asList(fields1));
+          java.util.ArrayList<Field> list2 = new java.util.ArrayList<>(java.util.Arrays.asList(fields2));
           list1.addAll(list2);
           removeDuplicates(list1); // +++ need to remove duplicates
           Object[] fields = list1.toArray();

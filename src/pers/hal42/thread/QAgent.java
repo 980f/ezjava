@@ -8,24 +8,26 @@ import pers.hal42.timer.Ticks;
 
 import java.util.Comparator;
 
+import static java.util.Comparator.reverseOrder;
+
 /**
  * Message Queue processor component
- * todo syncronized methods should be changed to synch on fifo.
- * todo: investigate using a Server as the thread
  * todo: should check for null actor. would simplify startup code for users of this class.
  */
-public class QAgent implements Runnable {
-  protected PrioritizedQueue fifo;//accessible for input filtering based upon present content
+public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
+  protected final PrioritizedQueue<Qtype> fifo;//accessible for input filtering based upon present content
   protected Thread thread;
-  private QActor actor;
+  /** this entity receives things that are put into the queue, one at a time.*/
+  private QActor<Qtype> actor;
   private ErrorLogStream dbg = classdbg;
   // +++ make this an enumeration (except killed)
   private boolean amStopped = true;
   private boolean killed = false; //need class cleanThread
   private boolean paused = false;
-  private String myname;
-  private Waiter waitingForInput;
-  private Object idleObject = null;
+  private final String myname;
+  private final Waiter waitingForInput;
+  /** if the queue is empty then this object (if not null) is passed to the actor */
+  private Qtype idleObject = null;
   private static final long failsafeKeepAlive = Ticks.forSeconds(100);// a zero keepalive is heinous
   private static ErrorLogStream classdbg;
 
@@ -35,7 +37,7 @@ public class QAgent implements Runnable {
    * @param ordering       can be null if the incoming objects are NEVER Comparable
    * @param threadPriority sets the new thread's priority
    */
-  protected QAgent(String threadname, QActor actor, Comparator ordering, int threadPriority) {
+  public QAgent(String threadname, QActor<Qtype> actor, Comparator<Qtype> ordering, int threadPriority) {
     if (classdbg == null) {
       classdbg = ErrorLogStream.getForClass(QAgent.class);
       if (dbg == null) { // will for the first one created!
@@ -49,7 +51,7 @@ public class QAgent implements Runnable {
     killed = false;
     thread.setDaemon(true);
     this.actor = actor;
-    fifo = new PrioritizedQueue(ordering);
+    fifo = new PrioritizedQueue<Qtype>(ordering);
   }
 
   public QAgent config(double keepaliveSecs) {//consider mutexing
@@ -73,7 +75,7 @@ public class QAgent implements Runnable {
 
 ///////////////////////////
 
-  public QAgent setIdleObject(Object demon) {
+  public QAgent setIdleObject(Qtype demon) {
     idleObject = demon;//will run periodically when there is nothing else to do.
     return this;
   }
@@ -90,61 +92,46 @@ public class QAgent implements Runnable {
     return paused;
   }
 
-  public final synchronized boolean Post(Object arf) {//primary access point
-    return put(arf) > 0; //not checking types yet, just whether there is room in fifo
+  public final boolean Post(Qtype arf) {//primary access point
+    return put(arf) > 0;
   }
 
-  /**
-   * @todo try to close the hole. Hole begins after the fifo.next() and ends @ waitOn().
-   * this can be done by copying out a piece of waitOn.
-   * can we synchronize on inputWakeupLock, then wait on it in waitOn?
-   * i.e. will the release in waitOn release all synchronizations on that object?
-   * Need an example of what you think is a hole, I.e. waht can happen in that hole that is not
-   * acceptible?
+  /** call this when you are ready to wait, which is sometime after prepare AND triggering the agent whose action you are awaiting.
    */
   public void run() {//implements Runnable
-    // @IPFIX@ if there is an exception in lines 2 & 3, the thread dies!!!  put them ALL in the try!
-    // alh: those lines can't except unless 'this' is grossly defective. Moving them would't hurt.
     amStopped = false;
-    if (waitingForInput.millisecs <= 0) {//we will spin hard if this is true!
-      waitingForInput.set(failsafeKeepAlive);
-    }
-    try {
-      dbg.VERBOSE(myname + " run() entered ");
-      while (!killed) { // @IPFIX@ if this loop dies, the thread dies.  put the try inside the loop ???  kill the whole program instead (restart) ???
+    waitingForInput.ensure(failsafeKeepAlive);//we will spin hard if wait time is too small.\
+    try (AutoCloseable pop=dbg.Push(myname)){
+      while (!killed) {
         try {
           waitingForInput.prepare();
-          //even though the above clears the input notified flag, the following
-          //checks whether there is input.
-          //alh:Maybe this closes the hole mentioned in the javadoc?
           if (!paused) {
-            Object todo = fifo.next();
+            Qtype todo = fifo.next();
             if (todo != null) {
               dbg.VERBOSE(myname + " about to runone");
               actor.runone(todo);
             } else { //wait awhile to keep from sucking up processor cycles
-              if (waitingForInput.run() == Waiter.Timedout) {//if we wait for a full idle period then
+              if (waitingForInput.run() == Waiter.State.Timedout) {//if we wait for a full idle period then
                 if (idleObject != null) {//indicate we have been idle
                   dbg.VERBOSE(myname + " about to run idle object");
-                  actor.runone(todo = idleObject);//record idleObject as active element for debug
-                  //queueing the object leads to timing ambiguities if the fifo is a prioritized queue rather than a simple fifo.
+                  todo = idleObject;//record idleObject as active element for debug
+                  actor.runone(todo);
                 }
               }
             }
           }
         } catch (Exception any) {
-          dbg.Caught(any);//@todo: add some info about 'todo' object, but without potentially causing nested exceptions.
+          dbg.Caught(any);//@todo:2 add some info about 'todo' object, but without potentially causing nested exceptions.
         } finally {
           if (killed) {
             actor.Stop(); //let the actor know that we will no longer be delivering objects.
           }
         }
       }
-    } catch (Throwable panic) {
+    } catch (Throwable panic) {//don't stop application just because one agent croaks.
       dbg.Caught(panic);
     } finally {
       amStopped = true;
-      dbg.VERBOSE(myname + " run() exits");
     }
   }
 
@@ -178,16 +165,16 @@ public class QAgent implements Runnable {
 
   //one upon a time the "puts" were protected.
   //see new class 'OrderedVector' for intended cleanup of this class's public interface.
-  protected synchronized int put(Object obj) {
-    if (dbg.willOutput(LogLevelEnum.VERBOSE.level)) {
-      dbg.VERBOSE("Posting:" + ReflectX.ObjectInfo(obj));
-    }
-    int size = fifo.put(obj);
-    boolean didnot = inputNotify();
-    if (didnot) {
-      dbg.WARNING("inputNotify() did NOT have an effect.");
-    }
-    return size;
+  protected int put(Qtype obj) {
+      if (dbg.willOutput(LogLevelEnum.VERBOSE.level)) {
+        dbg.VERBOSE("Posting:" + ReflectX.ObjectInfo(obj));
+      }
+      int size = fifo.put(obj);
+      boolean didnot = inputNotify();
+      if (didnot) {
+        dbg.WARNING("inputNotify() did NOT have an effect.");
+      }
+      return size;
   }
 
   /**
@@ -195,14 +182,16 @@ public class QAgent implements Runnable {
    *            this version always replaces old with new.
    * @return true if overwrote rather than added
    */
-  public synchronized boolean putUnique(Object obj) {
-    boolean retval = removeAny(obj) != 0;
-    put(obj);
-    return retval;
+  public boolean putUnique(Qtype obj) {
+    synchronized (fifo) {//#need to synch the remove against the put
+      boolean retval = removeAny(obj) != 0;
+      put(obj);
+      return retval;
+    }
   }
 
-  public synchronized int removeAny(Object obj) {
-    return fifo.removeAny(obj);
+  public int removeAny(Qtype obj) {
+      return fifo.removeAny(obj);
   }
 
   // once you call this function, you can never call it again
@@ -225,7 +214,7 @@ public class QAgent implements Runnable {
     return Stopped(); //first attempt to stop...
   }
 
-  // +++ add a pause/resume feature where the thread doesn't runone, but just sleeps over and over again?  this causes the queue to fill, but nothing to be done about the items.
+  // +++ add a pause/resume feature where the thread doesn't runone, but just sleeps over and over again?  this causes the queue to fill, but nothing to be waiter about the items.
   // +++ separate start/clear
   // +++ create a clearAndStart()
 
@@ -248,17 +237,17 @@ public class QAgent implements Runnable {
   }
 
   // defaults the ordering to PriorityComparator.Reversed()
-  public static QAgent New(String threadname, QActor agent) {
-    return New(threadname, agent, PriorityComparator.Reversed());
+  public static <Qtype extends Comparable<Qtype>> QAgent<Qtype> New(String threadname, QActor<Qtype> agent) {
+    return New(threadname, agent, Comparator.reverseOrder());
   }
 
   // defaults the ThreadPriority to that of the current thread
-  public static QAgent New(String threadname, QActor agent, Comparator ordering) {
+  public static <Qtype extends Comparable<Qtype>> QAgent<Qtype> New(String threadname, QActor<Qtype> agent, Comparator<Qtype> ordering) {
     return New(threadname, agent, ordering, Thread.currentThread().getPriority());
   }
 
-  public static QAgent New(String threadname, QActor agent, Comparator ordering, int threadPriority) {
-    return new QAgent(threadname, agent, ordering, threadPriority);
+  public static <Qtype extends Comparable<Qtype>> QAgent<Qtype> New(String threadname, QActor<Qtype> agent, Comparator<Qtype> ordering, int threadPriority) {
+    return new QAgent<>(threadname, agent, ordering, threadPriority);
   }
 
 }

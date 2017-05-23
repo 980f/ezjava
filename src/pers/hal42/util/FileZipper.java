@@ -37,7 +37,7 @@ public class FileZipper extends Thread implements AtExit {
 
   // call these last so that they don't starve the other threads ???
   public void AtExit() {
-    setPriority(Thread.NORM_PRIORITY); // hurry up and get it done.
+    setPriority(Thread.NORM_PRIORITY); // hurry up and get it waiter.
   }
 
   public boolean IsDown() {
@@ -71,7 +71,7 @@ public class FileZipper extends Thread implements AtExit {
       // now cleanup can handle those streams
       // delete the original file
       inputFile.delete(); // +++ check return value
-      // so mark it done
+      // so mark it waiter
       done = true;
     } catch (Exception e) {
       String err = "Exception zipping a file: " + e;
@@ -133,7 +133,7 @@ public class FileZipper extends Thread implements AtExit {
 /**
  * +++ use an ObjectPool ???
  * The registry is used to keep up with which ones are currently running.
- * If you don't remove them when they are done, they will never leave!
+ * If you don't remove them when they are waiter, they will never leave!
  * (Can't force a destroy.)
  */
 class FileZipperRegistry extends Vector {

@@ -10,20 +10,29 @@ import pers.hal42.transport.isEasy;
 
 /**
  * an interval of generic type
- * todo:0 use generics! this class predates those!
+ *
+ * Properties interface has been commented out due to its interference with genericization
  */
-public class ObjectRange<T extends Comparable<T>> implements isEasy {
-  protected Comparable one;
-  protected Comparable two;
+public class ObjectRange<T extends Comparable<T>> {
+  protected T one;
+  protected T two;
+  private boolean sorted = false;
+
   private boolean singular;
   private boolean broad;
-  private boolean sorted = false;
   private boolean isDirty = true; //defer analyze
-  //isEasy:
-  protected final static String oneKey = "one";
-  protected final static String twoKey = "two";
-  protected final static String sortedKey = "sorted";
+//  //isEasy:
+//  protected final static String oneKey = "one";
+//  protected final static String twoKey = "two";
+//  protected final static String sortedKey = "sorted";
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ObjectRange.class);
+
+
+  public ObjectRange(T one, T two, boolean sorted) {
+    this.one = one;
+    this.two = two;
+    this.sorted = sorted;
+  }
 
   protected ObjectRange(boolean sorted) {
     isDirty = true;
@@ -34,10 +43,10 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
     this(true);
   }
 
-  protected ObjectRange(String one, String two, boolean sorted) {
-    this(sorted);
-    setBoth(one, two);
-  }
+//  protected ObjectRange(String one, String two, boolean sorted) {
+//    this(sorted);
+//    setBoth(one, two);
+//  }
 
   public boolean singular() {
     if (isDirty) {
@@ -57,7 +66,7 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
     return StringX.TrivialDefault(one());
   }
 
-  public final Object one() {
+  public final T one() {
     if (isDirty) {
       analyze();
     }
@@ -68,46 +77,46 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
     return StringX.TrivialDefault(two());
   }
 
-  public final Object two() {
+  public final T two() {
     if (isDirty) {
       analyze();
     }
     return two;
   }
 
-  public Comparable filter(String input) {
-    return input;
-  }
+//  public T filter(String input) {
+//    return new T(input);
+//  }
 
-  public ObjectRange setOne(Comparable input) {
+  public ObjectRange<T> setOne(T input) {
     dbg.VERBOSE("setOne():" + input);
     one = input;
     isDirty = true;
     return this;
   }
 
-  public ObjectRange setTwo(Comparable input) {
+  public ObjectRange<T> setTwo(T input) {
     dbg.VERBOSE("setTwo():" + input);
     two = input;
     isDirty = true;
     return this;
   }
 
-  public ObjectRange setOne(String input) {
-    return setOne(filter(input));
-  }
+//  public ObjectRange setOne(String input) {
+//    return setOne(filter(input));
+//  }
+//
+//  public ObjectRange setTwo(String input) {
+//    return setTwo(filter(input));
+//  }
+//public ObjectRange setBoth(String oner, String twoer) {
+//  return setOne(oner).setTwo(twoer);
+//}
 
-  public ObjectRange setTwo(String input) {
-    return setTwo(filter(input));
-  }
-
-  public ObjectRange setBoth(Comparable oner, Comparable twoer) {
+  public ObjectRange<T> setBoth(T oner, T twoer) {
     return setOne(oner).setTwo(twoer);
   }
 
-  public ObjectRange setBoth(String oner, String twoer) {
-    return setOne(oner).setTwo(twoer);
-  }
 
   public boolean NonTrivial() {
     if (isDirty) {
@@ -120,7 +129,7 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
 
   protected ObjectRange swap() {
     dbg.VERBOSE("swapping");
-    Comparable exchange = one;
+    T exchange = one;
     one = two;
     two = exchange;
     return this;
@@ -145,8 +154,8 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
    * must be called anytime either string has changed
    */
   protected void analyze() {
-    dbg.Enter("analyze");
-    try {
+
+    try (ErrorLogStream pop= dbg.Push("analyze")){
       //temporarily make assignments, then make sense of them
       broad = ObjectX.NonTrivial(two);
       singular = ObjectX.NonTrivial(one);
@@ -167,12 +176,12 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
         }
       }
       isDirty = false;
-    } finally {
-      dbg.Exit();
+    } catch (Exception e) {
+      e.printStackTrace();//won't occur
     }
   }
 
-  public void copyMembers(ObjectRange rhs) {
+  public void copyMembers(ObjectRange<T> rhs) {
     dbg.VERBOSE("copyMembers from " + ReflectX.shortClassName(rhs) + " to this " + ReflectX.shortClassName(this));
     //can this work? if(rhs.getClass()==this.getClass())
     {
@@ -182,16 +191,16 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
     }
   }
 
-  public void save(EasyCursor ezp) {
-    ezp.setString(oneKey, oneImage());
-    ezp.setString(twoKey, twoImage());
-    ezp.setBoolean(sortedKey, sorted);
-  }
-
-  public void load(EasyCursor ezp) {
-    sorted = ezp.getBoolean(sortedKey, false); // do this one first (affects the rest) !!!
-    setBoth(ezp.getString(oneKey, null), ezp.getString(twoKey, null));
-  }
+//  public void save(EasyCursor ezp) {
+//    ezp.setString(oneKey, oneImage());
+//    ezp.setString(twoKey, twoImage());
+//    ezp.setBoolean(sortedKey, sorted);
+//  }
+//
+//  public void load(EasyCursor ezp) {
+//    sorted = ezp.getBoolean(sortedKey, false); // do this one first (affects the rest) !!!
+//    setBoth(ezp.getString(oneKey, null), ezp.getString(twoKey, null));
+//  }
 
   public String toString() {
     return (sorted ? "" : "un") + "sorted: [" + one() + ", " + two() + "]";
@@ -216,4 +225,3 @@ public class ObjectRange<T extends Comparable<T>> implements isEasy {
   */
 
 }
-//$Id: ObjectRange.java,v 1.17 2004/03/22 17:44:17 andyh Exp $

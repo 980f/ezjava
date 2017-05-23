@@ -155,7 +155,7 @@ public class Packet {
    * usually overridden for things like etx detection and incremental lrc computation.
    */
   public boolean append(byte b) {//often extended
-    dbg.Enter("Packet.append");//#gc
+    dbg.Push("Packet.append");//#gc
     try {
       if (!ended) {
         if (nexti < size) {//haveSpaceFor(1);

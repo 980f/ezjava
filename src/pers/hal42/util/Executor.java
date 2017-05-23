@@ -34,7 +34,7 @@ public class Executor {
         msgs.add(in.readLine());
       }
     } catch (IOException ioe) {
-      dbg.Enter("pStream");
+      dbg.Push("pStream");
       dbg.Caught(ioe);
       dbg.Exit();
     }
@@ -177,9 +177,9 @@ public class Executor {
 
   /*
   if timeoutSeconds == 0 and updateSeconds == 0,
-  the process will not be watched at all  and there won't be any output to the screen until it's done
+  the process will not be watched at all  and there won't be any output to the screen until it's waiter
   if displayUpdateSeconds == 0, the display will not be shown
-  if timeoutSeconds == 0, the process won't be killed; will run until done
+  if timeoutSeconds == 0, the process won't be killed; will run until waiter
   for display purposes, it's best to make displayUpdateSeconds == 1
   it's also best if they are both even, or if displayUpdateSeconds == 1
   */
@@ -216,7 +216,7 @@ public class Executor {
          String[] cmd = null;
 
          try {
-   //with this variable will be done the swithcing
+   //with this variable will be waiter the swithcing
              String osName = System.getProperty("os.name" );
 
        //only will work with Windows NT
