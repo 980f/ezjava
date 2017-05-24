@@ -180,14 +180,12 @@ public class ReflectX {
 
 
   public static Object loadClass(String className) {
-    Object ret = null;
+
     try {
       Class c = Class.forName(className);
-      ret = c.newInstance(); // some drivers don't load completely until you do this
+      return c.newInstance(); // some drivers don't load completely until you do this
     } catch (Exception e) {
-      // +++ bitch ?
-    } finally {
-      return ret;
+      return null;
     }
   }
 
@@ -195,10 +193,10 @@ public class ReflectX {
   public static boolean preloadClass(String className, boolean loadObject) {
     try {
       Class c = classForName(className);
-      if (loadObject) {
-        c.newInstance(); // some drivers don't load completely until you do this
+      if (loadObject && c!=null) {
+        return  c.newInstance()!=null; // some drivers don't load completely until you do this
       }
-      return true;
+      return c!=null;
     } catch (Exception e) {
       if (preloadClassErrors == null) {
         preloadClassErrors = new TextList();

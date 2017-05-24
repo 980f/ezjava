@@ -99,8 +99,8 @@ public class PushedParser {
 
     if (fully) {
       d.location = 0;
-      d.row = 0;
-      d.column = 0;
+      d.row = 1; //1-based to match most text editor line numbering.
+      d.column = 0;//see above
       d.last = 0;
     }
   }

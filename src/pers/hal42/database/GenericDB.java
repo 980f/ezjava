@@ -2,11 +2,13 @@ package pers.hal42.database;
 
 
 import pers.hal42.lang.Monitor;
+import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.thread.Counter;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 
 public class GenericDB {
 
@@ -48,7 +50,7 @@ public class GenericDB {
   private DBConnInfo connInfo;
   private Connection conn;
   private String myThreadName = "NOTSETYET";
-  private Monitor connMonitor = null;
+  private final Monitor connMonitor;
 
   /** last fetched metadata */
   private DatabaseMetaData dbmd; // saved for debug
@@ -58,11 +60,14 @@ public class GenericDB {
   private static final Counter metaDataCounter = new Counter();
 
   public GenericDB(DBConnInfo connInfo, String threadname) {
-
+    connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
     try (AutoCloseable free = genericDBclassMonitor.getMonitor()) {
       this.myThreadName = threadname;
       this.connInfo = connInfo;
-      connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
+      dbg.VERBOSE("Preloading driver class {0}",connInfo.drivername);
+      if(!ReflectX.preloadClass(connInfo.drivername)){
+        dbg.ERROR("Preloading driver class {0} failed",connInfo.drivername);
+      }
 //      cpool = list.get(connInfo);
       getConnection();
     } catch (Exception e) {

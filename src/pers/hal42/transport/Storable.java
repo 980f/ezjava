@@ -2,6 +2,7 @@ package pers.hal42.transport;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import pers.hal42.lang.Bool;
 import pers.hal42.lang.StringX;
 import pers.hal42.text.TextList;
 
@@ -71,7 +72,10 @@ public class Storable {
    * only use this for root nodes.
    */
   public Storable(String name) {
-    this.name = name;
+    if(name==null){
+      dbg.VERBOSE("null name");
+    }
+    this.name = StringX.TrivialDefault(name,"");//normalize all trivialities, we don't want one space to be different name than two spaces ...
     this.parent = null;//in yur face.
   }
 
@@ -152,7 +156,7 @@ public class Storable {
    * non mutating and non null apparent image of value, for under-the-hood peeks
    */
   public String asText() {
-    return StringX.OnTrivial(image, "");
+    return StringX.unNull(image);
   }
 
   /**
@@ -160,8 +164,8 @@ public class Storable {
    */
   public String getImage() {
     if (type == Type.Unclassified) {
-      type = Textual;
-      image = StringX.OnTrivial(image, "");
+      setType(Textual);
+      image = StringX.unNull(image);
     }
     return image;
   }
@@ -226,19 +230,22 @@ public class Storable {
 
   public boolean getTruth() {
     if (type == Type.Unclassified) {
-      type = Boolean;
+      setType(Boolean);
     }
     return bit;
   }
 
   public double getValue() {
     if (type == Type.Unclassified) {
-      type = Numeric;
+      setType(Numeric);
     }
     return value;
   }
 
   public void setValue(double dee) {
+    if (type == Type.Unclassified) {
+      setType(Numeric);
+    }
     value = dee;
     bit = !Double.isNaN(value);
 //    image= unchanged, can't afford to render to text on every change
@@ -250,10 +257,16 @@ public class Storable {
   public boolean setType(Type newtype) {
     boolean wasUnknown = type == Type.Unclassified;
     if (type != newtype) {
-      if (newtype == Textual && type == Numeric) {
-        image = Double.toString(value);
-      } else if (newtype == Numeric && type == Textual) {
-        value = Double.parseDouble(image);//todo: use safer parser
+      if (newtype == Textual){
+        if(type == Numeric) {
+          image = Double.toString(value);
+        } else if(type==Boolean){
+          image= java.lang.Boolean.toString(bit);
+        }
+      } else if (newtype == Numeric ) {
+        value = StringX.parseDouble(image);
+      } else if(newtype==Boolean){
+        bit=parseBool(image);
       }
       //more such mappings might make sense
       type = newtype;
@@ -261,15 +274,20 @@ public class Storable {
     return wasUnknown;
   }
 
-  public Type guessType() {//todo:00 much work needed
+  public Type guessType() {
     if (type == Type.Unclassified) {
       try {
         value = Double.parseDouble(image);//leave this as the overly picky parser
-        return type = Type.Numeric;
+        setType(Numeric);
       } catch (Throwable any) {
         //ignore
+        if(parseBool(image)){
+          setType(Boolean);
+        } else {
+          setType(Textual);
+        }
       }
-      parseBool(image);
+
     }
     return type;
   }
@@ -313,6 +331,9 @@ public class Storable {
    * @returns a child if it exists else null
    */
   public Storable existingChild(String childname) {
+    if(childname==null){
+      return null;
+    }
     for (Storable kid : wad) {
       if (kid.name.equals(childname)) {
         return kid;
@@ -408,6 +429,7 @@ public class Storable {
                 dbg.WARNING("No object for field {0}",name);
                 //todo:1 option to create, which is not easy- it entails creating members recursively then finding a matching constructor, or we could require a nullargs constructor.
               } else {
+                child.setType(Type.Wad);
                 int subchanges = child.applyTo(nestedObject, narrow, aggressive);
                 if (subchanges >= 0) {
                   changes += subchanges;

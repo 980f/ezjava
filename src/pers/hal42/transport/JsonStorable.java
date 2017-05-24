@@ -60,7 +60,7 @@ public class JsonStorable extends PushedJSONParser {
   public static void SaveOptions(Storable node, PrintStream ps, int tablevel) {
     if (node != null && ps != null && tablevel >= 0) {
       Printer print = new Printer(ps, tablevel);
-      print.printValue(node, node.numChildren() - 1);
+      print.printValue(node);
     }
   }
 
@@ -103,7 +103,7 @@ public class JsonStorable extends PushedJSONParser {
     }
     kid.setValue(value);
     itemCompleted();//to prevent duplication or propagation of values over nulls.
-    name = "!error";//this should stand out if we carelessly use it.
+    name="";
     return kid;
   }
 
@@ -143,10 +143,12 @@ public class JsonStorable extends PushedJSONParser {
             if (parent == root && specialRootTreatment) {//#same object, not just equivalent.
               specialRootTreatment = false;//only do once else we flatten the input file.
               //ignore 'begin wad' on root node, so that a standard json file (one value) can parse into an already existing node.
+              itemCompleted();//erase dregs, name is ignored
               kid = parent;
             } else {//this is a wad type child node
               //save present item as a wad
               kid = makeChild(parent);
+              kid.setType(Storable.Type.Wad);
             }
             //noinspection StatementWithEmptyBody
             while (parse(kid)) {//recurse
@@ -155,7 +157,12 @@ public class JsonStorable extends PushedJSONParser {
             return true;
           }
           case EndItem:
-            makeChild(parent);
+            if(haveName||value.isValid()) {
+              makeChild(parent);
+            } else {
+              //most likley a comma after an end brace.
+              dbg.VERBOSE("Ignoring null item, probably gratuitous comma or comma after end brace");
+            }
             return true;//might be more children
           case Done://terminate children all the way up.
             return false;//end wad because we are at end of file.
@@ -179,12 +186,10 @@ public class JsonStorable extends PushedJSONParser {
   }
 
   public static class Printer {
-
-
     PrintStream ps;
     int tablevel;
 
-    public Printer(final PrintStream ps, final int tablevel) {
+    public Printer(final PrintStream ps, int tablevel) {
       this.ps = ps;
       this.tablevel = tablevel;
     }
@@ -216,7 +221,7 @@ public class JsonStorable extends PushedJSONParser {
       }
     }
 
-    boolean printValue(Storable node, int last) {
+    boolean printValue(Storable node) {
       if (node == null) { //COA
         return false;
       }
@@ -232,7 +237,7 @@ public class JsonStorable extends PushedJSONParser {
         break;
       case Boolean:
         printName(node);
-        ps.print(node.getTruth() ? "true" : "false");
+        ps.print(java.lang.Boolean.toString(node.getTruth()));//  node.getImage());
         break;
       default:
       case Unclassified:
@@ -243,8 +248,8 @@ public class JsonStorable extends PushedJSONParser {
         printName(node);
         double number = node.getValue();
         //todo:1 output nans as keyword
-        if ((long) number == number) {
-          ps.print((long) number);
+        if ((long) number == number) {//if is an integer value
+          ps.print((long) number);//print nicely
         } else {
           ps.print(number);
         }
@@ -259,7 +264,8 @@ public class JsonStorable extends PushedJSONParser {
         printWad(node.wad);
         break;
       } /* switch */
-      if (last>=0 && node.ordinal() < last) {//the leading term might get rid of extraneous trailing comma on printing a non-root node.
+      int which=node.ordinal();
+      if (which>=0 && node.parent!=null && node.parent.numChildren()>which+1) {//not the last child of a wad, not the top level node.
         ps.println(',');
       }
       return true;
@@ -269,7 +275,7 @@ public class JsonStorable extends PushedJSONParser {
       ps.println('{');
       ++tablevel;
       int last = wad.size() - 1;
-      wad.forEach(node -> printValue(node, last));
+      wad.forEach(node -> printValue(node));
       --tablevel;
       indent();
       ps.print('}');
