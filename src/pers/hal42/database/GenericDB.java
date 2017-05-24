@@ -64,7 +64,7 @@ public class GenericDB {
       this.connInfo = connInfo;
       connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
 //      cpool = list.get(connInfo);
-      getCon();
+      getConnection();
     } catch (Exception e) {
       // can't happen
     }
@@ -88,7 +88,7 @@ public class GenericDB {
 
   public final DatabaseMetaData getDatabaseMetadata() {
     try (AutoCloseable pop = dbg.Push("getDatabaseMetadata")) {
-      Connection mycon = getCon();
+      Connection mycon = getConnection();
       if (mycon != null) {
         try (AutoCloseable monitor = connMonitor.getMonitor()) {
           dbg.VERBOSE("Calling Connection.getMetaData() ...");
@@ -103,9 +103,12 @@ public class GenericDB {
     }
   }
 
-  public final Connection getCon() {
+  public final Connection getConnection() {
 
-    try (AutoCloseable monitor = connMonitor.getMonitor()) {//mutex for when we restore connection pooling
+    try (AutoCloseable monitor = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
+      if(dbConnector==null) {
+        dbConnector = new DBConn();
+      }
       if (conn == null) {
         dbg.WARNING("conn is null, so getting new connection for thread \"" + myThreadName + "\" !");
 //        conn = cpool.checkOut();

@@ -20,6 +20,7 @@ import java.util.Vector;
  * mate JSON object persistance stuff to a file.
  */
 public class JsonStorable extends PushedJSONParser {
+  static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonStorable.class);
   public Storable root;
   public String filename;
   public boolean specialRootTreatment = true;//@see BeginWad clause of parse().
@@ -32,113 +33,35 @@ public class JsonStorable extends PushedJSONParser {
    */
   String name = "";
   int illegalsCount = 0;
-  static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonStorable.class);
-
-  public static class Printer {
-
-
-    PrintStream ps;
-    int tablevel;
-
-    public Printer(final PrintStream ps, final int tablevel) {
-      this.ps = ps;
-      this.tablevel = tablevel;
-    }
-
-    void indent() {
-      for (int tabs = tablevel; tabs-- > 0; ) {
-        ps.append('\t'); //or we could use spaces
-      }
-    }
-
-    void printText(String p, boolean forceQuote) {
-      if (forceQuote) {//todo: or of string contains any of the parse separators or a space or ...
-        ps.append('"');
-      }
-      ps.append(p);
-      if (forceQuote) {
-        ps.append('"');
-      }
-    } // printText
-
-    boolean printName(Storable node) {
-      indent();
-      if (StringX.NonTrivial(node.name)) {
-        printText(node.name, true); //forcing quotes here, may not need to
-        ps.append(':');
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    boolean printValue(Storable node, int last) {
-      if (node == null) { //COA
-        return false;
-      }
-      if (node.isTrivial()) { //drop autocreated but unused nodes.
-        return false;
-      }
-//this c++ functionality must be done by caller, until we register watchers and all that jazz.      node.preSave(); //when not trivial this flushes cached representations
-
-      switch (node.type) {
-        case Null:
-          printName(node);
-          ps.print("null"); //fix code whenever you see one of these
-          break;
-        case Boolean:
-          printName(node);
-          ps.print(node.getTruth() ? "true" : "false");
-          break;
-        default:
-        case Unclassified:
-          if (printName(node)) {
-            ps.print("!Unknown"); //fix your own code whenever you see one of these
-          } else {
-            return false;
-          }
-          //else the node disappears
-          break;
-        case Numeric: {
-          printName(node);
-          double number = node.getValue();
-          //todo:1 output nans as keyword
-          if ((long) number == number) {
-            ps.print((long) number);
-          } else {
-            ps.print(number);
-          }
-        }
-        break;
-        case Textual:
-          printName(node);
-          printText(node.getImage(), true); //always quote
-          break;
-        case Wad:
-          printName(node);
-          printWad(node.wad);
-          break;
-      } /* switch */
-      if (node.ordinal() < last) {
-        ps.println(',');
-      }
-      return true;
-    } /* printValue */
-
-    void printWad(Vector<Storable> wad) {
-      ps.println('{');
-      ++tablevel;
-      int last = wad.size() - 1;
-      wad.forEach(node -> printValue(node, last));
-      --tablevel;
-      indent();
-      ps.print('}');
-    } /* printWad */
-
-  }
 
   public JsonStorable(boolean equalsAndSemi) {
     super(equalsAndSemi);
+  }
+
+  /**
+   * load options use @param claz to generate a file name.
+   */
+  public static Storable ClassOptions(Class claz) {
+    String optsfile = claz.getSimpleName();
+    Storable root = new Storable(optsfile);//named 4 debug
+    optsfile += ".json";
+    final JsonStorable optsloader = new JsonStorable(true);
+    if (optsloader.loadFile(optsfile)) {
+      optsloader.parse(root);
+      root.child("#filename").setValue(optsfile);
+    }
+    //todo:2 either dbg the stats or print them to a '#attribute field
+    return root;
+  }
+
+  /**
+   * before calling this you probably need to node.apply(Object obj)
+   */
+  public static void SaveOptions(Storable node, PrintStream ps, int tablevel) {
+    if (node != null && ps != null && tablevel >= 0) {
+      Printer print = new Printer(ps, tablevel);
+      print.printValue(node, node.numChildren() - 1);
+    }
   }
 
   protected void recordName() {
@@ -208,38 +131,38 @@ public class JsonStorable extends PushedJSONParser {
         while (d.location < content.length) {//todo: use a bytearraystream
           char b = (char) content[d.location];
           switch (nextitem(b)) {
-            case Continue:
-              continue;//like the case says ;)
-            case Illegal://not much is illegal.
-              if (++illegalsCount < 100) {//give up complaining after a while, so as to speed up failure.
-                dbg.ERROR("Illegal character at row {0}:column {1}, will pretend it's not there. (1-based coords)", d.row, d.column);
-              }
-              break;
-            case BeginWad: {
-              Storable kid;
-              if (parent == root && specialRootTreatment) {//#same object, not just equivalent.
-                specialRootTreatment = false;//only do once else we flatten the input file.
-                //ignore 'begin wad' on root node, so that a standard json file (one value) can parse into an already existing node.
-                kid = parent;
-              } else {//this is a wad type child node
-                //save present item as a wad
-                kid = makeChild(parent);
-              }
-              //noinspection StatementWithEmptyBody
-              while (parse(kid)) {//recurse
-                //nothing to do here.
-              }
-              return true;
+          case Continue:
+            continue;//like the case says ;)
+          case Illegal://not much is illegal.
+            if (++illegalsCount < 100) {//give up complaining after a while, so as to speed up failure.
+              dbg.ERROR("Illegal character at row {0}:column {1}, will pretend it's not there. (1-based coords)", d.row, d.column);
             }
-            case EndItem:
-              makeChild(parent);
-              return true;//might be more children
-            case Done://terminate children all the way up.
-              return false;//end wad because we are at end of file.
-            case EndWad:
-              //if there is an item pending add it to wad, this will be the case if the last item of a wad doesn't have a gratuitous comma after it.
-              cleanup(parent);
-              return false;//no more children
+            break;
+          case BeginWad: {
+            Storable kid;
+            if (parent == root && specialRootTreatment) {//#same object, not just equivalent.
+              specialRootTreatment = false;//only do once else we flatten the input file.
+              //ignore 'begin wad' on root node, so that a standard json file (one value) can parse into an already existing node.
+              kid = parent;
+            } else {//this is a wad type child node
+              //save present item as a wad
+              kid = makeChild(parent);
+            }
+            //noinspection StatementWithEmptyBody
+            while (parse(kid)) {//recurse
+              //nothing to do here.
+            }
+            return true;
+          }
+          case EndItem:
+            makeChild(parent);
+            return true;//might be more children
+          case Done://terminate children all the way up.
+            return false;//end wad because we are at end of file.
+          case EndWad:
+            //if there is an item pending add it to wad, this will be the case if the last item of a wad doesn't have a gratuitous comma after it.
+            cleanup(parent);
+            return false;//no more children
           }
         }
         //no more content
@@ -255,27 +178,103 @@ public class JsonStorable extends PushedJSONParser {
     }
   }
 
-  public static Storable ClassOptions(Class claz) {
-    String optsfile = claz.getSimpleName();
-    Storable root = new Storable(optsfile);//named 4 debug
-    optsfile += ".json";
-    final JsonStorable optsloader = new JsonStorable(true);
-    if (optsloader.loadFile(optsfile)) {
-      optsloader.parse(root);
-      root.child("#filename").setValue(optsfile);
-    }
-    //todo: either dbg the stats or print them to a '#attribute field
-    return root;
-  }
+  public static class Printer {
 
-  /**
-   * before calling this you probably need to node.apply(Object obj)
-   */
-  public static void SaveOptions(Storable node, PrintStream ps, int tablevel) {
-    if (node != null && ps != null && tablevel >= 0) {
-      Printer print = new Printer(ps, tablevel);
-      print.printValue(node, node.numChildren() - 1);
+
+    PrintStream ps;
+    int tablevel;
+
+    public Printer(final PrintStream ps, final int tablevel) {
+      this.ps = ps;
+      this.tablevel = tablevel;
     }
+
+    void indent() {
+      for (int tabs = tablevel; tabs-- > 0; ) {
+        ps.append('\t'); //or we could use spaces
+      }
+    }
+
+    void printText(String p, boolean forceQuote) {
+      if (forceQuote) {//todo: or of string contains any of the parse separators or a space or ...
+        ps.append('"');
+      }
+      ps.append(p);
+      if (forceQuote) {
+        ps.append('"');
+      }
+    } // printText
+
+    boolean printName(Storable node) {
+      indent();
+      if (StringX.NonTrivial(node.name)) {
+        printText(node.name, true); //forcing quotes here, may not need to
+        ps.append(':');
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    boolean printValue(Storable node, int last) {
+      if (node == null) { //COA
+        return false;
+      }
+      if (node.isTrivial()) { //drop autocreated but unused nodes.
+        return false;
+      }
+//this c++ functionality must be done by caller, until we register watchers and all that jazz.      node.preSave(); //when not trivial this flushes cached representations
+
+      switch (node.type) {
+      case Null:
+        printName(node);
+        ps.print("null"); //fix code whenever you see one of these
+        break;
+      case Boolean:
+        printName(node);
+        ps.print(node.getTruth() ? "true" : "false");
+        break;
+      default:
+      case Unclassified:
+        printName(node);
+        printText(node.getImage(), true); //always quote
+        break;
+      case Numeric: {
+        printName(node);
+        double number = node.getValue();
+        //todo:1 output nans as keyword
+        if ((long) number == number) {
+          ps.print((long) number);
+        } else {
+          ps.print(number);
+        }
+      }
+      break;
+      case Textual:
+        printName(node);
+        printText(node.getImage(), true); //always quote
+        break;
+      case Wad:
+        printName(node);
+        printWad(node.wad);
+        break;
+      } /* switch */
+      if (last>=0 && node.ordinal() < last) {//the leading term might get rid of extraneous trailing comma on printing a non-root node.
+        ps.println(',');
+      }
+      return true;
+    } /* printValue */
+
+    void printWad(Vector<Storable> wad) {
+      ps.println('{');
+      ++tablevel;
+      int last = wad.size() - 1;
+      wad.forEach(node -> printValue(node, last));
+      --tablevel;
+      indent();
+      ps.print('}');
+    } /* printWad */
+
   }
 
 }

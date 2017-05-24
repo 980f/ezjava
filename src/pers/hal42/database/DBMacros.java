@@ -427,7 +427,7 @@ public class DBMacros extends GenericDB {
     long qn = queryCounter.incr();
     try {
       dbg.Push("query");
-      mycon = getCon();
+      mycon = getConnection();
       if (mycon != null) {
         dbg.VERBOSE("Calling Connection.createStatement() ...");
         // +++ deal with other possible parameters to this statement ...
@@ -530,7 +530,7 @@ public class DBMacros extends GenericDB {
       // do the query
       try {
         dbg.Push("update" + (throwException ? "(RAW)" : ""));
-        mycon = getCon();
+        mycon = getConnection();
         if (mycon != null) {
           dbg.VERBOSE("Calling Connection.createStatement() ...");
           stmt = mycon.createStatement();

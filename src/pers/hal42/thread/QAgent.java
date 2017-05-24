@@ -1,6 +1,7 @@
 package pers.hal42.thread;
 
 
+import org.jetbrains.annotations.Contract;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
@@ -51,7 +52,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
     killed = false;
     thread.setDaemon(true);
     this.actor = actor;
-    fifo = new PrioritizedQueue<Qtype>(ordering);
+    fifo = new PrioritizedQueue<>(ordering);
   }
 
   public QAgent config(double keepaliveSecs) {//consider mutexing
@@ -105,7 +106,9 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
       while (!killed) {
         try {
           waitingForInput.prepare();
-          if (!paused) {
+          if (paused) {
+            waitingForInput.finishWaiting();//todo:0 test this, or don't pause. former (lack of) code probably spun hard burning cpu cycles.
+          } else {
             Qtype todo = fifo.next();
             if (todo != null) {
               dbg.VERBOSE(myname + " about to runone");
@@ -147,7 +150,6 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   public synchronized void Start() {
     if (amStopped) {
       fifo.Clear();
-      // +++ have this guy reload configuration, etc? -- what configuration?
       try {
         dbg.ERROR("start thread:" + thread.getName());
         thread.start(); // !!! --- can't start this thread if it was ever run before !!!
@@ -166,9 +168,6 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   //one upon a time the "puts" were protected.
   //see new class 'OrderedVector' for intended cleanup of this class's public interface.
   protected int put(Qtype obj) {
-      if (dbg.willOutput(LogLevelEnum.VERBOSE.level)) {
-        dbg.VERBOSE("Posting:" + ReflectX.ObjectInfo(obj));
-      }
       int size = fifo.put(obj);
       boolean didnot = inputNotify();
       if (didnot) {
@@ -213,11 +212,6 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
     }
     return Stopped(); //first attempt to stop...
   }
-
-  // +++ add a pause/resume feature where the thread doesn't runone, but just sleeps over and over again?  this causes the queue to fill, but nothing to be waiter about the items.
-  // +++ separate start/clear
-  // +++ create a clearAndStart()
-
   /**
    * @return whether run loop has exited
    */
@@ -236,7 +230,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
     return waitingForInput.toSpam();
   }
 
-  // defaults the ordering to PriorityComparator.Reversed()
+  // defaults the ordering to Reversed()
   public static <Qtype extends Comparable<Qtype>> QAgent<Qtype> New(String threadname, QActor<Qtype> agent) {
     return New(threadname, agent, Comparator.reverseOrder());
   }

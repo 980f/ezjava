@@ -43,10 +43,6 @@ public class ObjectRange<T extends Comparable<T>> {
     this(true);
   }
 
-//  protected ObjectRange(String one, String two, boolean sorted) {
-//    this(sorted);
-//    setBoth(one, two);
-//  }
 
   public boolean singular() {
     if (isDirty) {
@@ -84,10 +80,6 @@ public class ObjectRange<T extends Comparable<T>> {
     return two;
   }
 
-//  public T filter(String input) {
-//    return new T(input);
-//  }
-
   public ObjectRange<T> setOne(T input) {
     dbg.VERBOSE("setOne():" + input);
     one = input;
@@ -102,6 +94,9 @@ public class ObjectRange<T extends Comparable<T>> {
     return this;
   }
 
+//  public T filter(String input) {
+//    return new T(input);
+//  }
 //  public ObjectRange setOne(String input) {
 //    return setOne(filter(input));
 //  }
@@ -112,6 +107,10 @@ public class ObjectRange<T extends Comparable<T>> {
 //public ObjectRange setBoth(String oner, String twoer) {
 //  return setOne(oner).setTwo(twoer);
 //}
+//  protected ObjectRange(String one, String two, boolean sorted) {
+//    this(sorted);
+//    setBoth(one, two);
+//  }
 
   public ObjectRange<T> setBoth(T oner, T twoer) {
     return setOne(oner).setTwo(twoer);
@@ -127,6 +126,26 @@ public class ObjectRange<T extends Comparable<T>> {
     return ret;
   }
 
+  /** @returns -1 if item is below range (<low), +1 if above range (>=high) , else 0 (inside halfOpen interval)
+   * this method does NOT check whether this range is sane. Expect NPE's etc. if it is badly initialized */
+  public int compare(T item){
+    int cmplow=one.compareTo(item);
+    if(cmplow<0){
+      return -1;
+    }
+    int cmphigh=two.compareTo(item);
+    if(cmphigh>=0){
+      return 1;
+    }
+    return 0;
+  }
+
+  /** @returns whether @param item is in range, if @param overlapped then range includes the higher bound.
+   * overlapped probably should be a member rather than a passed parameter. */
+  public boolean contains(T item, boolean overlapped) {
+    return compare(item) == 0 || overlapped && two.equals(item);
+  }
+
   protected ObjectRange swap() {
     dbg.VERBOSE("swapping");
     T exchange = one;
@@ -136,17 +155,17 @@ public class ObjectRange<T extends Comparable<T>> {
   }
 
   protected ObjectRange sort() {
-    dbg.VERBOSE("SORTING[" + (broad ? "" : "NOT") + "broad]: one[" + ReflectX.shortClassName(one) + "]=" + one + ", two[" + ReflectX.shortClassName(two) + "]=" + two);
+//    dbg.VERBOSE("SORTING[" + (broad ? "" : "NOT") + "broad]: one[" + ReflectX.shortClassName(one) + "]=" + one + ", two[" + ReflectX.shortClassName(two) + "]=" + two);
     if (broad) {
       int comp = two.compareTo(one);
       boolean shouldswap = (comp < 0);
-      dbg.VERBOSE("two.compareTo(one)=" + comp + ", so comp<0=" + shouldswap);
-      dbg.VERBOSE("fyi: one.compareTo(two)=" + one.compareTo(two));
+//      dbg.VERBOSE("two.compareTo(one)=" + comp + ", so comp<0=" + shouldswap);
+//      dbg.VERBOSE("fyi: one.compareTo(two)=" + one.compareTo(two));
       if (shouldswap) {
         swap();
       }
     }
-    dbg.VERBOSE("SORTED: one=" + one + ", two=" + two);
+//    dbg.VERBOSE("SORTED: one=" + one + ", two=" + two);
     return this;
   }
 

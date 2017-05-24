@@ -167,6 +167,7 @@ public class Storable {
   }
 
   public void setValue(boolean truly) {
+    setType(Boolean);
     bit = truly;
     value = truly ? 1.0 : 0.0;
     image = java.lang.Boolean.toString(bit);
@@ -260,7 +261,7 @@ public class Storable {
     return wasUnknown;
   }
 
-  public Type guessType() {
+  public Type guessType() {//todo:00 much work needed
     if (type == Type.Unclassified) {
       try {
         value = Double.parseDouble(image);//leave this as the overly picky parser
@@ -284,6 +285,7 @@ public class Storable {
     return kid;
   }
 
+  /** make a new child, does NOT check if the name is alredy in use. */
   @NotNull
   public Storable makeChild(String childname) {
     Storable kid = new Storable(childname);
@@ -399,14 +401,19 @@ public class Storable {
               field.setInt(obj, (int) child.getValue());
             }
             //todo: add clauses for the remaining field.setXXX methods.
-
             else {
               //time for recursive descent
-              int subchanges = child.applyTo(field.get(obj), narrow, aggressive);
-              if (subchanges >= 0) {
-                changes += subchanges;
+              final Object nestedObject = field.get(obj);
+              if(nestedObject==null){
+                dbg.WARNING("No object for field {0}",name);
+                //todo:1 option to create, which is not easy- it entails creating members recursively then finding a matching constructor, or we could require a nullargs constructor.
               } else {
-                dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
+                int subchanges = child.applyTo(nestedObject, narrow, aggressive);
+                if (subchanges >= 0) {
+                  changes += subchanges;
+                } else {
+                  dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
+                }
               }
               continue;//in order to not increment 'changes'
             }
@@ -420,7 +427,7 @@ public class Storable {
     return changes;
   }
 
-  public int apply(Object obj, boolean narrow, boolean aggressive) {
+  public int apply(Object obj, boolean narrow, boolean aggressive, boolean create) {
     if (obj == null) {
       return -1;
     }
@@ -432,7 +439,7 @@ public class Storable {
       Stored stored = field.getAnnotation(Stored.class);
       if (stored != null) {
         String name = field.getName();
-        Storable child = this.existingChild(name);
+        Storable child = create? this.child(name):this.existingChild(name);
         if (child != null) {
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();
@@ -451,11 +458,16 @@ public class Storable {
             //todo: add clauses for the remaining field.getXXX methods.
             else {
               //time for recursive descent
-              int subchanges = child.apply(field.get(obj), narrow, aggressive);
-              if (subchanges >= 0) {
-                changes += subchanges;
+              final Object nestedObject = field.get(obj);
+              if(nestedObject==null){
+                dbg.WARNING("No object for field {0}",name);
               } else {
-                dbg.ERROR(MessageFormat.format("Not yet recording fields of type {0}", fclaz.getCanonicalName()));
+                int subchanges = child.apply(nestedObject, narrow, aggressive, create);
+                if (subchanges >= 0) {
+                  changes += subchanges;
+                } else {
+                  dbg.ERROR(MessageFormat.format("Not yet recording fields of type {0}", fclaz.getCanonicalName()));
+                }
               }
               continue;//in order to not increment 'changes'
             }
