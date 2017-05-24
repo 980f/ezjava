@@ -28,10 +28,13 @@ public class Ticks {
     return days * perDay;
   }
 
-  // should be longs?
+  /** for short time intervals */
   public static int toIntSeconds(long ticks) { // truncates for now
     return (int) (ticks / perSecond);
   }
 
+  public static double toSeconds(long ticks){
+    return ((double)ticks)/perSecond;
+  }
 }
 

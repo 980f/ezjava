@@ -266,7 +266,7 @@ public class Storable {
       } else if (newtype == Numeric ) {
         value = StringX.parseDouble(image);
       } else if(newtype==Boolean){
-        bit=parseBool(image);
+        parseBool(image);//#returns whether the field appeared to be boolean.
       }
       //more such mappings might make sense
       type = newtype;

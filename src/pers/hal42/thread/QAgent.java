@@ -29,7 +29,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   private final Waiter waitingForInput;
   /** if the queue is empty then this object (if not null) is passed to the actor */
   private Qtype idleObject = null;
-  private static final long failsafeKeepAlive = Ticks.forSeconds(100);// a zero keepalive is heinous
+  private static final long failsafeKeepAlive = Ticks.forSeconds(0.01);// a zero keepalive is heinous
   private static ErrorLogStream classdbg;
 
   /**
@@ -154,7 +154,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
         dbg.ERROR("start thread:" + thread.getName());
         thread.start(); // !!! --- can't start this thread if it was ever run before !!!
       } catch (IllegalThreadStateException ignore) {
-        dbg.WARNING("QAgent.Clear():" + String.valueOf(ignore));
+        dbg.WARNING("QAgent.Start():" + String.valueOf(ignore));
       }
     } else {
       dbg.VERBOSE("gratuitous attempt to start a running agent");

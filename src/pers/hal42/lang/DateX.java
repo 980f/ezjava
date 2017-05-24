@@ -13,15 +13,15 @@ import java.util.Date;
 public class DateX {
   /////////////////////////////////////////////////////////////////////////////
   // date / time stuff
-  static final LocalTimeFormat stamper = LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS");
-  static final LocalTimeFormat yearlessstamper = LocalTimeFormat.Utc("MMdd.HHmmss.SSS");
-  private static final Monitor timeMon = new Monitor("DateX.timeStamp");
-  private static final Monitor yearlesstimeMon = new Monitor("DateX.timeStampYearless");
+//  static final LocalTimeFormat stamper = LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS");
+//  static final LocalTimeFormat yearlessstamper = LocalTimeFormat.Utc("MMdd.HHmmss.SSS");
+//  private static final Monitor timeMon = new Monitor("DateX.timeStamp");
+//  private static final Monitor yearlesstimeMon = new Monitor("DateX.timeStampYearless");
   ///////////////////////////////
 //  create a separate class for this ???
-  private static final DecimalFormat secsNMillis = new DecimalFormat("#########0.000");
-  private static final Monitor secsNMillisMonitor = new Monitor("secsNMillis");
-  private static final StringBuffer sbsnm = new StringBuffer();
+//  private static final DecimalFormat secsNMillis = new DecimalFormat("#########0.000");
+//  private static final Monitor secsNMillisMonitor = new Monitor("secsNMillis");
+//  private static final StringBuffer sbsnm = new StringBuffer();
   /**
    * store the amount to add to the clock to get outside world's time.
    */
@@ -40,23 +40,23 @@ public class DateX {
   }
 
   private static String timeStamp(Date today) {
-    try (AutoCloseable free = timeMon.getMonitor()) {
-      return stamper.format(today);
-    } catch (Exception e) {
-      // +++ deal with this
-      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
-      return "oops";
-    }
+//    try (AutoCloseable free = timeMon.getMonitor()) {
+      return LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS").format(today);
+//    } catch (Exception e) {
+//      // +++ deal with this
+//      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
+//      return "oops";
+//    }
   }
 
   public static String timeStampYearless(Date today) {
-    try (AutoCloseable free = yearlesstimeMon.getMonitor()) {
-      return yearlessstamper.format(today);
-    } catch (Exception e) {
-      // +++ deal with this
-      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
-      return "";
-    }
+//    try (AutoCloseable free = yearlesstimeMon.getMonitor()) {
+      return LocalTimeFormat.Utc("MMdd.HHmmss.SSS").format(today);
+//    } catch (Exception e) {
+//      // +++ deal with this
+//      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
+//      return "";
+//    }
   }
 
   public static String timeStamp(long millis) {
@@ -98,14 +98,14 @@ public class DateX {
   }
 
   public static String millisToSecsPlus(long millis) {
-    try (AutoCloseable free = secsNMillisMonitor.getMonitor()) {
-      sbsnm.setLength(0);
-      double secs = 1.0 * millis / Ticks.perSecond;
-      secsNMillis.format(secs, sbsnm, new FieldPosition(NumberFormat.INTEGER_FIELD));
+//    try (AutoCloseable free = secsNMillisMonitor.getMonitor()) {
+    final StringBuffer sbsnm = new StringBuffer();
+      double secs = Ticks.toSeconds(millis);
+      new DecimalFormat("#########0.000").format(secs, sbsnm, new FieldPosition(NumberFormat.INTEGER_FIELD));
       return String.valueOf(sbsnm);
-    } catch (Exception e) {
-      return "";
-    }
+//    } catch (Exception e) {
+//      return "";
+//    }
   }
 
   private static long ClockSkew() {
