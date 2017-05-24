@@ -34,7 +34,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
 
   /**
    * @param threadname     used solely for debugging
-   * @param actor          handles objects taken from fifo
+   * @param actor          handles objects taken from storage
    * @param ordering       can be null if the incoming objects are NEVER Comparable
    * @param threadPriority sets the new thread's priority
    */
@@ -168,7 +168,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   //one upon a time the "puts" were protected.
   //see new class 'OrderedVector' for intended cleanup of this class's public interface.
   protected int put(Qtype obj) {
-      int size = fifo.put(obj);
+      int size = fifo.put(obj);//note: the object may be pulled from the fifo by the time put returns.
       boolean didnot = inputNotify();
       if (didnot) {
         dbg.WARNING("inputNotify() did NOT have an effect.");
@@ -181,7 +181,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
    *            this version always replaces old with new.
    * @return true if overwrote rather than added
    */
-  public boolean putUnique(Qtype obj) {
+  public boolean PostUnique(Qtype obj) {
     synchronized (fifo) {//#need to synch the remove against the put
       boolean retval = removeAny(obj) != 0;
       put(obj);

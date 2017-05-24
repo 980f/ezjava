@@ -217,7 +217,7 @@ class ByteFifoBlockingInputStream extends ByteFifoInputStream {
 
   public int read() throws IOException {
     if (!isClosed) {
-      synchronized (this) {//must enclose all references to fifo object in a single synch
+      synchronized (this) {//must enclose all references to storage object in a single synch
         if (available() == 0) {
           forData.Start(Long.MAX_VALUE);//doesn't actually start, just configs
           switch (forData.run()) {
@@ -253,14 +253,14 @@ abstract class ByteFifoInputStream extends InputStream {
 
   /**
    *
-   * @return byte read from fifo, blocks if fifo is empty
+   * @return byte read from storage, blocks if storage is empty
    * @throws IOException when stream closed while waiting for input. all other exceptions are pathological.
    */
   public int read() throws IOException {
     if (isClosed) {
       throw new IOException("Stream is closed");
     } else {
-      synchronized (this) {//must enclose all references to fifo object in a single synch
+      synchronized (this) {//must enclose all references to storage object in a single synch
         return fifo.simpleRead();
       }
     }

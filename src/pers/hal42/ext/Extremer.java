@@ -16,6 +16,14 @@ public class Extremer<Scalar extends Number> {
   boolean preferLatter = false;
   boolean started = false;
 
+  public Extremer(Scalar guard){
+    extremum=guard;
+    //but DONT start, so can have an absurd init value for those who are careless abour checking 'started' before using 'extremum'
+  }
+
+  public Extremer(){
+
+  }
   /**
    * @return the extreme value if any values were presented, else @param ifNone
    */

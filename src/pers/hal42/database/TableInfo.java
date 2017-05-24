@@ -1,35 +1,42 @@
 package pers.hal42.database;
 
+import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.StringX;
 
 /**
- * Title:
- * Description:
- * Copyright:    Copyright (c) 2000
- * Company:      PayMate.net
- *
- * @author PayMate.net
- * @version $Id: TableInfo.java,v 1.8 2003/08/27 02:20:11 mattm Exp $
+
  */
 
-public class TableInfo implements Comparable {
+public class TableInfo implements Comparable<TableInfo> {
+  //don't want to depend upon db connection features for these:
+  public static String SharedCatalog;
+  public static String SharedSchema;
 
   private String catalog;
   private String schema;
+
+  public void setSchema(String schema) {
+    this.schema = schema;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
   private String name;
   private String type;
   private String remark;
 
   public TableInfo(String catalog, String schema, String name, String type, String remark) {
-    this.catalog = StringX.TrivialDefault(catalog, "");
-    this.schema = StringX.TrivialDefault(schema, "");
-    this.name = StringX.TrivialDefault(name, "").toLowerCase(); // FOR PG!
-    this.type = StringX.TrivialDefault(type, "");
+    this.catalog = StringX.TrivialDefault(catalog, SharedCatalog);
+    this.schema = StringX.TrivialDefault(schema, SharedSchema);
+    this.name = StringX.TrivialDefault(name, "").toLowerCase(); // lowercase FOR PostGres
+    this.type = StringX.TrivialDefault(type, "TABLE");//else view et al.
     this.remark = StringX.TrivialDefault(remark, "");
   }
 
   public TableInfo(String name) {
-    this("", "", name, "", "");
+    this(null, null, name, null, null);
   }
 
   public String catalog() {
@@ -52,8 +59,15 @@ public class TableInfo implements Comparable {
     return remark;
   }
 
-  public int compareTo(Object o) {
-    TableInfo ti = (TableInfo) o;
-    return name().compareTo(ti.name());
+  @Override
+  public int compareTo(@NotNull TableInfo o) {
+    int diff=catalog.compareTo(o.catalog);
+    if(diff==0){
+      diff=schema.compareTo(o.schema);
+      if(diff==0){
+        diff=name.compareTo(o.name);
+      }
+    }
+    return diff;
   }
 }

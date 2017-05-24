@@ -8,16 +8,25 @@ import pers.hal42.thread.Counter;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 public class GenericDB {
 
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(GenericDB.class);
+  private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
+  private static final Counter metaDataCounter = new Counter();
+  private final Monitor connMonitor;
+  /**
+   * whether conn is not null and is likely usable. clear this if the non-null connection gave you trouble.
+   */
+  public boolean connectOk = false;
   /**
    * replaced pool with a regenerator
    */
   protected DBConn dbConnector;
 
-//  protected boolean validated() {
+  //  protected boolean validated() {
 //    return (cpool != null) && cpool.validated;
 //  }
 //
@@ -48,25 +57,24 @@ public class GenericDB {
 //  }
 //private ConnectionPool cpool;
   private DBConnInfo connInfo;
+  /**
+   * the live connection, see connectOk
+   */
   private Connection conn;
   private String myThreadName = "NOTSETYET";
-  private final Monitor connMonitor;
-
-  /** last fetched metadata */
+  /**
+   * last fetched metadata
+   */
   private DatabaseMetaData dbmd; // saved for debug
-
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(GenericDB.class);
-  private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
-  private static final Counter metaDataCounter = new Counter();
 
   public GenericDB(DBConnInfo connInfo, String threadname) {
     connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
     try (AutoCloseable free = genericDBclassMonitor.getMonitor()) {
       this.myThreadName = threadname;
       this.connInfo = connInfo;
-      dbg.VERBOSE("Preloading driver class {0}",connInfo.drivername);
-      if(!ReflectX.preloadClass(connInfo.drivername)){
-        dbg.ERROR("Preloading driver class {0} failed",connInfo.drivername);
+      dbg.VERBOSE("Preloading driver class {0}", connInfo.drivername);
+      if (!ReflectX.preloadClass(connInfo.drivername)) {
+        dbg.ERROR("Preloading driver class {0} failed", connInfo.drivername);
       }
 //      cpool = list.get(connInfo);
       getConnection();
@@ -82,9 +90,16 @@ public class GenericDB {
   public void releaseConn() {
     try {
       if (conn != null) {
+        dbg.VERBOSE("releasing connection for thread {0}",myThreadName);
 //        list.get(connInfo).checkIn(conn);
-        conn = null;
-        dbg.WARNING("releasing connection for thread \"" + myThreadName + "\" !");
+        try {
+          conn.close();
+        } catch (SQLException e) {
+          dbg.VERBOSE("Closing discarded connection");
+        } finally {
+          connectOk=false;//forget we ahve one
+          conn = null;
+        }
       }
     } catch (Exception e) {
       dbg.Caught(e);
@@ -108,23 +123,42 @@ public class GenericDB {
     }
   }
 
+  public boolean haveConnection() {
+    if (conn == null) {
+      getConnection();
+    }
+    return connectOk;
+  }
+
   public final Connection getConnection() {
 
     try (AutoCloseable monitor = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
-      if(dbConnector==null) {
+      if (!connectOk && conn != null) {
+        releaseConn();
+      }
+      if (dbConnector == null) {
         dbConnector = new DBConn();
       }
       if (conn == null) {
-        dbg.WARNING("conn is null, so getting new connection for thread \"" + myThreadName + "\" !");
+        dbg.WARNING("Getting new connection for thread \"" + myThreadName + "\" !");
 //        conn = cpool.checkOut();
         conn = dbConnector.makeConnection(connInfo);
       }
-    } catch (Exception ex) {
-      dbg.Caught(ex);
-    } finally {
-      return conn;
+    } catch (Exception e) {
+      dbg.Caught(e,"getConnection");
+    }
+    connectOk=conn!=null;
+    return conn;
+  }
+
+  public Statement makeStatement() throws SQLException {
+    if (haveConnection()) {
+      return conn.createStatement();
+    } else {
+      return null;
     }
   }
+
 
 }
 

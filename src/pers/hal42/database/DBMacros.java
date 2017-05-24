@@ -1,5 +1,6 @@
 package pers.hal42.database;
 
+import com.fedfis.Namers;
 import pers.hal42.lang.Bool;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.ObjectX;
@@ -15,6 +16,7 @@ import pers.hal42.transport.EasyProperties;
 import pers.hal42.util.PrintFork;
 
 import java.sql.*;
+import java.text.MessageFormat;
 import java.util.Vector;
 
 /*
@@ -25,11 +27,7 @@ import java.util.Vector;
 enum DBFunctionType {
   UPDATE, QUERY, NEXT;
 
-  public static final String[] myTexts = {
-    "Update: ",
-    "Query:  ",
-    "Next(): ",
-  };
+  public static final String[] myTexts = {"Update: ", "Query:  ", "Next(): ",};
 
   public int numValues() {
     return 3;
@@ -42,7 +40,6 @@ enum DBFunctionType {
 }
 
 public class DBMacros extends GenericDB {
-  Counter queryCounter = new Counter(); // used to number queries for loggin purposes
   public static final String ALLTABLES = null;
   public static final int FAILED = -1; //where #of rows is expected
   protected static final Tracer dbv = new Tracer(DBMacros.class, "Validator");
@@ -58,7 +55,6 @@ public class DBMacros extends GenericDB {
   public static Accumulator updateStats = new Accumulator();
   public static Accumulator nextStats = new Accumulator();
   private static Monitor timerStrMon = new Monitor("DBMacros.timerStr");
-
   //  public String getCatStringsFromRS(ResultSet rs, String div) {
 //    String result = "";
 //    String [] results = getStringsFromRS(rs);
@@ -88,25 +84,26 @@ public class DBMacros extends GenericDB {
 //    return result.trim();
 //  }
   private static PrintFork pf = null;
+  Counter queryCounter = new Counter(); // used to number queries for loggin purposes
 
   public DBMacros(DBConnInfo connInfo, String threadname) {
     super(connInfo, threadname);
   }
 
-  public final EasyProperties colsToProperties(QueryString qs, ColumnProfile ignoreColumn) {
-    EasyProperties ezc = new EasyProperties();
-    try {
-      Statement stmt = query(qs);
-      if (stmt == null) {
-        dbg.ERROR("Can't convert cols to properties if stmt is null!");
-      } else {
-        ResultSet rs = getResultSet(stmt);
-        ezc = colsToProperties(rs, ignoreColumn);
+  public static ResultSetMetaData getRSMD(ResultSet rs) {
+    ResultSetMetaData rsmd = null;
+    if (rs != null) {
+      try {
+        dbg.VERBOSE("Calling ResultSet.getMetaData() ...");
+        rsmd = rs.getMetaData();
+      } catch (SQLException e) {
+        dbg.ERROR("Exception occurred getting ResultSetMetaData!");
+        dbg.Caught(e);
+      } finally {
+        dbg.VERBOSE("Done calling ResultSet.getMetaData().");
       }
-    } catch (Exception ex) {
-      dbg.Caught(ex);
     }
-    return ezc;
+    return rsmd;
   }
 
 //  public TextList getTextListColumnFromRS(ResultSet rs) {
@@ -126,6 +123,325 @@ public class DBMacros extends GenericDB {
 //    dbg.WARNING("returning: " + tl);
 //    return tl;
 //  }
+
+  public static EasyProperties colsToProperties(ResultSet rs, ColumnProfile ignoreColumn) {
+    EasyProperties ezc = new EasyProperties();
+    try {
+      if ((rs != null) && (next(rs))) {
+        ResultSetMetaData rsmd = getRSMD(rs);
+        for (int col = rsmd.getColumnCount() + 1; col-- > 1; ) {// functions start with column 1!
+          String name = rsmd.getColumnName(col);
+          if (ObjectX.NonTrivial(ignoreColumn) && StringX.equalStrings(ignoreColumn.displayName(), name)) {
+            dbg.WARNING("colsToProperties: Ignoring field " + ignoreColumn.fullName());
+          } else {
+            ColumnTypes dbt = ColumnTypes.valueOf(rsmd.getColumnTypeName(col));
+            if (dbt == ColumnTypes.BOOL) {
+              ezc.setBoolean(name, getBooleanFromRS(col, rs));
+            } else {
+              ezc.setString(name, getStringFromRS(col, rs));
+            }
+          }
+        }
+      } else {
+        dbg.ERROR("Can't convert cols to properties if resultset is null!");
+      }
+    } catch (Exception ex) {
+      dbg.Caught(ex);
+    }
+    return ezc;
+  }
+
+  private static void logQuery(DBFunctionType qt, long millis, int retval, boolean regularLog, long qn) {
+    String toLog = "exception attempting to log the query";
+    try (AutoCloseable free = timerStrMon.getMonitor()) {
+      // create a pool of DBFunctionTypes and Fstrings that you can reuse [no mutexing == faster].
+      toLog = "'can'this figure out what javac doesn't like about the following complex message, ie replace with Message.Format ";
+//        qt.toString()
+//        + (qt==DBFunctionType.NEXT )? "" : " END   " + qn + " "
+//        +  timerStr.righted(String.valueOf(millis)) + " ms " +
+//          (qt==DBFunctionType.UPDATE) ? " returned " + retval : "";
+      if (regularLog) {
+        dbg.WARNING(toLog);
+      }
+      log(toLog);
+    } catch (Exception e) {
+      dbg.Caught(e);
+    }
+  }
+
+  private static void preLogQuery(int qt, QueryString query, boolean regularLog, long qn) {
+    try {
+      DBFunctionType qtype = DBFunctionType.class.getEnumConstants()[qt];
+      String toLog = qtype.toString() + " BEGIN " + qn + " = " + query;
+      if (regularLog) {
+        dbg.WARNING(toLog);
+      }
+      log(toLog);
+    } catch (Exception e) {
+      dbg.Caught(e);
+    }
+  }
+
+  public static String getStringFromRS(String fieldName, ResultSet myrs) {
+    return getStringFromRS(NOT_A_COLUMN, fieldName, myrs);
+  }
+
+  public static String getStringFromRS(ColumnProfile field, ResultSet myrs) {
+    return getStringFromRS(field.name(), myrs);
+  }
+
+  // presumed only done once by one thread
+  public static boolean init() {
+//    if (service == null) {
+//      service = new DBMacrosService(new PayMateDBDispenser()); // setup the service
+//      service.initLog();
+//    }
+//    pf = service.logFile.getPrintFork();
+//    pf.println("inited OK");
+    return true;
+  }
+
+  private static void log(String toLog) {
+    if (pf != null) {
+      try {
+        pf.println(toLog);
+      } catch (Exception e) {
+        dbg.Caught(e);
+      }
+    }
+  }
+
+  public static String getStringFromRS(int column, ResultSet myrs) {
+    return getStringFromRS(column, null, myrs);
+  }
+
+  private static String getStringFromRS(int column, String fieldName, ResultSet myrs) {
+    String ret = null;
+    try {
+      if (myrs != null) {//valid non empty resultset
+        if (column < 1) {//code that tells us to use the name field
+          try {
+            dbg.VERBOSE("Calling ResultSet.findColumn() ...");
+            column = myrs.findColumn(fieldName);//excepts if results set is empty!
+          } catch (SQLException ex) {
+            dbg.VERBOSE("Coding error: \n" + ErrorLogStream.whereAmI());
+            dbg.VERBOSE(ex.getMessage() + " - see next line for args...");
+          } finally {
+            dbg.VERBOSE("Done calling ResultSet.findColumn().");
+          }
+        }
+        if (column < 1) {//happens when field is present but result set is empty.
+          dbg.ERROR("getStringFromRS: column [" + fieldName + "] (not included in query?): ");
+        } else {
+          try {
+            dbg.VERBOSE("Calling ResultSet.getString() ...");
+            ret = myrs.getString(column);
+            //} catch (Exception ex) {
+          } finally {
+            dbg.VERBOSE("Done calling ResultSet.getString().");
+          }
+        }
+      }
+    } catch (Exception t) {
+      dbg.ERROR("getStringFromRS: Exception getting column [" + column + "/" + fieldName + "] (not included in query?): ");
+      dbg.Caught(t);
+    }
+    // --------------- NEXT LINE COULD BE CAUSING PROBLEMS,
+    // but try to fix the problems elsewhere so that we can preserve empty strings here.
+    // return StringX.OnTrivial(StringX.TrivialDefault(ret, "").trim(), " "); // Why are we doing this ?!?!?!?  I think because leaving it out makes empty (raised) boxes in the html tables, but we should fix those in the html tables, and not here.
+    return StringX.TrivialDefault(ret, "").trim();
+  }
+
+  public static int getIntFromRS(int column, ResultSet myrs) {
+    return StringX.parseInt("0" + getStringFromRS(column, myrs));//--- parseInt can deal with null and non-decimal returns
+  }
+
+  public static int getIntFromRS(String column, ResultSet myrs) {
+    return StringX.parseInt(getStringFromRS(column, myrs));
+  }
+
+  public static int getIntFromRS(ColumnProfile column, ResultSet myrs) {
+    return getIntFromRS(column.name(), myrs);
+  }
+
+  public static long getLongFromRS(String column, ResultSet myrs) {
+    return StringX.parseLong(getStringFromRS(column, myrs));
+  }
+
+  public static long getLongFromRS(ColumnProfile column, ResultSet myrs) {
+    return getLongFromRS(column.name(), myrs);
+  }
+
+  public static boolean getBooleanFromRS(int column, ResultSet myrs) {
+    return Bool.For(getStringFromRS(column, myrs));
+  }
+
+  public static boolean getBooleanFromRS(String column, ResultSet myrs) {
+    String boolstr = getStringFromRS(column, myrs);
+    boolean ret = Bool.For(boolstr);
+    dbg.VERBOSE("Returning " + ret + " for string " + boolstr);
+    return ret;
+  }
+
+  public static boolean getBooleanFromRS(ColumnProfile column, ResultSet myrs) {
+    return getBooleanFromRS(column.name(), myrs);
+  }
+
+//  private void checkDBthreadSelect() {
+//    DBMacros should = PayMateDBDispenser.getPayMateDB();
+//    DBMacros is = this;
+//    if(should != is) {
+//      TextList tl = dbg.whereAmI();
+//      String msg = "Thread's db NOT= this!";
+//      if(service != null) {
+//        service.PANIC(msg);
+//      }
+//      dbg.ERROR(msg + "\n" + tl);
+//    }
+//  }
+
+  /**
+   * TODO:
+   * +++ Improve the pagination of records [only for search screen, drawers listing, etc.]:
+   * boolean isBeforeFirst() throws SQLException;
+   * boolean isAfterLast() throws SQLException;
+   * boolean isFirst() throws SQLException;
+   * boolean isLast() throws SQLException;
+   * void beforeFirst() throws SQLException;
+   * void afterLast() throws SQLException;
+   * boolean first() throws SQLException;
+   * boolean last() throws SQLException;
+   * int getRow() throws SQLException;
+   * boolean absolute( int row ) throws SQLException;
+   * boolean relative( int rows ) throws SQLException;
+   * boolean previous() throws SQLException;
+   */
+  public static boolean next(ResultSet rs) {
+    return next(rs, null);
+  }
+
+  // a timer is passed in so that it can be used,
+  // in case the caller wants to know how long it took.
+  // if the timer is null, we create one locally,
+  // as we use that timer to add times to our accumulator for service reporting.
+  public static boolean next(ResultSet rs, StopWatch swatch) {
+    if (swatch == null) {
+      swatch = new StopWatch(false);
+    }
+    swatch.Start(); // to be sure to start either passed-in or locally-created ones
+    boolean ret = false;
+    try {
+      if (rs != null) {
+        dbg.VERBOSE("Calling ResultSet.next() ...");
+        ret = rs.next();
+      }
+    } catch (Exception e) {
+      dbg.ERROR("next() excepted attempting to get the next row in the ResultSet ... ");
+      dbg.Caught(e);
+    } finally {
+      if (rs != null) {
+        dbg.VERBOSE("Done calling ResultSet.next().");
+      }
+      long dur = swatch.Stop();
+      nextStats.add(dur);
+      if (dur > 0) {
+        logQuery(DBFunctionType.NEXT, dur, -1, false, -1);
+      }
+      return ret;
+    }
+  }
+
+  public static ResultSet getResultSet(Statement stmt) {
+    ResultSet ret = null;
+    try {
+      if (stmt != null) {
+        dbg.VERBOSE("Calling Statement.getResultSet() ...");
+        ret = stmt.getResultSet();
+      }
+    } catch (Exception e) {
+      dbg.ERROR("getRS excepted attempting to get the ResultSet from the executed statement");
+      dbg.Caught(e);
+    } finally {
+      if (stmt != null) {
+        dbg.VERBOSE("Done calling Statement.getResultSet().");
+      }
+      return ret;
+    }
+  }
+
+  public static void closeCon(Connection con) {
+    if (con != null) {
+      try {
+        dbg.VERBOSE("Calling Connection.close() ...");
+        con.close();
+      } catch (Exception t) {
+        dbg.WARNING("Exception closing connection.");
+      } finally {
+        dbg.VERBOSE("Done calling Connection.close().");
+      }
+    }
+  }
+
+  public static void closeStmt(Statement stmt) {
+    if (stmt != null) {
+      try {
+        dbg.VERBOSE("Calling Statement.close() ...");
+        stmt.close();
+      } catch (Exception t) {
+        dbg.WARNING("Exception closing statement.");
+      } finally {
+        dbg.VERBOSE("Done calling Statement.close().");
+      }
+    }
+  }
+
+  /**
+   * ONLY use with resultsets that have no statement (like are returned by DatabaseMetadata functions)
+   */
+  public static void closeRS(ResultSet rs) {
+    if (rs != null) {
+      try {
+        dbg.VERBOSE("Calling ResultSet.close() ...");
+        rs.close();
+      } catch (Exception t) {
+        dbg.WARNING("Exception closing result set.");
+      } finally {
+        dbg.VERBOSE("Done calling ResultSet.close().");
+      }
+    }
+  }
+
+  public static Statement getStatement(ResultSet rs) {
+    try {
+      if (rs != null) {
+        dbg.VERBOSE("Calling ResultSet.getStatement() ...");
+        return rs.getStatement();
+      }
+    } catch (Exception t) {
+      dbg.WARNING("Exception getting statement from resultset.");
+    } finally {
+      if (rs != null) {
+        dbg.VERBOSE("Done calling ResultSet.getStatement().");
+      }
+    }
+    return null;
+  }
+
+  public final EasyProperties colsToProperties(QueryString qs, ColumnProfile ignoreColumn) {
+    EasyProperties ezc = new EasyProperties();
+    try {
+      Statement stmt = query(qs);
+      if (stmt == null) {
+        dbg.ERROR("Can't convert cols to properties if stmt is null!");
+      } else {
+        ResultSet rs = getResultSet(stmt);
+        ezc = colsToProperties(rs, ignoreColumn);
+      }
+    } catch (Exception ex) {
+      dbg.Caught(ex);
+    }
+    return ezc;
+  }
 
   public final EasyProperties rowsToProperties(QueryString qs, String nameColName, String valueColName) {
     EasyProperties ezc = new EasyProperties();
@@ -388,19 +704,6 @@ public class DBMacros extends GenericDB {
     return StringX.parseInt(StringX.TrivialDefault(getStringFromQuery(queryStr, field), "-1"));
   }
 
-//  private void checkDBthreadSelect() {
-//    DBMacros should = PayMateDBDispenser.getPayMateDB();
-//    DBMacros is = this;
-//    if(should != is) {
-//      TextList tl = dbg.whereAmI();
-//      String msg = "Thread's db NOT= this!";
-//      if(service != null) {
-//        service.PANIC(msg);
-//      }
-//      dbg.ERROR(msg + "\n" + tl);
-//    }
-//  }
-
   public double getDoubleFromQuery(QueryString queryStr, int field) {
     return StringX.parseDouble(getStringFromQuery(queryStr, field));
   }
@@ -412,6 +715,75 @@ public class DBMacros extends GenericDB {
   public double getDoubleFromRS(String column, ResultSet myrs) {
     return StringX.parseDouble(getStringFromRS(column, myrs));
   }
+
+//  public static final int getColumnCount(ResultSetMetaData rsmd) {
+//    int ret = 0;
+//    try {
+//      dbg.VERBOSE("Calling ResultSetMetaData.getColumnCount() ...");
+//      ret = rsmd.getColumnCount();
+//    } catch (Exception e) {
+//      dbg.ERROR("getColumnCount() excepted attempting to get column count from the ResultSetMetaData");
+//    } finally {
+//      dbg.VERBOSE("Done calling ResultSetMetaData.getColumnCount().");
+//      return ret;
+//    }
+//  }
+//
+//  public int getColumnCount(ResultSet rs) {
+//    return getColumnCount(getRSMD(rs));
+//  }
+
+//  public static final int NAME    = 0;
+//  public static final int TYPE    = 1;
+//  public static final int SIZE    = 2;
+//  public static final int NULLABLE= 3;
+//
+//  public static final String ISNOTNULLABLE = "NOT NULL";
+//  public static final String ISNULLABLE = "";
+//
+//  public static final String getColumnAttr(ResultSetMetaData rsmd, int what, int rsCol) {
+//    String ret = null;
+//    try {
+//      switch(what) {
+//        case NAME: {
+//          try {
+//            dbg.VERBOSE("Calling ResultSetMetaData.getColumnLabel() ...");
+//            ret = rsmd.getColumnLabel(rsCol);
+//          } finally {
+//            dbg.VERBOSE("Done calling ResultSetMetaData.getColumnLabel().");
+//          }
+//        } break;
+//        case TYPE: {
+//          try {
+//            dbg.VERBOSE("Calling ResultSetMetaData.getColumnTypeName() ...");
+//            ret = rsmd.getColumnTypeName(rsCol);
+//          } finally {
+//            dbg.VERBOSE("Done calling ResultSetMetaData.getColumnTypeName().");
+//          }
+//        } break;
+//        case SIZE: {
+//          try {
+//            dbg.VERBOSE("Calling ResultSetMetaData.getColumnDisplaySize() ...");
+//            ret = "" + rsmd.getColumnDisplaySize(rsCol);
+//          } finally {
+//            dbg.VERBOSE("Done calling ResultSetMetaData.getColumnDisplaySize().");
+//          }
+//        } break;
+//        case NULLABLE: {
+//          try {
+//            dbg.VERBOSE("Calling ResultSetMetaData.isNullable() ...");
+//            ret = ((rsmd.isNullable(rsCol) == ResultSetMetaData.columnNullable) ? ISNULLABLE: ISNOTNULLABLE);
+//          } finally {
+//            dbg.VERBOSE("Done calling ResultSetMetaData.isNullable().");
+//          }
+//        } break;
+//      }
+//    } catch (Exception e) {
+//      dbg.ERROR("getColumnAttr() excepted attempting to get column info from the ResultSetMetaData");
+//      dbg.Caught(e);
+//    }
+//    return ret;
+//  }
 
   public Statement query(QueryString queryStr, boolean throwException) throws Exception {
     return query(queryStr, throwException, true /*canReattempt*/);
@@ -513,6 +885,19 @@ public class DBMacros extends GenericDB {
   public int update(QueryString queryStr, boolean throwException) throws SQLException {
     return update(queryStr, throwException, /*canReattempt*/ true);
   }
+
+//  // for this version of postgresql jdbc, the fetch size is the WHOLE thing!
+//  public static final int getResultSetFetchSize(ResultSet rs) {
+//    try {
+//      return rs.getFetchSize();
+//    } catch (Exception ex) {
+//      dbg.Caught(ex);
+//      return -1;
+//    }
+//  }
+
+  ////////////////////////////////////
+  // database profiling
 
   //todo: replace 'throwException' with an exception member on the QueryString and never throw from herein, instead return an error code.
   private int update(QueryString queryStr, boolean throwException, boolean canReattempt) throws SQLException {
@@ -622,6 +1007,55 @@ public class DBMacros extends GenericDB {
     }
   }
 
+//  public int getColumnSize(String tablename, String fieldname) {
+//    int ret = 0;
+//    TableProfile dbp = profileTable(tablename);
+//    if(dbp != null) {
+//      ColumnProfile cp = dbp.column(fieldname);
+//      if(cp != null) {
+//        ret = cp.size();
+//      } else {
+//        dbg.ERROR("getColumnSize is returning " + ret + " since the cp is null!");
+//      }
+//    } else {
+//      dbg.ERROR("getColumnSize is returning " + ret + " since the dbp is null!");
+//    }
+//    return ret;
+//  }
+
+//  private static final EasyProperties ezp = new EasyProperties();
+//  private static boolean ezpset = false;
+//  private static final Monitor javaSqlTypesMonitor = new Monitor(DBMacros.class.getName()+".javaSqlTypes");
+//  public static final String javaSqlType(String typeNum) {
+//    String ret = "";
+//    int type = StringX.parseInt(typeNum);
+//    // lock
+//    try {
+//      javaSqlTypesMonitor.getMonitor();
+//      // only have to do this once per run
+//      if(!ezpset) {
+//        // use reflection to find every 'public final static int' in the class java.sql.Types, and add the item to ezp
+//        try {
+//          Class c = java.sql.Types.class;
+//          Field[] fields = c.getFields();
+//          for(int i = fields.length; i-->0;) {
+//            Field field = fields[i];
+//            int ivalue = field.getInt(c); // probably doesn't work
+//            String value = String.valueOf(ivalue);
+//            ezp.setString(value, field.getName());
+//          }
+//        } catch (Exception e) {
+//          /* abandon all hope ye who enter here */
+//        }
+//        ezpset = true;
+//      }
+//    } finally {
+//      javaSqlTypesMonitor.freeMonitor();
+//    }
+//    ret = ezp.getString(typeNum, "");
+//    return ret;
+//  }
+
   public final boolean getBooleanFromQuery(QueryString qry, int column) {
     return Bool.For(getStringFromQuery(qry, column));
   }
@@ -637,46 +1071,55 @@ public class DBMacros extends GenericDB {
   /**
    * Get the tables for the connected database
    */
-  private ResultSet getTables() {
+  private ResultSet getTables(TableInfo ti) {
     ResultSet rs = null;
     try {
-      String types[] = {
-        "TABLE",
-        "VIEW",
+      if(false) {
+        String types[] = {"BASE TABLE",//mysql's text for this.
+          //--mysql doesn't allow query on this      "VIEW",
 //        "SYSTEM TABLE",
 //        "GLOBAL TEMPORARY",
 //        "LOCAL TEMPORARY",
 //        "ALIAS",
 //        "SYNONYM",
-      };
-      dbg.VERBOSE("Calling DatabaseMetadata.getTables() ...");
-      rs = getDatabaseMetadata().getTables(null, null, null, types);
+        };
+        rs = getDatabaseMetadata().getTables(ti.catalog(), ti.schema(), ti.name(), types);
+      } else {//mysql stuff, can't get a handle on what they want in the above query but they don't like it.
+        Statement stmt=makeStatement();
+        if(stmt!=null){
+          String query=MessageFormat.format(
+            "SELECT * FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name WHERE t.table_schema = ''{0}'' and t.table_name LIKE ''{1}'';", ti.schema(),ti.name());
+          if(stmt.execute(query)){
+            rs=stmt.getResultSet();
+
+          }
+
+        }
+
+      }
+      SQLWarning barf=rs.getWarnings();
+      dbg.WARNING(barf.getMessage());
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      dbg.VERBOSE("Done calling DatabaseMetadata.getTables().");
     }
     return rs;
   }
 
-  public TableInfoList getTableList() {
+  public TableInfoList getTableList(TableInfo tableInfo) {
     // get the list of all tables in the new database
     TableInfoList tables = new TableInfoList();
-    ResultSet rs = getTables();
+    ResultSet rs = getTables(tableInfo);
     if (rs != null) {
-      boolean cont = true;
-      while (cont) {
-        if (cont = next(rs)) {
-          String name = getTableInfo(rs, "TABLE_NAME");
-          String catalog = getTableInfo(rs, "TABLE_CAT");
-          String schema = getTableInfo(rs, "TABLE_SCHEM");
-          String type = getTableInfo(rs, "TABLE_TYPE");
-          String remarks = getTableInfo(rs, "REMARKS");
-          dbg.VERBOSE("Found table: CAT=" + catalog + ", SCHEM=" + schema + ", NAME=" + name + ", TYPE=" + type + ", REMARKS=" + remarks);
-          if ((name != null) && (name.indexOf("SYS") != 0)) { // +++ We MUST make a rule to NOT start our table names with SYS!
-            TableInfo ti = new TableInfo(catalog, schema, name, type, remarks);
-            tables.add(ti);
-          }
+      while (next(rs)) {
+        String name = getTableInfo(rs, "TABLE_NAME");
+        String catalog = getTableInfo(rs, "TABLE_CAT");
+        String schema = getTableInfo(rs, "TABLE_SCHEM");
+        String type = getTableInfo(rs, "TABLE_TYPE");
+        String remarks = getTableInfo(rs, "REMARKS");
+        dbg.VERBOSE("Found table: CAT=" + catalog + ", SCHEM=" + schema + ", NAME=" + name + ", TYPE=" + type + ", REMARKS=" + remarks);
+        if ((name != null) && (name.indexOf("SYS") != 0)) { // +++ We MUST make a rule to NOT start our table names with SYS!
+          TableInfo ti = new TableInfo(catalog, schema, name, type, remarks);
+          tables.add(ti);
         }
       }
       closeStmt(getStatement(rs));
@@ -685,37 +1128,37 @@ public class DBMacros extends GenericDB {
   }
 
   private String getTableInfo(ResultSet rs, String info) {
-    String ret = "";
-    try {
-      dbg.Push("getTableInfo");
+    try (AutoCloseable pop = dbg.Push("getTableInfo")) {
       dbg.VERBOSE("Calling ResultSet.getString() regarding: " + info + "...");
-      ret = rs.getString(info);
+      return rs.getString(info);
     } catch (Exception e) {
       dbg.ERROR("Excepted trying to get field " + info + " from result set.");
-    } finally {
-      dbg.VERBOSE("Done calling ResultSet.getString().");
-      dbg.Exit();
+      return "";
     }
-    return ret;
   }
 
   /**
    * +++ Make this create TableProfile objects with the right names, then fill those objects with their data instead of passing String names around.
    */
   public DatabaseProfile profileDatabase(String databaseName, String tablename, boolean sort) {
-    dbg.VERBOSE("Profiling database: " + databaseName + " ...");
+    dbg.VERBOSE("Profiling database: {0} ...", databaseName);
+    TableInfo tq = new TableInfo(null, databaseName, tablename, null, null);
+
     DatabaseProfile tables = new DatabaseProfile(databaseName);
     //noinspection StringEquality
     if (tablename != ALLTABLES) {
-      TableProfile tp = profileTable(tablename);
+      TableProfile tp = profileTable(tq);
       if (sort) {
         tp.sort();
       }
       tables.add(tp);
     } else { // Profile ALLTABLES
-      TableInfoList tablelist = getTableList();
+
+
+      TableInfoList tablelist = getTableList(tq);
       for (int i = 0; i < tablelist.size(); i++) {
-        TableProfile tp = profileTable(tablelist.itemAt(i).name());
+        tq.setName(tablelist.itemAt(i).name());
+        TableProfile tp = profileTable(tq);
         if (tp.numColumns() > 0) {
           if (sort) {
             tp.sort();
@@ -734,21 +1177,15 @@ public class DBMacros extends GenericDB {
    * Don't let outside classes use Strings for tablenames.  Stick with objects...
    */
   public TableProfile profileTable(TableProfile table) {
-    return profileTable(table.name());
+    return profileTable(table.tq());
   }
 
-  private TableProfile profileTable(String tableName) {
-    ResultSet cpmd = null;
+  private TableProfile profileTable(TableInfo tq) {
     Vector<ColumnProfile> cols = new Vector<>(100);
-    TableProfile tp = TableProfile.create(new TableInfo(tableName), null, new ColumnProfile[0]);
-    try {
-      dbg.VERBOSE("profiling table '" + tableName + "'");
-      try {
-        dbg.VERBOSE("Calling getDatabaseMetadata.getColumns() ...");
-        cpmd = getDatabaseMetadata().getColumns(null, null, tableName.toLowerCase(), null);
-      } finally {
-        dbg.VERBOSE("Done calling getDatabaseMetadata.getColumns().");
-      }
+    TableProfile tp = TableProfile.create(tq, null, new ColumnProfile[0]);
+
+    dbg.VERBOSE("profiling table '{0}'", tq.name());
+    try (ResultSet cpmd = getDatabaseMetadata().getColumns(tq.catalog(), tq.schema(), tq.name(), null)) {
       if (cpmd != null) {
         while (next(cpmd)) {
           ColumnProfile cp = null;
@@ -778,11 +1215,6 @@ public class DBMacros extends GenericDB {
             dbg.VERBOSE("Adding column " + cp.name());
           }
         }
-        try {
-          cpmd.close(); // don't do this anywhere else, please
-        } catch (Exception e) {
-          dbg.Caught(e);
-        }
       } else {
         dbg.ERROR("cpmd is NULL!");
       }
@@ -797,10 +1229,13 @@ public class DBMacros extends GenericDB {
     return tp;
   }
 
+  // VALIDATOR STUFF
+
   public boolean tableExists(String tableName) {
     boolean ret = false;
     if (StringX.NonTrivial(tableName)) {
-      TableInfoList tablelist = getTableList();
+      TableInfo tq = new TableInfo(tableName);
+      TableInfoList tablelist = getTableList(tq);
       for (int i = tablelist.size(); i-- > 0; ) {
         if (tablelist.itemAt(i).name().equalsIgnoreCase(tableName)) {
           ret = true;
@@ -811,10 +1246,12 @@ public class DBMacros extends GenericDB {
     return ret;
   }
 
-  public boolean fieldExists(String tableName, String fieldName) {
+  // VALIDATOR STUFF
+
+  public boolean fieldExists(TableInfo tableName, String fieldName) {
     TableProfile tp = profileTable(tableName);
     // skip through and look for the fieldname
-    return tp.fieldExists(fieldName);
+    return tp != null && tp.fieldExists(fieldName);
   }
 
   public boolean primaryKeyExists(PrimaryKeyProfile primaryKey) {
@@ -869,8 +1306,7 @@ public class DBMacros extends GenericDB {
       int loc = fkname.indexOf("\\000");
       if (loc > ObjectX.INVALIDINDEX) {
         String tmp = StringX.left(fkname, loc);
-        dbg.VERBOSE("Extracted actual key name '" + tmp +
-          "' from verbose PG key name '" + fkname + "'.");
+        dbg.VERBOSE("Extracted actual key name '" + tmp + "' from verbose PG key name '" + fkname + "'.");
         fkname = tmp;
       }
     }
@@ -948,105 +1384,26 @@ public class DBMacros extends GenericDB {
    * Returns true if the field was properly dropped
    */
   protected final boolean dropField(ColumnProfile column) {
-    boolean ret = false;
-    try {
-      dbg.Push("dropField");
-      if (fieldExists(column.table().name(), column.name())) {
-        boolean supports = false;
-        try {
-          dbg.VERBOSE("Running DatabaseMetadata.getIndexInfo() ...");
-          supports = getDatabaseMetadata().supportsAlterTableWithDropColumn();
-        } finally {
-          dbg.VERBOSE("Done running DatabaseMetadata.getIndexInfo().");
-        }
-        if (!supports) {
+
+    try (AutoCloseable pop = dbg.Push("dropField")) {
+      if (fieldExists(column.tq(), column.name())) {
+
+        if (!getDatabaseMetadata().supportsAlterTableWithDropColumn()) {//todo:1 cache all such attributes
           dbg.ERROR("dropField " + column.fullName() + ": was not able to run since the DBMS does not support it!");
-          ret = true;
+          return true;
         } else {
-          dbg.ERROR("dropField " + column.fullName() + ": returned " +
-            update(QueryString.genDropField(column)));
-          ret = !fieldExists(column.table().name(), column.name());
+          dbg.ERROR("dropField " + column.fullName() + ": returned " + update(QueryString.genDropField(column)));
+          return !fieldExists(column.tq(), column.name());
         }
       } else {
         dbg.ERROR("dropField " + column.fullName() + ": already dropped.");
-        ret = true;
+        return true;
       }
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      dbg.Exit();
-      return ret;
+      return false;
     }
   }
-
-//  public static final int getColumnCount(ResultSetMetaData rsmd) {
-//    int ret = 0;
-//    try {
-//      dbg.VERBOSE("Calling ResultSetMetaData.getColumnCount() ...");
-//      ret = rsmd.getColumnCount();
-//    } catch (Exception e) {
-//      dbg.ERROR("getColumnCount() excepted attempting to get column count from the ResultSetMetaData");
-//    } finally {
-//      dbg.VERBOSE("Done calling ResultSetMetaData.getColumnCount().");
-//      return ret;
-//    }
-//  }
-//
-//  public int getColumnCount(ResultSet rs) {
-//    return getColumnCount(getRSMD(rs));
-//  }
-
-//  public static final int NAME    = 0;
-//  public static final int TYPE    = 1;
-//  public static final int SIZE    = 2;
-//  public static final int NULLABLE= 3;
-//
-//  public static final String ISNOTNULLABLE = "NOT NULL";
-//  public static final String ISNULLABLE = "";
-//
-//  public static final String getColumnAttr(ResultSetMetaData rsmd, int what, int rsCol) {
-//    String ret = null;
-//    try {
-//      switch(what) {
-//        case NAME: {
-//          try {
-//            dbg.VERBOSE("Calling ResultSetMetaData.getColumnLabel() ...");
-//            ret = rsmd.getColumnLabel(rsCol);
-//          } finally {
-//            dbg.VERBOSE("Done calling ResultSetMetaData.getColumnLabel().");
-//          }
-//        } break;
-//        case TYPE: {
-//          try {
-//            dbg.VERBOSE("Calling ResultSetMetaData.getColumnTypeName() ...");
-//            ret = rsmd.getColumnTypeName(rsCol);
-//          } finally {
-//            dbg.VERBOSE("Done calling ResultSetMetaData.getColumnTypeName().");
-//          }
-//        } break;
-//        case SIZE: {
-//          try {
-//            dbg.VERBOSE("Calling ResultSetMetaData.getColumnDisplaySize() ...");
-//            ret = "" + rsmd.getColumnDisplaySize(rsCol);
-//          } finally {
-//            dbg.VERBOSE("Done calling ResultSetMetaData.getColumnDisplaySize().");
-//          }
-//        } break;
-//        case NULLABLE: {
-//          try {
-//            dbg.VERBOSE("Calling ResultSetMetaData.isNullable() ...");
-//            ret = ((rsmd.isNullable(rsCol) == ResultSetMetaData.columnNullable) ? ISNULLABLE: ISNOTNULLABLE);
-//          } finally {
-//            dbg.VERBOSE("Done calling ResultSetMetaData.isNullable().");
-//          }
-//        } break;
-//      }
-//    } catch (Exception e) {
-//      dbg.ERROR("getColumnAttr() excepted attempting to get column info from the ResultSetMetaData");
-//      dbg.Caught(e);
-//    }
-//    return ret;
-//  }
 
   /**
    * Returns true if the index was properly dropped
@@ -1077,8 +1434,7 @@ public class DBMacros extends GenericDB {
     try {
       dbg.Push("dropTable");
       if (tableExists(tablename)) {
-        dbg.ERROR("dropTable" + tablename + " returned " +
-          update(QueryString.genDropTable(tablename)));
+        dbg.ERROR("dropTable" + tablename + " returned " + update(QueryString.genDropTable(tablename)));
         ret = !tableExists(tablename);
       } else {
         ret = true;
@@ -1097,10 +1453,10 @@ public class DBMacros extends GenericDB {
     boolean ret = false;
     try {
       dbg.Push("addField");
-      if (!fieldExists(column.table().name(), column.name())) {
+      if (!fieldExists(column.tq(), column.name())) {
         dbg.ERROR("addField" + column.fullName() + " returned " + update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
           QueryString.genAddField(column)));
-        ret = fieldExists(column.table().name(), column.name());
+        ret = fieldExists(column.tq(), column.name());
       } else {
         ret = true;
       }
@@ -1131,7 +1487,7 @@ public class DBMacros extends GenericDB {
     try {
       dbg.Push("changeFieldNullable");
       dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
-      TableProfile afterTable = profileTable(to.table().name());
+      TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
       ret = to.sameNullableAs(aftercolumn);
     } catch (Exception e) {
@@ -1147,7 +1503,7 @@ public class DBMacros extends GenericDB {
     try {
       dbg.Push("changeFieldDefault");
       dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(QueryString.genChangeFieldDefault(to)));
-      TableProfile afterTable = profileTable(to.table().name());
+      TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
       ret = to.sameDefaultAs(aftercolumn);
     } catch (Exception e) {
@@ -1157,19 +1513,6 @@ public class DBMacros extends GenericDB {
       return ret;
     }
   }
-
-//  // for this version of postgresql jdbc, the fetch size is the WHOLE thing!
-//  public static final int getResultSetFetchSize(ResultSet rs) {
-//    try {
-//      return rs.getFetchSize();
-//    } catch (Exception ex) {
-//      dbg.Caught(ex);
-//      return -1;
-//    }
-//  }
-
-  ////////////////////////////////////
-  // database profiling
 
   protected final int validateAddIndex(IndexProfile index) {
     String functionName = "validateAddIndex";
@@ -1212,7 +1555,7 @@ public class DBMacros extends GenericDB {
     try {
       dbv.Push(functionName);//#gc
       dbv.mark("Add field " + column.fullName());
-      if (!fieldExists(column.table().name(), column.name())) {
+      if (!fieldExists(column.tq(), column.name())) {
         boolean did = addField(column);
         success = (did ? DONE : FAILED);
         dbv.ERROR((did ? "Added" : "!! COULD NOT ADD") + " field " + column.fullName());
@@ -1231,55 +1574,6 @@ public class DBMacros extends GenericDB {
       return success;
     }
   }
-
-//  public int getColumnSize(String tablename, String fieldname) {
-//    int ret = 0;
-//    TableProfile dbp = profileTable(tablename);
-//    if(dbp != null) {
-//      ColumnProfile cp = dbp.column(fieldname);
-//      if(cp != null) {
-//        ret = cp.size();
-//      } else {
-//        dbg.ERROR("getColumnSize is returning " + ret + " since the cp is null!");
-//      }
-//    } else {
-//      dbg.ERROR("getColumnSize is returning " + ret + " since the dbp is null!");
-//    }
-//    return ret;
-//  }
-
-//  private static final EasyProperties ezp = new EasyProperties();
-//  private static boolean ezpset = false;
-//  private static final Monitor javaSqlTypesMonitor = new Monitor(DBMacros.class.getName()+".javaSqlTypes");
-//  public static final String javaSqlType(String typeNum) {
-//    String ret = "";
-//    int type = StringX.parseInt(typeNum);
-//    // lock
-//    try {
-//      javaSqlTypesMonitor.getMonitor();
-//      // only have to do this once per run
-//      if(!ezpset) {
-//        // use reflection to find every 'public final static int' in the class java.sql.Types, and add the item to ezp
-//        try {
-//          Class c = java.sql.Types.class;
-//          Field[] fields = c.getFields();
-//          for(int i = fields.length; i-->0;) {
-//            Field field = fields[i];
-//            int ivalue = field.getInt(c); // probably doesn't work
-//            String value = String.valueOf(ivalue);
-//            ezp.setString(value, field.getName());
-//          }
-//        } catch (Exception e) {
-//          /* abandon all hope ye who enter here */
-//        }
-//        ezpset = true;
-//      }
-//    } finally {
-//      javaSqlTypesMonitor.freeMonitor();
-//    }
-//    ret = ezp.getString(typeNum, "");
-//    return ret;
-//  }
 
   // +++ generalize internal parts between validate functions!
   protected final int validateAddPrimaryKey(PrimaryKeyProfile primaryKey) {
@@ -1377,19 +1671,12 @@ public class DBMacros extends GenericDB {
       dbv.Push(functionName);//#gc
       dbv.mark(toDrop);
       TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
-      success = (tableExists(tablename)) ?
-        update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) :
-        ALREADY;
+      success = (tableExists(tablename)) ? update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) : ALREADY;
     } catch (Exception e) {
       // muffle
       //dbv.Caught(e);
     } finally {
-      dbv.ERROR(functionName + ": '" + toDrop +
-        ((success == ALREADY) ?
-          " Can't perform since table doesn't exist." :
-          ((success == DONE) ?
-            "' Succeeded!" :
-            "' FAILED!  Constraint probably didn't exist.")));
+      dbv.ERROR(functionName + ": '" + toDrop + ((success == ALREADY) ? " Can't perform since table doesn't exist." : ((success == DONE) ? "' Succeeded!" : "' FAILED!  Constraint probably didn't exist.")));
       dbv.mark("");
       dbv.Exit();//#gc
       return (success != FAILED);
@@ -1398,7 +1685,9 @@ public class DBMacros extends GenericDB {
 
   protected final boolean renameField(String table, String oldname, String newname) {
     int count = 0;
-    if (fieldExists(table, oldname)) {
+    TableInfo tq = new TableInfo(table);
+
+    if (fieldExists(tq, oldname)) {
       count = update(QueryString.genRenameColumn(table, oldname, newname));
     }
     return (count == 0);
@@ -1408,9 +1697,9 @@ public class DBMacros extends GenericDB {
   protected final boolean createTable(TableProfile tp) {
     boolean ret = false;
     try {
-      dbg.Push("createTable");
+      dbg.Push("haveTable");
       if (!tableExists(tp.name())) {
-        dbg.ERROR("createTable " + tp.name() + " returned " + update(QueryString.genCreateTable(tp)));
+        dbg.ERROR("haveTable " + tp.name() + " returned " + update(QueryString.genCreateTable(tp)));
         ret = tableExists(tp.name());
       } else {
         ret = true;
@@ -1421,316 +1710,6 @@ public class DBMacros extends GenericDB {
       dbg.Exit();
       return ret;
     }
-  }
-
-  public static ResultSetMetaData getRSMD(ResultSet rs) {
-    ResultSetMetaData rsmd = null;
-    if (rs != null) {
-      try {
-        dbg.VERBOSE("Calling ResultSet.getMetaData() ...");
-        rsmd = rs.getMetaData();
-      } catch (SQLException e) {
-        dbg.ERROR("Exception occurred getting ResultSetMetaData!");
-        dbg.Caught(e);
-      } finally {
-        dbg.VERBOSE("Done calling ResultSet.getMetaData().");
-      }
-    }
-    return rsmd;
-  }
-
-  public static EasyProperties colsToProperties(ResultSet rs, ColumnProfile ignoreColumn) {
-    EasyProperties ezc = new EasyProperties();
-    try {
-      if ((rs != null) && (next(rs))) {
-        ResultSetMetaData rsmd = getRSMD(rs);
-        for (int col = rsmd.getColumnCount() + 1; col-- > 1; ) {// functions start with column 1!
-          String name = rsmd.getColumnName(col);
-          if (ObjectX.NonTrivial(ignoreColumn) && StringX.equalStrings(ignoreColumn.displayName(), name)) {
-            dbg.WARNING("colsToProperties: Ignoring field " + ignoreColumn.fullName());
-          } else {
-            ColumnTypes dbt = ColumnTypes.valueOf(rsmd.getColumnTypeName(col));
-            if (dbt == ColumnTypes.BOOL) {
-              ezc.setBoolean(name, getBooleanFromRS(col, rs));
-            } else {
-              ezc.setString(name, getStringFromRS(col, rs));
-            }
-          }
-        }
-      } else {
-        dbg.ERROR("Can't convert cols to properties if resultset is null!");
-      }
-    } catch (Exception ex) {
-      dbg.Caught(ex);
-    }
-    return ezc;
-  }
-
-  private static void logQuery(DBFunctionType qt, long millis, int retval, boolean regularLog, long qn) {
-    String toLog = "exception attempting to log the query";
-    try (AutoCloseable free = timerStrMon.getMonitor()) {
-      // create a pool of DBFunctionTypes and Fstrings that you can reuse [no mutexing == faster].
-      toLog = "'can'this figure out what javac doesn't like about the following complex message, ie replace with Message.Format ";
-//        qt.toString()
-//        + (qt==DBFunctionType.NEXT )? "" : " END   " + qn + " "
-//        +  timerStr.righted(String.valueOf(millis)) + " ms " +
-//          (qt==DBFunctionType.UPDATE) ? " returned " + retval : "";
-      if (regularLog) {
-        dbg.WARNING(toLog);
-      }
-      log(toLog);
-    } catch (Exception e) {
-      dbg.Caught(e);
-    }
-  }
-
-  // VALIDATOR STUFF
-
-  private static void preLogQuery(int qt, QueryString query, boolean regularLog, long qn) {
-    try {
-      DBFunctionType qtype = DBFunctionType.class.getEnumConstants()[qt];
-      String toLog = qtype.toString() + " BEGIN " + qn + " = " + query;
-      if (regularLog) {
-        dbg.WARNING(toLog);
-      }
-      log(toLog);
-    } catch (Exception e) {
-      dbg.Caught(e);
-    }
-  }
-
-  // VALIDATOR STUFF
-
-  public static String getStringFromRS(String fieldName, ResultSet myrs) {
-    return getStringFromRS(NOT_A_COLUMN, fieldName, myrs);
-  }
-
-  public static String getStringFromRS(ColumnProfile field, ResultSet myrs) {
-    return getStringFromRS(field.name(), myrs);
-  }
-
-  // presumed only done once by one thread
-  public static boolean init() {
-//    if (service == null) {
-//      service = new DBMacrosService(new PayMateDBDispenser()); // setup the service
-//      service.initLog();
-//    }
-//    pf = service.logFile.getPrintFork();
-//    pf.println("inited OK");
-    return true;
-  }
-
-  private static void log(String toLog) {
-    if (pf != null) {
-      try {
-        pf.println(toLog);
-      } catch (Exception e) {
-        dbg.Caught(e);
-      }
-    }
-  }
-
-  public static String getStringFromRS(int column, ResultSet myrs) {
-    return getStringFromRS(column, null, myrs);
-  }
-
-  private static String getStringFromRS(int column, String fieldName, ResultSet myrs) {
-    String ret = null;
-    try {
-      if (myrs != null) {//valid non empty resultset
-        if (column < 1) {//code that tells us to use the name field
-          try {
-            dbg.VERBOSE("Calling ResultSet.findColumn() ...");
-            column = myrs.findColumn(fieldName);//excepts if results set is empty!
-          } catch (SQLException ex) {
-            dbg.VERBOSE("Coding error: \n" + ErrorLogStream.whereAmI());
-            dbg.VERBOSE(ex.getMessage() + " - see next line for args...");
-          } finally {
-            dbg.VERBOSE("Done calling ResultSet.findColumn().");
-          }
-        }
-        if (column < 1) {//happens when field is present but result set is empty.
-          dbg.ERROR("getStringFromRS: column [" + fieldName + "] (not included in query?): ");
-        } else {
-          try {
-            dbg.VERBOSE("Calling ResultSet.getString() ...");
-            ret = myrs.getString(column);
-            //} catch (Exception ex) {
-          } finally {
-            dbg.VERBOSE("Done calling ResultSet.getString().");
-          }
-        }
-      }
-    } catch (Exception t) {
-      dbg.ERROR("getStringFromRS: Exception getting column [" + column + "/" + fieldName + "] (not included in query?): ");
-      dbg.Caught(t);
-    }
-    // --------------- NEXT LINE COULD BE CAUSING PROBLEMS,
-    // but try to fix the problems elsewhere so that we can preserve empty strings here.
-    // return StringX.OnTrivial(StringX.TrivialDefault(ret, "").trim(), " "); // Why are we doing this ?!?!?!?  I think because leaving it out makes empty (raised) boxes in the html tables, but we should fix those in the html tables, and not here.
-    return StringX.TrivialDefault(ret, "").trim();
-  }
-
-  public static int getIntFromRS(int column, ResultSet myrs) {
-    return StringX.parseInt("0" + getStringFromRS(column, myrs));//--- parseInt can deal with null and non-decimal returns
-  }
-
-  public static int getIntFromRS(String column, ResultSet myrs) {
-    return StringX.parseInt(getStringFromRS(column, myrs));
-  }
-
-  public static int getIntFromRS(ColumnProfile column, ResultSet myrs) {
-    return getIntFromRS(column.name(), myrs);
-  }
-
-  public static long getLongFromRS(String column, ResultSet myrs) {
-    return StringX.parseLong(getStringFromRS(column, myrs));
-  }
-
-  public static long getLongFromRS(ColumnProfile column, ResultSet myrs) {
-    return getLongFromRS(column.name(), myrs);
-  }
-
-  public static boolean getBooleanFromRS(int column, ResultSet myrs) {
-    return Bool.For(getStringFromRS(column, myrs));
-  }
-
-  public static boolean getBooleanFromRS(String column, ResultSet myrs) {
-    String boolstr = getStringFromRS(column, myrs);
-    boolean ret = Bool.For(boolstr);
-    dbg.VERBOSE("Returning " + ret + " for string " + boolstr);
-    return ret;
-  }
-
-  public static boolean getBooleanFromRS(ColumnProfile column, ResultSet myrs) {
-    return getBooleanFromRS(column.name(), myrs);
-  }
-
-  /**
-   * TODO:
-   * +++ Improve the pagination of records [only for search screen, drawers listing, etc.]:
-   * boolean isBeforeFirst() throws SQLException;
-   * boolean isAfterLast() throws SQLException;
-   * boolean isFirst() throws SQLException;
-   * boolean isLast() throws SQLException;
-   * void beforeFirst() throws SQLException;
-   * void afterLast() throws SQLException;
-   * boolean first() throws SQLException;
-   * boolean last() throws SQLException;
-   * int getRow() throws SQLException;
-   * boolean absolute( int row ) throws SQLException;
-   * boolean relative( int rows ) throws SQLException;
-   * boolean previous() throws SQLException;
-   */
-  public static boolean next(ResultSet rs) {
-    return next(rs, null);
-  }
-
-  // a timer is passed in so that it can be used,
-  // in case the caller wants to know how long it took.
-  // if the timer is null, we create one locally,
-  // as we use that timer to add times to our accumulator for service reporting.
-  public static boolean next(ResultSet rs, StopWatch swatch) {
-    if (swatch == null) {
-      swatch = new StopWatch(false);
-    }
-    swatch.Start(); // to be sure to start either passed-in or locally-created ones
-    boolean ret = false;
-    try {
-      if (rs != null) {
-        dbg.VERBOSE("Calling ResultSet.next() ...");
-        ret = rs.next();
-      }
-    } catch (Exception e) {
-      dbg.ERROR("next() excepted attempting to get the next row in the ResultSet ... ");
-      dbg.Caught(e);
-    } finally {
-      if (rs != null) {
-        dbg.VERBOSE("Done calling ResultSet.next().");
-      }
-      long dur = swatch.Stop();
-      nextStats.add(dur);
-      if (dur > 0) {
-        logQuery(DBFunctionType.NEXT, dur, -1, false, -1);
-      }
-      return ret;
-    }
-  }
-
-  public static ResultSet getResultSet(Statement stmt) {
-    ResultSet ret = null;
-    try {
-      if (stmt != null) {
-        dbg.VERBOSE("Calling Statement.getResultSet() ...");
-        ret = stmt.getResultSet();
-      }
-    } catch (Exception e) {
-      dbg.ERROR("getRS excepted attempting to get the ResultSet from the executed statement");
-      dbg.Caught(e);
-    } finally {
-      if (stmt != null) {
-        dbg.VERBOSE("Done calling Statement.getResultSet().");
-      }
-      return ret;
-    }
-  }
-
-  public static void closeCon(Connection con) {
-    if (con != null) {
-      try {
-        dbg.VERBOSE("Calling Connection.close() ...");
-        con.close();
-      } catch (Exception t) {
-        dbg.WARNING("Exception closing connection.");
-      } finally {
-        dbg.VERBOSE("Done calling Connection.close().");
-      }
-    }
-  }
-
-  public static void closeStmt(Statement stmt) {
-    if (stmt != null) {
-      try {
-        dbg.VERBOSE("Calling Statement.close() ...");
-        stmt.close();
-      } catch (Exception t) {
-        dbg.WARNING("Exception closing statement.");
-      } finally {
-        dbg.VERBOSE("Done calling Statement.close().");
-      }
-    }
-  }
-
-  /**
-   * ONLY use with resultsets that have no statement (like are returned by DatabaseMetadata functions)
-   */
-  public static void closeRS(ResultSet rs) {
-    if (rs != null) {
-      try {
-        dbg.VERBOSE("Calling ResultSet.close() ...");
-        rs.close();
-      } catch (Exception t) {
-        dbg.WARNING("Exception closing result set.");
-      } finally {
-        dbg.VERBOSE("Done calling ResultSet.close().");
-      }
-    }
-  }
-
-  public static Statement getStatement(ResultSet rs) {
-    try {
-      if (rs != null) {
-        dbg.VERBOSE("Calling ResultSet.getStatement() ...");
-        return rs.getStatement();
-      }
-    } catch (Exception t) {
-      dbg.WARNING("Exception getting statement from resultset.");
-    } finally {
-      if (rs != null) {
-        dbg.VERBOSE("Done calling ResultSet.getStatement().");
-      }
-    }
-    return null;
   }
 
 }

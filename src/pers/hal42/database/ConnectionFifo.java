@@ -6,7 +6,7 @@ import pers.hal42.stream.ObjectFifo;
 import java.sql.Connection;
 
 /**
- * a fifo of connections, but for some reason with a more restricted interface than the ObjectFifo it iss built from.
+ * a storage of connections, but for some reason with a more restricted interface than the ObjectFifo it iss built from.
  * alh thinks that is because of uncertainty of how it should be implemented so the implemenation is forcefully hidden.
  */
 

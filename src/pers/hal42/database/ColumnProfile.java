@@ -36,6 +36,10 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
   public static final boolean NOAUTO = false;
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(ColumnProfile.class);
 
+  public TableInfo tq(){
+    return table.tq();
+  }
+
   //////////////////////////
   private ColumnProfile() {
     //use create

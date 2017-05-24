@@ -1,5 +1,6 @@
 package pers.hal42.database;
 
+import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.ObjectX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
@@ -11,14 +12,19 @@ import java.util.Arrays;
  */
 
 
-public class TableProfile implements Comparable {
+public class TableProfile implements Comparable<TableProfile> {
+  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(TableProfile.class);
   public PrimaryKeyProfile primaryKey = null;
   public ForeignKeyProfile[] foreignKeys = null;
   public IndexProfile[] indexes = null;
   public TableType type = null;
   protected ColumnProfile columns[] = null;
+
+  public TableInfo tq() {
+    return ti;
+  }
+
   private TableInfo ti = null;
-  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(TableProfile.class);
 
   // Coded profiles enter here ...
   protected TableProfile(TableInfo ti, TableType type, ColumnProfile[] columns) {
@@ -29,7 +35,13 @@ public class TableProfile implements Comparable {
     }
   }
 
-  /** @returns this after appending @param joiners columns to the exist columns. */
+  public static TableProfile create(TableInfo ti, TableType type, ColumnProfile[] columns) {
+    return new TableProfile(ti, type, columns);
+  }
+
+  /**
+   * @returns this after appending @param joiners columns to the exist columns.
+   */
   public TableProfile join(ColumnProfile[] joiners) {
     ColumnProfile[] merger = new ColumnProfile[columns.length + joiners.length];
     System.arraycopy(columns, 0, merger, 0, columns.length);
@@ -51,7 +63,9 @@ public class TableProfile implements Comparable {
     return ti.name() + ".*";
   }
 
-  /** @returns a new list of column names */
+  /**
+   * @returns a new list of column names
+   */
   public TextList fieldNames() {
     TextList tl = new TextList();
     for (ColumnProfile item : columns) {
@@ -60,7 +74,9 @@ public class TableProfile implements Comparable {
     return tl;
   }
 
-  /** @returns a <b>copy</b> of this table's columns. */
+  /**
+   * @returns a <b>copy</b> of this table's columns.
+   */
   public ColumnProfile[] columns() {
     ColumnProfile[] cols = new ColumnProfile[columns.length];
     System.arraycopy(columns, 0, cols, 0, columns.length);
@@ -83,7 +99,9 @@ public class TableProfile implements Comparable {
     }
   }
 
-  /**@returns column named @param fieldName, null if no such column or fieldName is null */
+  /**
+   * @returns column named @param fieldName, null if no such column or fieldName is null
+   */
   public ColumnProfile column(String fieldName) {
     if (fieldName != null) {
       for (ColumnProfile column : columns) {
@@ -98,7 +116,9 @@ public class TableProfile implements Comparable {
     }
   }
 
-  /** @returns @param i-th column, null if i is bad */
+  /**
+   * @returns @param i-th column, null if i is bad
+   */
   public ColumnProfile column(int i) {
     return ((i >= 0) && (i < columns.length)) ? columns[i] : null;
   }
@@ -139,22 +159,9 @@ public class TableProfile implements Comparable {
     return name();
   }
 
-  public int compareTo(Object o) {
-    int i = 0;
-    if (ObjectX.NonTrivial(o)) {
-      try {
-        TableProfile tp = (TableProfile) o;
-        i = name().compareTo(tp.name());
-      } catch (Exception e) {
-        dbg.ERROR("Compared different types!");
-      }
-      return i;
-    } else {
-      return 1; // this is bigger than null
-    }
+  @Override
+  public int compareTo(@NotNull TableProfile o) {
+    return this.ti.compareTo(o.ti);
   }
 
-  public static TableProfile create(TableInfo ti, TableType type, ColumnProfile[] columns) {
-    return new TableProfile(ti, type, columns);
-  }
 }

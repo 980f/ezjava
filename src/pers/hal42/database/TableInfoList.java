@@ -40,11 +40,11 @@ public class TableInfoList extends Vector<TableInfo> {
   }
 
   public synchronized TableInfoList sortByName() {
-    TableInfo[] theList = (TableInfo[]) this.toArray();
+    final Object[] theList = toArray();
     java.util.Arrays.sort(theList);
     this.setSize(0);
     for (int i = theList.length; i-- > 0; ) {
-      this.insertElementAt(theList[i], 0); // put in in reverse order, but at the front, which makes it the CORRECT order
+      this.insertElementAt((TableInfo) theList[i], 0); // put in in reverse order, but at the front, which makes it the CORRECT order
     }
     return this;
   }
