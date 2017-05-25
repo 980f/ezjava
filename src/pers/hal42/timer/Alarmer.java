@@ -45,11 +45,10 @@ class AlarmList {
    * @return the earliest that any will blow.
    */
   long soonest() {
-    lock.LOCK("soonest");
-    try {
+    try (AutoCloseable pop=lock.LOCK("soonest")) {
       return size() > 0 ? next().blowtime : 0;
-    } finally {
-      lock.UNLOCK("soonest");
+    } catch (Exception ignored) {
+      return 0;//wont' happen but compiler doesn't know that
     }
   }
 
@@ -65,8 +64,7 @@ class AlarmList {
       return false;//caller should treat this as an error.
     }
 
-    try {
-      lock.LOCK("insert " + newalarm.toSpam());
+    try (AutoCloseable pop= lock.LOCK("insert " + newalarm.toSpam())){
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         if (newalarm.blowtime < alarm.blowtime) {
@@ -82,8 +80,6 @@ class AlarmList {
       return newalarm.listed = true;
     } catch (Exception any) {
       return newalarm.listed = false;
-    } finally {
-      lock.UNLOCK("insert");
     }
   }
 
@@ -91,8 +87,7 @@ class AlarmList {
    * @return true if new one goes to top of stack.
    */
   boolean remove(Alarmum newalarm) {
-    try {
-      lock.LOCK("remove:" + newalarm.toSpam());
+    try (AutoCloseable pop = lock.LOCK("remove:" + newalarm.toSpam())) {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         if (alarm == newalarm) {//same object
@@ -101,37 +96,34 @@ class AlarmList {
           return true; //presume single instance
         }
       }
-      return false;
-    } finally {
-      lock.UNLOCK("remove");
+    } catch (Exception ignored) {
+
     }
+    return false;
   }
 
   /**
    * @return COPY of object if it is in list
    */
   Alarmum info(Alarmum analarm) {
-    try {
-      lock.LOCK("info");
+    try (AutoCloseable pop = lock.LOCK("info")) {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         if (alarm == analarm) {//same object
           return analarm.Clone();//return snapshot, one that is NOT in the active list.
         }
       }
-      return null;
-    } finally {
-      lock.UNLOCK("info");
+    } catch (Exception ignored) {
     }
+    return null;
   }
 
   AlarmList ringers(long now) {
     AlarmList ringers = new AlarmList(dbg);
-    try {
-      lock.LOCK("ringers");
+    try (AutoCloseable pop = lock.LOCK("ringers")) {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
-        dbg.WARNING("Checking:" + alarm.toSpam());
+        dbg.VERBOSE("Checking:" + alarm.toSpam());
         if (alarm.blowtime <= now) {
           alarm.listed = false;
           dbg.WARNING("Ringing:" + alarm.toSpam());
@@ -142,49 +134,47 @@ class AlarmList {
         }
         //+_+ recode above to find the break point then make an ARRAY for ringers.
       }
-      return ringers;
-    } finally {
-      lock.UNLOCK("ringers");
+    } catch (Exception ignored) {
+
     }
+    return ringers;
   }
 
   /**
    * adjust the time value of all alarms in list
    */
   void adjust(int diff) {
-    try {
-      lock.LOCK("adjust");
+    try (AutoCloseable pop = lock.LOCK("adjust")) {
       for (int i = list.size(); i-- > 0; ) {
         alarm(i).blowtime += diff;
       }
-    } finally {
-      lock.UNLOCK("adjust");
+    } catch (Exception ignored) {
+
     }
   }
 
   TextList toSpam(TextList spam) {
-    try {
-      lock.LOCK("spamlist");
+    try (AutoCloseable pop=lock.LOCK("spamlist")){
       spam.Add("<ActiveAlarms size=" + size() + ">");
       for (int i = list.size(); i-- > 0; ) {
         spam.Add(alarm(i).toSpam());
       }
       spam.Add("</ActiveAlarms>");
       return spam;
-    } finally {
-      lock.UNLOCK("spamlist");
+    } catch (Exception ignored) {
+      return null;//appease compiler
     }
   }
 
   EasyProperties toEzpSpam() {
     EasyProperties ret = new EasyProperties();
-    try {
-      lock.LOCK("spamlist");
+    //noinspection finally
+    try(AutoCloseable pop=lock.LOCK("spamlist")){
       for (int i = list.size(); i-- > 0; ) {
         ret.setString("" + i, alarm(i).toSpam());
       }
     } finally {
-      lock.UNLOCK("spamlist");
+      //noinspection ReturnInsideFinallyBlock
       return ret;
     }
   }
@@ -194,11 +184,6 @@ class AlarmList {
 // the following is a singleton ONLY
 
 public class Alarmer implements Runnable {
-  public boolean kill = false;
-  Thread thread;
-  int priority;
-  AlarmList active;
-  boolean paused = false; //for clock update
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Alarmer.class, LogLevelEnum.OFF);
   static Alarmer my;//the default Alarm manager
 
@@ -206,61 +191,17 @@ public class Alarmer implements Runnable {
     setMy();
   }
 
+  public boolean kill = false;
+  Thread thread;
+  int priority;
+  AlarmList active;
+  boolean paused = false; //for clock update
+
   private Alarmer() {//only one instance allowed at present.
     thread = new Thread(this, "PM.Alarmer");
     thread.setDaemon(true);
     priority = Thread.NORM_PRIORITY;//-1;
     active = new AlarmList(dbg);
-  }
-
-  /**
-   * seems to startup already interrupted. I.e. first sleep doesn't sleep. Ok but curious.
-   */
-  public void run() {
-    dbg.WARNING("RUNNING");
-    kill = false;
-    while (!kill) {
-      try {
-        long nexttime = active.soonest();
-        if (paused || nexttime == 0) {
-          dbg.WARNING("no alarms, sleeping for along time");
-          ThreadX.sleepFor(100000);//just a little safer than 'forever'
-        } else {
-          long interval = nexttime - DateX.utcNow();//convert to timedifference
-          if (interval > 0) {
-            dbg.WARNING("next check at " + DateX.timeStamp(nexttime) + " Sleeping for " + interval);
-            ThreadX.sleepFor(interval);
-          }
-        }
-        if (!paused) {
-          dbg.WARNING("check alarms");
-          //ignore why we quit sleeping, try to do some alarms NOW
-          doRingers(active.ringers(DateX.utcNow()));
-        }
-      } catch (Throwable ex) {
-        dbg.Caught(ex, "Unexpected exception:");
-        continue;
-      }
-    }
-  }
-
-  private void check() {
-    thread.interrupt();
-  }
-
-  private Alarmum getState(Alarmum alarm) {
-    return active.info(alarm);
-  }
-
-  private TextList dump(TextList spam) {
-    if (spam == null) {
-      spam = new TextList();
-    }
-    return my.active.toSpam(spam);
-  }
-
-  private EasyProperties ezpDump() {
-    return my.active.toEzpSpam();
   }
 
   private static void setMy() {
@@ -352,6 +293,56 @@ public class Alarmer implements Runnable {
 
   public static void dump(ErrorLogStream els, int importance) {
 //debugger construction loop    els.rawMessage(importance,dump().asParagraph());
+  }
+
+  /**
+   * seems to startup already interrupted. I.e. first sleep doesn't sleep. Ok but curious.
+   */
+  public void run() {
+    dbg.WARNING("RUNNING");
+    kill = false;
+    while (!kill) {
+      try {
+        long nexttime = active.soonest();
+        if (paused || nexttime == 0) {
+          dbg.WARNING("no alarms, sleeping for along time");
+          ThreadX.sleepFor(100000);//just a little safer than 'forever'
+        } else {
+          long interval = nexttime - DateX.utcNow();//convert to timedifference
+          if (interval > 0) {
+            dbg.WARNING("next check at " + DateX.timeStamp(nexttime) + " Sleeping for " + interval);
+            ThreadX.sleepFor(interval);
+          }
+        }
+        if (!paused) {
+          dbg.WARNING("check alarms");
+          //ignore why we quit sleeping, try to do some alarms NOW
+          doRingers(active.ringers(DateX.utcNow()));
+        }
+      } catch (Throwable ex) {
+        dbg.Caught(ex, "Unexpected exception:");
+//        continue;
+      }
+    }
+  }
+
+  private void check() {
+    thread.interrupt();
+  }
+
+  private Alarmum getState(Alarmum alarm) {
+    return active.info(alarm);
+  }
+
+  private TextList dump(TextList spam) {
+    if (spam == null) {
+      spam = new TextList();
+    }
+    return my.active.toSpam(spam);
+  }
+
+  private EasyProperties ezpDump() {
+    return my.active.toEzpSpam();
   }
 
 }

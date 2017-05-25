@@ -1,15 +1,10 @@
 package pers.hal42.thread;
 
 
-import org.jetbrains.annotations.Contract;
-import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.timer.Ticks;
 
 import java.util.Comparator;
-
-import static java.util.Comparator.reverseOrder;
 
 /**
  * Message Queue processor component

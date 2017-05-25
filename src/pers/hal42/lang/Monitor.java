@@ -106,11 +106,26 @@ public final class Monitor implements Comparable<Monitor>, AutoCloseable {
             notify();
           }
         }
-      } catch (Exception e2) {
+      } catch (Exception ignored) {
       }
     }
   }
 
+  private class FancyUnlocker implements AutoCloseable{
+    String message;
+
+    public FancyUnlocker(String message) {
+      this.message = message;
+    }
+
+    @Override
+    public void close() throws Exception {
+       synchronized (name) {
+          dbg().VERBOSE("Freed by: " + message + " " + Thread.currentThread());
+          freeMonitor();
+        }
+      }
+  }
   //noisy versions of the above:
   public AutoCloseable LOCK(String moreinfo) {
     dbg().VERBOSE(moreinfo + " trying to Lock:" + ownerInfo());
@@ -118,19 +133,10 @@ public final class Monitor implements Comparable<Monitor>, AutoCloseable {
       getMonitor();
       dbg().VERBOSE("Locked by: " + moreinfo + " " + Thread.currentThread());
     }
-    return this;
+    return new FancyUnlocker(moreinfo);
   }
-
-  public void UNLOCK(String moreinfo) {
-    synchronized (name) {
-      dbg().VERBOSE("Freed by: " + moreinfo + " " + Thread.currentThread());
-      freeMonitor();
-    }
-  }
-
 
   public boolean tryMonitor() {
-
     synchronized (name) {  //## must use same synch as getMonitor.
       try {
         if (thread == null) {

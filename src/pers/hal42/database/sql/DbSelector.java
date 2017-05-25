@@ -138,7 +138,6 @@ public class DbSelector extends DbExpr {
    * Get the query string represented by this query.
    *
    * @return The queryString value
-   * @throws Exception Description of Exception
    */
   public StringBuilder getQueryString() {
     StringBuilder rtn = new StringBuilder(100);
@@ -172,10 +171,9 @@ public class DbSelector extends DbExpr {
 //      } catch (IOException e) {
 //        throw new Exception(e);
 //      }
+      rtn.append("DUAL");//works for most db's
     } else {
-      Iterator tablei = tables.iterator();
-      while (tablei.hasNext()) {
-        TableProfile tab = (TableProfile) tablei.next();
+      for (TableProfile tab : tables) {
         if (i++ != 0) {
           rtn.append(", ");
         }

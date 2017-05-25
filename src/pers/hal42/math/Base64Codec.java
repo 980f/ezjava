@@ -68,7 +68,7 @@ public class Base64Codec {
       val >>= 6;
       out[index + 1] = alphabet[val & 0x3F];
       val >>= 6;
-      out[index + 0] = alphabet[val & 0x3F];
+      out[index] = alphabet[val & 0x3F];
     }
     return out;
   }

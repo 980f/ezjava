@@ -62,7 +62,7 @@ public class VectorX {
    * @return whether @param arf was inserted into @param v using @param ordering.
    * if an equivalent object is found then new one is NOT inserted
    */
-  public static boolean uniqueInsert(Vector v, Object arf, Comparator ordering) {
+  public static <T> boolean uniqueInsert(Vector<T> v, T arf, Comparator<T> ordering) {
     int location = Collections.binarySearch(v, arf, ordering);
     if (location < 0) {
       v.insertElementAt(arf, ~location);

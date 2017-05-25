@@ -54,8 +54,8 @@ public class IndexProfile {
 
   public TextList columnNames() {
     TextList tl = new TextList();
-    for (int i = 0; i < fields.length; i++) {
-      tl.add(fields[i].name());
+    for (ColumnProfile field : fields) {
+      tl.add(field.name());
     }
     return tl;
   }

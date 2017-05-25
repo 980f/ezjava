@@ -2,7 +2,6 @@ package pers.hal42.transport;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import pers.hal42.lang.Bool;
 import pers.hal42.lang.StringX;
 import pers.hal42.text.TextList;
 
@@ -280,18 +279,24 @@ public class Storable {
         value = Double.parseDouble(image);//leave this as the overly picky parser
         setType(Numeric);
       } catch (Throwable any) {
-        //ignore
         if(parseBool(image)){
           setType(Boolean);
         } else {
           setType(Textual);
         }
       }
-
     }
     return type;
   }
 
+  /** try to divine type from appearance, recursively*/
+  public void guessTypes(){
+    if(type == Type.Wad){
+      wad.forEach(Storable::guessType);
+    } else {
+      guessType();
+    }
+  }
   /**
    * find or create child
    */

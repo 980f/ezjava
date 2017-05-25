@@ -26,6 +26,7 @@ public class ThreadX {
    * <p>
    * change this to return a void! WHy? just document what it does return.
    */
+  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
   public static boolean waitOn(Object obj, long millisecs, boolean allowInterrupt, ErrorLogStream dbg) {
     dbg = ErrorLogStream.NonNull(dbg);//avert NPE
     synchronized (obj) { // +++ in order to make code run faster, this synchronized *might* ought to be placed just around the obj.wait() line.
@@ -49,6 +50,7 @@ public class ThreadX {
               return true;
             } else {
               dbg.WARNING("interrupted,ignored");
+              //noinspection UnnecessaryContinue
               continue;
             }
           } catch (Exception ex) {
@@ -75,6 +77,7 @@ public class ThreadX {
    *
    * @return true if notify did NOT happen
    */
+  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
   public static boolean notify(Object obj) {
     synchronized (obj) {
       try {

@@ -20,7 +20,7 @@ import pers.hal42.logging.ErrorLogStream;
  * </PRE> Note the use of equal(), NOT equals().
  *
  * @author Chris Bitmead
- * @created December 13, 2001
+ * created December 13, 2001
  */
 
 public class DbDeleter {

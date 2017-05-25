@@ -275,7 +275,7 @@ public class JsonStorable extends PushedJSONParser {
       ps.println('{');
       ++tablevel;
       int last = wad.size() - 1;
-      wad.forEach(node -> printValue(node));
+      wad.forEach(this::printValue);
       --tablevel;
       indent();
       ps.print('}');

@@ -1,6 +1,5 @@
 package pers.hal42.database;
 
-import com.fedfis.Namers;
 import pers.hal42.lang.Bool;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.ObjectX;

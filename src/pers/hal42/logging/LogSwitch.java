@@ -29,6 +29,7 @@ public class LogSwitch implements Comparable {
   protected int level;
   private static final char[] lvlLtr = {'-', '/', '!'};
   protected static int DEFAULT_LEVEL = VERBOSE.level;//set for server, which has a harder time configuring than the client
+  @SuppressWarnings("FieldCanBeLocal")
   private static boolean debugme = false;//have to recompile to debug
 
   //////////////////////////////////////////////////////
@@ -55,14 +56,16 @@ public class LogSwitch implements Comparable {
   }
 
   void register() {
-    if (registry == null) {
+    if (null != registry) {
+      synchronized (registry) {//just to get size() to relate to us adding one.
+        debug("registering " + Name());
+        registry.add(this); // sort +++ !!!
+        debug("Registry size: " + registry.size());
+      }
+    } else {
       debug("LOGSWITCH REGISTRY IS NULL!!!");
     }
-    synchronized (registry) {//just to get size() to relate to us adding one.
-      debug("registering " + Name());
-      registry.add(this); // sort +++ !!!
-      debug("Registry size: " + registry.size());
-    }
+
   }
 
   // for sorting for display purposes

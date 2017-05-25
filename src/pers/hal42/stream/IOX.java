@@ -1,13 +1,12 @@
 package pers.hal42.stream;
 
-
 import pers.hal42.lang.DateX;
 import pers.hal42.text.TextList;
 import pers.hal42.timer.UTC;
 
 import java.io.*;
 
-
+/** utilties related to fiels and stream.  Look in java.nio for newer equivalents */
 public class IOX {
   private IOX() {
     // don't construct me; I am for static functions
@@ -74,16 +73,19 @@ public class IOX {
   }
 
   /**
-   * close, stifle all errors. Flush first is object supports flushing
+   * close, stifle all errors. Flush first if object supports flushing
+   *
+   * @returns whether there were no errors, usually ignored.
    */
-  public static <T extends Closeable> void Close(T closeable) {
+  public static <T extends Closeable> boolean Close(T closeable) {
     try {
       if (closeable instanceof Flushable) {
         ((Flushable) closeable).flush();
       }
       closeable.close();
+      return true;
     } catch (IOException | NullPointerException ignored) {
-      //just plain don't care.
+      return false;
     }
   }
 
@@ -166,18 +168,15 @@ public class IOX {
    *                     eg: createUniqueFilename("c:\temp", "myfile", ".txt") = c:\temp\myfile987654321.txt"
    */
   public static String createUniqueFilename(String pathedPrefix, String suffix) {
-    File file = null;
-    String filename = null;
-    int attempts = 0;
-    try {
-      do {
-        filename = pathedPrefix + DateX.timeStampNow() + suffix;
-        file = new File(filename);
-      } while (((file != null) || file.exists()) && (++attempts < 20));//no infinite loops
-    } catch (Exception e) {
-      // +++ bitch
+    //todo: needs mutex, also java.nio has this functionality so proxy to that.
+    for (int attempts = 20; attempts-- > 0; ) {
+      String filename = pathedPrefix + DateX.timeStampNow() + suffix;
+      File file = new File(filename);
+      if (!file.exists()) {
+        return filename;
+      }
     }
-    return filename;
+    return null;
   }
 
   public static long fileModTicks(String filename) {
@@ -201,13 +200,11 @@ public class IOX {
   }
 
   public static TextList showAsciiProfile(String filename) {
-    TextList ret = null;
     try {
-      FileInputStream fis = new FileInputStream(filename);
-      ret = showAsciiProfile(fis);
+      return showAsciiProfile(new FileInputStream(filename));
     } catch (Exception ex) {
+      TextList ret = new TextList();
       ret.add("Exception Ascii profiling \"" + filename + "\": " + ex);
-    } finally {
       return ret;
     }
   }
@@ -223,17 +220,15 @@ public class IOX {
 
   public static TextList showAsciiProfile(InputStream in) {
     TextList ret = new TextList();
-    int[] profile = null;
     try {
-      profile = asciiProfile(in);
+      int[] profile = asciiProfile(in);
       for (int i = 0; i < profile.length; i++) {
         ret.add("Value " + i + " had " + profile[i] + " occurrences.");
       }
     } catch (Exception ex) {
       ret.add("IOException Ascii profiling stream: " + ex);
-    } finally {
-      return ret;
     }
+    return ret;
   }
 
   public static BufferedReader StreamLineReader(InputStream stream) {
@@ -286,8 +281,7 @@ public class IOX {
   /**
    * read contents of a regular file into an array of strings
    *
-   * @param file
-   * @return textlist with each item one line from file
+   * @returns textlist with each item one line from file
    */
   public static TextList TextFileContent(File file) {
     TextList content = new TextList();
@@ -296,7 +290,7 @@ public class IOX {
       while (reader.ready()) {
         content.add(reader.readLine());
       }
-    } catch (Exception ex) {
+    } catch (Throwable ex) {
       //on exception break while and keep what we got, adding note:
       content.add("Exception while reading file");
       content.add(ex.getLocalizedMessage());
@@ -306,7 +300,7 @@ public class IOX {
   }
 
   /**
-   * @param fname
+   * @param fname filename
    * @return see TextFileContent(File file)
    */
   public static TextList TextFileContent(String fname) {
@@ -317,4 +311,3 @@ public class IOX {
     System.out.println(showAsciiProfile(args[0]));
   }
 }
-//$Id: IOX.java,v 1.7 2004/05/23 16:30:10 andyh Exp $

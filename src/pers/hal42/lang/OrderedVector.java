@@ -3,19 +3,39 @@ package pers.hal42.lang;
 import java.util.Comparator;
 import java.util.Vector;
 
-public class OrderedVector {
-  Comparator ordering;
-  Class filter = null;
-  boolean unique = false;
-  private Vector storage;
+public class OrderedVector<T> {
+  Comparator<T> ordering;
 
-  private OrderedVector(Comparator ordering, int prealloc, Class filter, boolean unique) {
-    storage = new Vector(prealloc);
+  boolean unique = false;
+  private Vector<T> storage;
+
+  private OrderedVector(Comparator<T> ordering, int prealloc, boolean unique) {
+    storage = new Vector<>(prealloc);
     this.ordering = ordering != null ? ordering : new NormalCompare();//swallow exceptions on ordering
-    this.filter = filter; //null is ok
     this.unique = unique;
   }
 
+  public static <T> OrderedVector New(Comparator<T> ordering, boolean unique, int prealloc) {
+    return new OrderedVector<>(ordering, prealloc, unique);
+  }
+
+  public static <T> OrderedVector New(Comparator<T> ordering, int prealloc) {
+    return new OrderedVector<>(ordering, prealloc, false);
+  }
+
+  public static <T> OrderedVector New(Comparator<T> ordering, boolean unique) {
+    return new OrderedVector<>(ordering, 0, unique);
+  }
+
+  public static <T> OrderedVector New(boolean unique) {
+    return new OrderedVector<T>(null, 0, unique);
+  }
+
+  public static <T> OrderedVector New() {
+    return new OrderedVector<T>(null, 0, false);
+  }
+
+  //deficiency in Java, can't ast an Object[] to a T[] array even if you know that it is. perhaps someone else can figure out how to do it.
   public synchronized Object[] snapshot() {
     return storage.toArray();
   }
@@ -25,48 +45,21 @@ public class OrderedVector {
     return storage.size();
   }
 
-  public synchronized boolean insert(Object arf) {
-    if (ObjectX.typeMatch(arf, filter)) {//chagne to "if arf can be cast to filter..."
-      if (unique) {
-        return VectorX.uniqueInsert(storage, arf, ordering);
-      } else {
-        VectorX.orderedInsert(storage, arf, ordering);
-        return true;
-      }
+  public synchronized boolean insert(T arf) {
+    if (unique) {
+      return VectorX.uniqueInsert(storage, arf, ordering);
+    } else {
+      VectorX.orderedInsert(storage, arf, ordering);
+      return true;
     }
-    return false;
   }
 
   public synchronized Object itemAt(int i) {
     if (i >= 0 && i < storage.size()) {
       return storage.elementAt(i);
     } else {
-      try {
-        return filter.newInstance();
-      } catch (Exception ex) {//npe, IllegalAccessException
-        return null;
-      }
+      return null;
     }
-  }
-
-  public static OrderedVector New(Comparator ordering, Class filter, boolean unique, int prealloc) {
-    return new OrderedVector(ordering, prealloc, filter, unique);
-  }
-
-  public static OrderedVector New(Comparator ordering, Class filter, int prealloc) {
-    return new OrderedVector(ordering, prealloc, filter, false);
-  }
-
-  public static OrderedVector New(Comparator ordering, Class filter, boolean unique) {
-    return new OrderedVector(ordering, 0, filter, unique);
-  }
-
-  public static OrderedVector New(Class filter, boolean unique) {
-    return new OrderedVector(null, 0, filter, unique);
-  }
-
-  public static OrderedVector New(Class filter) {
-    return new OrderedVector(null, 0, filter, false);
   }
 
 }

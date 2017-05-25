@@ -1,7 +1,6 @@
 package pers.hal42.database;
 
 import org.jetbrains.annotations.NotNull;
-import pers.hal42.lang.ObjectX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
 

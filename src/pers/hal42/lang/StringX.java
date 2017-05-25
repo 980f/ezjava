@@ -413,11 +413,7 @@ public class StringX {
 
   public static boolean equalStrings(String one, String two, boolean ignoreCase) {
     if (NonTrivial(one)) {
-      if (NonTrivial(two)) {
-        return ignoreCase ? one.equalsIgnoreCase(two) : one.equals(two);
-      } else {
-        return false;
-      }
+      return NonTrivial(two) && (ignoreCase ? one.equalsIgnoreCase(two) : one.equals(two));
     } else {
       return !NonTrivial(two); //both trivial is a match
     }
@@ -540,6 +536,35 @@ public class StringX {
     return parseInt(s, 10);
   }
 
+  public static boolean isInteger(String s){
+    try {
+      //noinspection ResultOfMethodCallIgnored
+      Integer.parseInt(s);
+      return true;
+    } catch (Exception ex) {
+      return false;
+    }
+  }
+
+  public static boolean isLong(String s){
+    try {
+      //noinspection ResultOfMethodCallIgnored
+      Long.parseLong(s);
+      return true;
+    } catch (Exception ex) {
+      return false;
+    }
+  }
+  public static boolean isDouble(String s){
+    try {
+      //noinspection ResultOfMethodCallIgnored
+      Double.parseDouble(s);
+      return true;
+    } catch (Exception ex) {
+      return false;
+    }
+  }
+
   /**
    * java.lang.Long.parseLong throws spurious exceptions,
    * and doesn't accept unsigned hex numbers that are otherwise acceptible to java.
@@ -605,6 +630,6 @@ public class StringX {
   }
 
   public static int parseInt(String s, int radix) {
-    return (int) (parseLong(s, radix) & 0xFFFFFFFF);
+    return (int) parseLong(s, radix);
   }
 }

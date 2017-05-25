@@ -10,7 +10,7 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 public class CronComputer {
-  private GregorianCalendar zoned;
+  private final GregorianCalendar zoned;
   private Date jre13hack = new Date();//made a member instead of a local for performance reasons.
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(CronComputer.class, LogLevelEnum.VERBOSE);
   ///////////////
@@ -19,6 +19,10 @@ public class CronComputer {
   private static final int MINUTE = 2;
   private static final int SECOND = 1;
   private static final int MILLISECOND = 0;
+
+  public CronComputer(TimeZone tz) {
+    zoned = (GregorianCalendar) Calendar.getInstance(tz);
+  }
 
   public TimeZone getZone() {
     return zoned.getTimeZone();
@@ -89,9 +93,7 @@ public class CronComputer {
 ////////////////
 
   public static CronComputer New(TimeZone tz) {
-    CronComputer newone = new CronComputer();
-    newone.zoned = (GregorianCalendar) Calendar.getInstance(tz);
-    return newone;
+    return new CronComputer(tz);
   }
 
   public static CronComputer UTC() {

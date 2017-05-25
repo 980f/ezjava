@@ -1,5 +1,6 @@
 package pers.hal42.timer;
 
+import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.DateX;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.StringX;
@@ -17,18 +18,97 @@ import java.util.TimeZone;
  */
 
 public class UTC implements Comparable<UTC> {
-  public long utc = 0;
   /**
    * h_uman r_eadable t_ime f_ormat ==
    */
   private static final LocalTimeFormat hrtf = LocalTimeFormat.Utc();//"yyyyMMddHHmmssSSS"
   private static final Monitor formatting = new Monitor("UTCFormatter");
+  public long utc = 0;
 
   /**
    * non null but invalid time.
    */
   public UTC() {
     //make an invalid time
+  }
+
+  /**
+   * @return new timevalue from absolute millis
+   */
+  public static UTC New(long time) {
+    UTC newone = new UTC();
+    newone.setto(time);
+    return newone;
+  }
+
+  /**
+   * @return new timevalue from value printed by this classes's toString()
+   */
+  public static UTC New(String image) {
+    UTC newone = new UTC();
+    newone.setto(image);
+    return newone;
+  }
+
+  /**
+   * @return whether @param probate is realistic value.
+   */
+  public static boolean isValid(UTC probate) {
+    return probate != null && probate.isValid();
+  }
+
+  /**
+   * return a new UTC initialized with current time
+   */
+  public static UTC Now() {
+    return new UTC().setto(DateX.utcNow());
+  }
+
+  // for the database, we need to be able to store time in an integer
+  // since an integer is signed in java, we need to fit our time in 2147483647.
+  // since there are about 86400 seconds in a day, that means we can fit 24855 days in that number
+  // Since there are roughly 365 days in a year, that allows us 68 years.
+  // Since genesis of computers is roughly calculated at 19700101
+  // if we use that, this scheme is good until 2038
+  public static UTC fromSeconds(int seconds) {
+    return UTC.New(secondsToMillis(seconds));
+  }
+
+  public static int toSeconds(UTC when) {
+    return (int) (when.getTime() / 1000L);
+  }
+
+  public static long secondsToMillis(int seconds) {
+    return 1000L * (long) seconds;
+  }
+
+  public static long Elapsed(UTC first, UTC second) {
+    return second.utc - first.utc;
+  }
+  //end comparable service utilities
+  /////////////////
+
+  public static UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
+    if (startdate == null) {
+      return null;
+    }
+    Date date = ChangeByDays(new Date(startdate.getTime()), days);
+    if (date == null) {
+      return null;
+    }
+    return UTC.New(date.getTime());
+  }
+
+  public static Date ChangeByDays(Date startdate, int days) { // can be positive or negative
+    if (startdate == null) {
+      return null;
+    }
+    // calculate the end date (start of next day)
+    // +++ copy this stuff into and use it in the Search screen!
+    GregorianCalendar zoned = (GregorianCalendar) Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    zoned.setTimeInMillis(startdate.getTime());
+    zoned.add(GregorianCalendar.DATE, days);
+    return zoned.getTime();
   }
 
   /**
@@ -41,12 +121,8 @@ public class UTC implements Comparable<UTC> {
   /**
    * @return int for ascending sort
    */
-  public int compareTo(UTC o) {
-//    System.out.println("comparing " + this + " to " + o);
-    if (o != null) {
-      return MathX.signum(utc - o.utc);//or could >>>32.
-    }
-    return (1 - 0);//could throw cast exception.
+  public int compareTo(@NotNull UTC o) {
+    return MathX.signum(utc - o.utc);//or could >>>32.
   }
 
   //////////////////////
@@ -90,8 +166,6 @@ public class UTC implements Comparable<UTC> {
   public long skew(UTC refclock) {
     return utc - refclock.utc;
   }
-  //end comparable service utilities
-  /////////////////
 
   /**
    * @return new UTC which is 'this' corrected for skew.
@@ -171,83 +245,6 @@ public class UTC implements Comparable<UTC> {
       setto(utc.getTime());
       return true;
     }
-  }
-
-  /**
-   * @return new timevalue from absolute millis
-   */
-  public static UTC New(long time) {
-    UTC newone = new UTC();
-    newone.setto(time);
-    return newone;
-  }
-
-  /**
-   * @return new timevalue from value printed by this classes's toString()
-   */
-  public static UTC New(String image) {
-    UTC newone = new UTC();
-    newone.setto(image);
-    return newone;
-  }
-
-  /**
-   * @return whether @param probate is realistic value.
-   */
-  public static boolean isValid(UTC probate) {
-    return probate != null && probate.isValid();
-  }
-
-  /**
-   * return a new UTC initialized with current time
-   */
-  public static UTC Now() {
-    return new UTC().setto(DateX.utcNow());
-  }
-
-  // for the database, we need to be able to store time in an integer
-  // since an integer is signed in java, we need to fit our time in 2147483647.
-  // since there are about 86400 seconds in a day, that means we can fit 24855 days in that number
-  // Since there are roughly 365 days in a year, that allows us 68 years.
-  // Since genesis of computers is roughly calculated at 19700101
-  // if we use that, this scheme is good until 2038
-  public static UTC fromSeconds(int seconds) {
-    return UTC.New(secondsToMillis(seconds));
-  }
-
-  public static int toSeconds(UTC when) {
-    return (int) (when.getTime() / 1000L);
-  }
-
-  public static long secondsToMillis(int seconds) {
-    return 1000L * (long) seconds;
-  }
-
-  public static long Elapsed(UTC first, UTC second) {
-    return second.utc - first.utc;
-  }
-
-  public static UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
-    if (startdate == null) {
-      return null;
-    }
-    Date date = ChangeByDays(new Date(startdate.getTime()), days);
-    if (date == null) {
-      return null;
-    }
-    return UTC.New(date.getTime());
-  }
-
-  public static Date ChangeByDays(Date startdate, int days) { // can be positive or negative
-    if (startdate == null) {
-      return null;
-    }
-    // calculate the end date (start of next day)
-    // +++ copy this stuff into and use it in the Search screen!
-    GregorianCalendar zoned = (GregorianCalendar) Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    zoned.setTimeInMillis(startdate.getTime());
-    zoned.add(GregorianCalendar.DATE, days);
-    return zoned.getTime();
   }
 
 }

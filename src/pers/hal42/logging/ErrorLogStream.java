@@ -23,13 +23,9 @@ import java.util.Vector;
 import static pers.hal42.logging.LogLevelEnum.*;
 /**
  * WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
- * this was waiter to improve efficiency the rest of the time.
+ * this was done to improve efficiency the rest of the time.
  *
- * @todo: finish applying logswitch
- */
-
-
-/**
+ * @todo finish applying logswitch
  * auto closeable for Push/Exit context stack
  */
 public class ErrorLogStream implements AtExit, AutoCloseable {
@@ -149,6 +145,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
 
   public void Message(int msgLevel, String message, Object... args) {
     // strange errors in here need to be debugged with System.out
+    //noinspection TryWithIdenticalCatches
     try {
       // broke this down to find the exact line that causes the error ...
       StringBuilder builder = new StringBuilder(200);

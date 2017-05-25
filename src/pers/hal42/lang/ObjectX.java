@@ -28,6 +28,7 @@ public class ObjectX {
     for (int i = a.length; i-- > 0; ) {
       int cmp = a[i].compareTo(key);//todo: apply random object compare funciton.
       if (cmp < 0) {
+        //noinspection UnnecessaryContinue
         continue;
       } else if (cmp > 0) {
         return ~i; // put it here

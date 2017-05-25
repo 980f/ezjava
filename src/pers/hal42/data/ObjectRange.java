@@ -4,8 +4,6 @@ import pers.hal42.lang.ObjectX;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.transport.EasyCursor;
-import pers.hal42.transport.isEasy;
 
 
 /**

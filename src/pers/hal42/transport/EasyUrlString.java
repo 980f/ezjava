@@ -105,15 +105,19 @@ public class EasyUrlString implements isEasy {
   public static void main(String[] args) {
     if (args.length < 2) {
       barf();
-    } else {
-      if (StringX.equalStrings(args[0], "encode")) {
-        System.out.println("ascii " + Ascii.bracket(args[1].getBytes()) + " encoded to " + EasyUrlString.encode(args[1]));
-      } else if (StringX.equalStrings(args[0], "decode")) {
-        System.out.println(args[1] + " decoded to " + Ascii.bracket(EasyUrlString.decode(args[1]).getBytes()));
-      } else {
-        System.out.println("args = " + TextList.CreateFrom(args));
-        barf();
-      }
+      System.exit(2);
+    }
+    switch (args[0]) {
+    case "encode":
+      System.out.println("ascii " + Ascii.bracket(args[1].getBytes()) + " encoded to " + EasyUrlString.encode(args[1]));
+      break;
+    case "decode":
+      System.out.println(args[1] + " decoded to " + Ascii.bracket(EasyUrlString.decode(args[1]).getBytes()));
+      break;
+    default:
+      System.out.println("args = " + TextList.CreateFrom(args));
+      barf();
+      System.exit(1);
     }
   }
 

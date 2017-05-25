@@ -1,10 +1,8 @@
 package pers.hal42.data;
 
-
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.timer.UTC;
-import pers.hal42.transport.EasyCursor;
 
 public class TimeRange extends ObjectRange<UTC> {
 
@@ -17,7 +15,7 @@ public class TimeRange extends ObjectRange<UTC> {
   }
 
   public UTC end() {
-    return singular() ? start() : (UTC) two();
+    return singular() ? start() : two();
   }
 
   public Comparable filter(String input) {

@@ -33,9 +33,7 @@ public class BaseConverter {
     if (!dtoaBaseOk(base)) {
       return "0#NaN"; //really need to find the official NaN's
     }
-
-//System.out.println("Converting " + value + " to base " + base);
-
+    @SuppressWarnings("UnnecessaryLocalVariable")
     double radix = base; //so we don't do a zillion int to floats
     //do sign/magnitude split
     boolean isNegative = value < 0;

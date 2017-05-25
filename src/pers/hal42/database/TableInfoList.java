@@ -1,13 +1,12 @@
 package pers.hal42.database;
 
-/**
- * List of Table Information structures, for database backup, creation, and copying
- */
-
 import pers.hal42.text.TextList;
 
 import java.util.Vector;
 
+/**
+ * List of Table Information structures, for database backup, creation, and copying
+ */
 public class TableInfoList extends Vector<TableInfo> {
 
   // Since this extends Vector, synchronizing makes sense

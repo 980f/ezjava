@@ -128,70 +128,55 @@ public class BigFile {
 
   /**
    * split the file by size
+   * @deprecated broken:needs to wait on stream completion
    */
   void splitfile() {
     File infile = new File(path);
-
     if (!infile.exists()) {
       dbg.ERROR("No such file:\n" + path);
       return;
-    } else if (!infile.canRead()) {
+    }
+    if (!infile.canRead()) {
       dbg.ERROR("Cannot read file:\n" + path);
       return;
     }
 
     long filelength = infile.length();
 
-    FileInputStream is = null;
-    try {
-      is = new FileInputStream(infile);
+    try(FileInputStream is = new FileInputStream(infile)) {
+      long tot = 0;
+      long p = 0;
+      while (tot < filelength) {
+        dbg.VERBOSE(statDisp(tot, filelength));
+        long sz = ((filelength - tot) < size) ? (int) (filelength - tot) : size;
+        try {
+          FileOutputStream os = new FileOutputStream(path + "." + p);
+          Streamer streamer = Streamer.Buffered(is, os, 100000, sz, null, false);
+//todo:0 streamer.join
+          long rd = streamer.count;
+          if (rd < sz) {
+            dbg.ERROR("Only " + rd + " bytes transferred instead of the " + sz + " expected!");
+          }
+          tot += rd;
+          os.close();
+        } catch (Exception ex) {
+          dbg.Caught(ex);
+          return;
+        }
+        p++;
+      }
+      dbg.VERBOSE(statDisp(tot, filelength) + ", " + tot + " bytes, " + p + " files.");
+      dbg.VERBOSE("Done... split into " + p + " files.\nTotal " + tot + " bytes");
     } catch (Exception ex) {
       dbg.ERROR("File not found:\n" + path);
-      return;
     }
-
-    long tot = 0;
-    long p = 0;
-    while (tot < filelength) {
-      dbg.VERBOSE(statDisp(tot, filelength));
-      long sz = ((filelength - tot) < size) ? (int) (filelength - tot) : size;
-      try {
-        FileOutputStream os = new FileOutputStream(path + "." + p);
-        Streamer streamer = Streamer.Buffered(is, os, 100000, sz, null, false);
-//        streamer.run();
-        long rd = streamer.count;
-        if (rd < sz) {
-          dbg.ERROR("Only " + rd + " bytes transferred instead of the " + sz + " expected!");
-        }
-        tot += rd;
-        os.close();
-      } catch (Exception ex) {
-        dbg.Caught(ex);
-        if (is instanceof FileInputStream) {
-          try {
-            is.close();
-          } catch (Exception s) {
-          }
-        }
-        return;
-      }
-      p++;
-    }
-    dbg.VERBOSE(statDisp(tot, filelength) + ", " + tot + " bytes, " + p + " files.");
-    if (is instanceof FileInputStream) {
-      try {
-        is.close();
-      } catch (Exception s) {
-      }
-    }
-    dbg.VERBOSE("Done... split into " + p + " files.\nTotal " + tot + " bytes");
   }
 
 
   /**
    */
   void joinfile() {
-    String name = "";
+
     int p = 0;
     int rd = 0;
     int dotindex = 0;
@@ -211,12 +196,9 @@ public class BigFile {
       dbg.ERROR("Not a valid JavaSplit file.");
       return;
     }
+    String name = path.substring(0, dotindex);
 
-    name = path.substring(0, dotindex);
-
-    try {
-      Integer.parseInt(path.substring(dotindex + 1, path.length()));
-    } catch (Exception ex) {
+    if(!StringX.isInteger(path.substring(dotindex + 1, path.length()))){
       dbg.ERROR("Not a valid JavaSplit file.");
       return;
     }
@@ -247,16 +229,9 @@ public class BigFile {
 
     while (true) {
       try {
+        IOX.Close(is);
         infile = new File(name + "." + p);
-        if (is instanceof FileInputStream) {
-          try {
-            is.close();
-          } catch (Exception s) {
-          }
-        }
-
         is = new FileInputStream(infile);
-
         p++;
       } catch (Exception ex) {
         //setMessage(  "Done... joined " + p + " files" );

@@ -104,7 +104,7 @@ public class Streamer implements Runnable {
   /**
    * @param howMany - how many bytes to move; -1 means all
    */
-  private /*public static*/ final long swapStreams(InputStream in, OutputStream out, int buffsize, long howMany, boolean ignoreEOF) throws IOException {
+  private long swapStreams(InputStream in, OutputStream out, int buffsize, long howMany, boolean ignoreEOF) throws IOException {
     if (in == null) {
       throw (new IOException("Streamer.swapStreams: IN is null."));
     }

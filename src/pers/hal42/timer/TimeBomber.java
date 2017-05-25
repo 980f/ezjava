@@ -1,5 +1,8 @@
 package pers.hal42.timer;
 
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.thread.ThreadX;
+
 /**
  * Intended use: timeout on background activity outside of Java
  * set a timebomb ticking, when it blows it calls your function.
@@ -8,9 +11,6 @@ package pers.hal42.timer;
  * of longs.
  */
 
-import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.thread.ThreadX;
-
 public class TimeBomber implements Runnable {
   protected TimeBomb dynamite = null;
   /**
@@ -18,10 +18,10 @@ public class TimeBomber implements Runnable {
    * and live with the restricted range, which is enormous for a timeout value.
    */
   protected int fuse = 0;
-  Thread timer;
-  boolean defused = false;
-  static final ErrorLogStream dbg = ErrorLogStream.getForClass(TimeBomber.class);
-  static int idCounter = 0;
+  private Thread timer;
+  private boolean defused = false;
+  public static final ErrorLogStream dbg = ErrorLogStream.getForClass(TimeBomber.class);
+  private static int idCounter = 0;
 
 
   /**
@@ -54,6 +54,7 @@ public class TimeBomber implements Runnable {
   /**
    * turn off a possibly ticking timebomb
    */
+  @SuppressWarnings("TryWithIdenticalCatches")
   public void defuse() {
     try {
       defused = true;
