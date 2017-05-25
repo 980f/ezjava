@@ -10,9 +10,12 @@ import pers.hal42.util.PrintFork;
 import pers.hal42.util.StringStack;
 
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.text.MessageFormat;
 import java.util.Vector;
@@ -619,5 +622,14 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     Global()._objectDump(o, path, tl);
   }
 
-}
+  public void dump(int level,String path,String content){
+    if(willOutput(level)) {
+      try {
+        Files.write(Paths.get("bigquery.sql"), content.getBytes());
+      } catch (IOException e) {
+        ERROR("Couldn't save debug copy of content, oh well.");
+      }
+    }
+  }
 
+}
