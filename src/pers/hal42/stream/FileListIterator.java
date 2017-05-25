@@ -10,9 +10,9 @@ import java.io.IOException;
 
 /**
  * Created by Andy on 5/25/2017.
- *
+ * <p>
  * originally inside of ScrapeSoup.java.
- *
+ * <p>
  * NOTE: this will close the file when the last string is read from it.
  */
 public class FileListIterator implements StringIterator {
@@ -36,15 +36,17 @@ public class FileListIterator implements StringIterator {
   }
 
   public String next() {
+    String nextly = nextValue; //try/finally did ambiguous things on init
     try {
-      return nextValue;
-    } finally {
-      try {
-        nextValue = StringX.trim(bylines.readLine());
-      } catch (IOException e) {
-        nextValue = null;
-        IOX.Close(file);
-      }
+      nextValue = bylines.readLine();
+    } catch (IOException e) {
+      nextValue = null;
     }
+    if (nextValue != null) {
+      nextValue = StringX.trim(nextValue);//trim converts nulls to empty string.
+    } else {
+      IOX.Close(file);
+    }
+    return nextly;
   }
 }

@@ -123,7 +123,7 @@ public class JsonStorable extends PushedJSONParser {
    */
   public boolean parse(Storable parent) {
     try (CountedLock popper = stats.depthTracker.open(d.location)) {
-      dbg.VERBOSE("Json File Depth now {0}/{1}", popper.asInt(), stats.depthTracker.maxDepth);
+//      dbg.VERBOSE("Json File Depth now {0}/{1}", popper.asInt(), stats.depthTracker.maxDepth);
       if (root == null) {
         root = parent;//wild stab at averting NPE's. often is the expected thing.
       }

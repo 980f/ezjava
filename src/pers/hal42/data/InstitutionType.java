@@ -12,5 +12,10 @@ public enum InstitutionType {
     this.abbrev = abbrev;
   }
 
+  /** single char in lower case */
+  public char asLower(){
+    return abbrev.toLowerCase().charAt(0);
+  }
+
 }
 

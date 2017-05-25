@@ -22,7 +22,8 @@ public class FancyArgIterator implements StringIterator {
       if (top.hasNext()) {
         return true;
       }
-      if (nesters != null) {
+      top=null;//release the exhausted iterator as soon as posible.
+      if (nesters != null && !nesters.empty()) {
         top = nesters.pop();
       } else {
         return false;
