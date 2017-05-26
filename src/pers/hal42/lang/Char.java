@@ -14,10 +14,10 @@ public class Char {
    * when removing a slash you search for the char and pass back the odd member of the pair
    * when adding slashes you find the char and emit a slash and the even member of the pair
    */
-  static String SeaScapes =
+  public static final String SeaScapes =
     "a\u0001" +
       "b\b" +      //STX
-      "c\0003" +   //ETX
+      "c\u0003" +   //ETX
       "f\f" +
       "n\n" +
       "r\r" +
@@ -33,14 +33,22 @@ public class Char {
     this.raw = raw;
   }
 
-  boolean needsSlash() {
+  public void setto(byte raw){
+    this.raw=raw;
+  }
+
+  public boolean is(char c){
+    return raw==c;
+  }
+
+  public boolean needsSlash() {
     return new Index(SeaScapes.indexOf(raw)).isOdd();//isOdd includes checking for valid.
   }
 
   /**
    * while named for one usage this works symmetrically
    */
-  char slashee() {
+  public char slashee() {
     Index present = new Index(SeaScapes.indexOf(raw));
     if (present.isValid()) {
       return SeaScapes.charAt(1 ^ present.get());//xor with 1 swaps even and odd.
@@ -49,26 +57,29 @@ public class Char {
     }
   }
 
-  boolean numAlpha() {
+  public boolean numAlpha() {
     return Character.isLetterOrDigit(raw) || isPresent("+-.", raw);
   }
 
 
 ////////////////////////////////////
 
-  boolean startsName() {
+  public boolean startsName() {
     return Character.isJavaIdentifierStart(raw);
   }
 
-  boolean isDigit() {
+  public boolean isSlash(){
+    return is('\\');//anannoying thing to type.
+  }
+  public boolean isDigit() {
     return Character.isDigit(raw);
   }
 
-  boolean isControl() {
+  public boolean isControl() {
     return Character.isISOControl(raw);
   }
 
-  boolean isInNumber() {
+  public boolean isInNumber() {
     return isDigit() || in("+-.Ee");
   }
 
@@ -80,11 +91,11 @@ public class Char {
     return isPresent(tokens, raw);
   }
 
-  boolean isHexDigit() {//todo:1 use math instead of string search.
+  public boolean isHexDigit() {//todo:1 use math instead of string search.
     return Character.isDigit(raw) || isPresent("aAbBcCdDeEfF", raw);
   }
 
-  int hexDigit() {
+  public int hexDigit() {
     int trusting = (raw | 0x20) - '0';//tolowerthen subtract char for zero.
     if ((trusting > 9)) {
       trusting -= 39;
@@ -92,7 +103,7 @@ public class Char {
     return trusting; //'A'-'0' = 17, want 10 for that
   }
 
-  char hexNibble(int sb) {
+  public char hexNibble(int sb) {
     int nib = 15 & (raw >> (sb * 4)); //push to low nib
     return (char) ((nib > 9) ? ('A' + nib - 10) : '0' + nib);
   }

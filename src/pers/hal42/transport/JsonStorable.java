@@ -97,7 +97,7 @@ public class JsonStorable extends PushedJSONParser {
   protected Storable makeChild(Storable parent) {
     ++stats.totalNodes;
     Storable kid = parent.makeChild(haveName ? name : null);//ternary in case we forgot to erase previous one
-    String value = super.value.isValid() ? getString(super.value) : null;
+    String value = super.token.isValid() ? getString(super.token) : null;
     if (value != null) {
       ++stats.totalScalar;//<=totalNodes.
     }
@@ -111,7 +111,7 @@ public class JsonStorable extends PushedJSONParser {
    * file might have been truncated
    */
   protected void cleanup(Storable node) {
-    if (value.isValid() || (haveName && super.name.isValid())) {
+    if (token.isValid() || (haveName && super.name.isValid())) {
       makeChild(node);
     }
   }
@@ -129,7 +129,7 @@ public class JsonStorable extends PushedJSONParser {
       }
       if (cached) {
         while (d.location < content.length) {//todo: use a bytearraystream
-          char b = (char) content[d.location];
+          byte b = content[d.location];
           switch (nextitem(b)) {
           case Continue:
             continue;//like the case says ;)
@@ -157,7 +157,7 @@ public class JsonStorable extends PushedJSONParser {
             return true;
           }
           case EndItem:
-            if(haveName||value.isValid()) {
+            if(haveName|| token.isValid()) {
               makeChild(parent);
             } else {
               //most likley a comma after an end brace.

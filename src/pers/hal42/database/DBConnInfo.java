@@ -3,64 +3,53 @@ package pers.hal42.database;
 import pers.hal42.lang.StringX;
 import pers.hal42.transport.Storable;
 
+import java.text.MessageFormat;
+
 /**
  * database connection info, typically feeds jdbc connect string.
+ *
+ * defaults are set for most recent contract ;)
  */
 public class DBConnInfo {
   @Storable.Stored
   public String drivername = "";
 
+  @Storable.Stored(legacy="connDatasource")
+  public String urlFormat ="jdbc:mysql://{0}.fedfis.com";
   @Storable.Stored
-  public String connDatasource;
-  @Storable.Stored
-  public String connUser = "";
-  @Storable.Stored
-  public String connPass = "";
+  public String server ="test";
+  @Storable.Stored(legacy="connUser")
+  public String username = "";
+  @Storable.Stored(legacy="connPass")
+  public String password = "";
 
   @Storable.Stored
   public boolean autoCommit = false;
   @Storable.Stored
   public int oversize = 0;
   @Storable.Stored
-  public int intervalsecs = 10;
+  public int intervalsecs = 100;
   @Storable.Stored
   public String keepaliveSQL = "";
 
-  public DBConnInfo(String connDatasource, String connUser, String connPass, String drivername, int oversize, int intervalsecs, String keepaliveSQL) {
-    this.connDatasource = connDatasource;
-    this.connUser = connUser;
-    this.connPass = connPass;
-    this.drivername = drivername;
-    this.oversize = oversize;
-    this.intervalsecs = intervalsecs;
-    this.keepaliveSQL = keepaliveSQL;
-  }
+  public DBConnInfo() {
 
-  public DBConnInfo(String connDatasource, String connUser, String connPass, String drivername, int oversize, int intervalsecs) {
-    this(connDatasource, connUser, connPass, drivername, oversize, intervalsecs, "");
-  }
-
-  public DBConnInfo(String connDatasource, String connUser, String connPass, String drivername, int oversize) {
-    this(connDatasource, connUser, connPass, drivername, oversize, 10);
-  }
-
-  public DBConnInfo(String connDatasource, String connUser, String connPass, String drivername) {
-    this(connDatasource, connUser, connPass, drivername, 0);
-  }
-
-  public DBConnInfo(String connDatasource, String connUser, String connPass) {
-    this(connDatasource, connUser, connPass, "jdbc:mysql");
   }
 
   /**
-   * @returns whether this connection is to the same db as @param conninfo
+   * @returns whether this connection is to the same db server as @param conninfo
    */
   public boolean is(DBConnInfo conninfo) {
-    return (conninfo != null) && StringX.equalStrings(connDatasource, conninfo.connDatasource);
+    return (conninfo != null) && StringX.equalStrings(server, conninfo.server) &&  StringX.equalStrings(urlFormat, conninfo.urlFormat);
   }
 
+  public String fullUrl(){
+    return MessageFormat.format(urlFormat,server);
+  }
+
+  @Override
   public String toString() {
-    return "connDatasource=" + connDatasource + ", connUser=" + connUser + ", connPass=" + connPass + ", drivername=" + drivername + ", oversize=" + oversize + ", intervalsecs=" + intervalsecs;
+    return "DBConnInfo{" + "drivername='" + drivername + '\'' + ", urlFormat='" + urlFormat + '\'' + ", server='" + server + '\'' + ", username='" + username + '\'' + ", password='" + password + '\'' + ", autoCommit=" + autoCommit + ", oversize=" + oversize + ", intervalsecs=" + intervalsecs + ", keepaliveSQL='" + keepaliveSQL + '\'' + '}';
   }
 
 }

@@ -45,11 +45,11 @@ public class PushedJSONParser extends PushedParser {
   /**
    * records locations for text extents, passes major events back to caller
    */
-  public JsonAction nextitem(char pushed) {
+  public JsonAction nextitem(byte pushed) {
 
     switch (next(pushed)) {
-    case BeginValue:
-    case EndValue:
+    case BeginToken:
+    case EndToken:
     case Continue:
       return Continue;
 
@@ -58,17 +58,17 @@ public class PushedJSONParser extends PushedParser {
     case Done:
       return Done;
 
-    case EndValueAndItem:
+    case EndTokenAndItem:
     case EndItem:
       switch (d.last) {
       case '='://treat equals like colon// todo: an enable for this feature
         d.last = ':';
         //join
       case ':':
-        if (super.value.isValid()) {
+        if (super.token.isValid()) {
           haveName = true;
           quotedName = super.wasQuoted;
-          name.take(super.value);
+          name.take(super.token);
           recordName(); //early access to name, you don't have to implement this function for the parser to do its job.
           return Continue; //null name is not the same as no name
         } else {
@@ -112,7 +112,7 @@ public class PushedJSONParser extends PushedParser {
       name.clear();
     } //else name will construct to a null one.
     super.wasQuoted = false;
-    super.value.clear();
+    super.token.clear();
   }
 
   /**

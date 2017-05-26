@@ -1,6 +1,6 @@
 package pers.hal42.ext;
 
-import pers.hal42.lang.UTF8;
+import pers.hal42.lang.Char;
 import pers.hal42.text.Ascii;
 
 import static pers.hal42.ext.PushedParser.Action.*;
@@ -10,27 +10,11 @@ import static pers.hal42.ext.PushedParser.Phase.*;
  * Created by andyh on 4/3/17.
  * <p>
  * Inner loop of parsing logic, identifies strings separated by the given separators.
- * This reacts to quotes, and should have an option for slash escapes.
+ * This reacts to quotes, and to slashes, but doesn't do escape processing.
  * It doesn't actually extract the token strings, it returns where they are by index into the stream that is passed to it a character at a time.
+ * todo:2 enhance quoting to allow single quotes where doulbe is now required.
  */
 public class PushedParser {
-
-  public Diag d = new Diag();
-  protected String separators;
-  /**
-   * used to skip over utf extended chars
-   */
-  protected CountDown utfFollowers = new CountDown(0);
-  protected Phase phase = Before;
-  protected boolean inQuote;
-  /**
-   * 'cursor' recorded at start and end of token
-   */
-  protected Span value = new Span();
-  /**
-   * whether value was found with quotes around it
-   */
-  protected boolean wasQuoted;
 
   /**
    * lexer states and events
@@ -46,7 +30,6 @@ public class PushedParser {
     Inside, //inside quotes
     After, //inside unquoted text: we're tolerant so this can be a name or a symbolic value
   }
-
   public enum Action {
     //these tend to pass through all layers, to where the character source is:
     Continue,   //continue scanning
@@ -54,11 +37,11 @@ public class PushedParser {
     Done,     //pass through EOF
     //the next two tend to be lumped together:
     EndItem,   //well separated seperator
-    EndValueAndItem,  //seperator ended item.
+    EndTokenAndItem,  //seperator ended item.
 
     //no-one seems to care about these events, we'll keep them in case value must be extracted immediatley after the terminating character
-    BeginValue, //record cursor, it is first char of something.
-    EndValue,  //just end the token
+    BeginToken, //record cursor, it is first char of something.
+    EndToken,  //just end the token
 
   }
 
@@ -83,13 +66,30 @@ public class PushedParser {
     }
 
   }
+  public Diag d = new Diag();
+  protected String separators;
+  protected Phase phase = Before;
+  protected boolean inQuote;
+  /**
+   * 'cursor' recorded at start and end of token
+   */
+  protected Span token = new Span();
+  /**
+   * whether value was found with quotes around it
+   */
+  protected boolean wasQuoted;
+  //  /**
+//   * used to skip over utf extended chars
+//   */
+//  protected CountDown utfFollowers = new CountDown(0);
+  boolean slashed = false;
 
   public PushedParser() {
     reset(true);
   }
 
   protected void itemCompleted() {
-    value.clear();
+    token.clear();
     phase = Before;
     inQuote = false;//usually already is, except on reset
   }
@@ -111,7 +111,7 @@ public class PushedParser {
    */
   public void shift(int offset) {
     //this line did not make sense, column and row should always reflect absolute indexes: d.column = d.location - offset;//only correct for normal use cases
-    value.shift(offset);
+    token.shift(offset);
     d.location -= offset;
   }
 
@@ -119,25 +119,25 @@ public class PushedParser {
     separators = seps;
   }
 
-  private Action endValue(boolean andItem) {
+  private Action endToken(boolean andItem) {
     wasQuoted = inQuote;
     inQuote = false;
     //if a field ends with whitespace we are still looking for a seperator. If the seperator ends the field then pass andItem==true.
     //this is relevant if fields are separate by just whitespace, we don't support that.
     //someone should document what adjacent quoted strings do, hopefully this just appends the text like in C source code. IE "abc""def" abc"def" should be the same as "abcdef"
     phase = andItem ? Before : After;
-    value.highest = d.location;
-    return andItem ? EndValueAndItem : EndValue;
+    token.highest = d.location;
+    return andItem ? EndTokenAndItem : EndToken;
   }
 
   private void beginValue() {
     phase = Inside;
-    value.begin(d.location);
+    token.begin(d.location);
   }
 
-  public Action next(char pushed) {
+  public Action next(byte pushed) {
     try {
-      d.last = pushed;
+      d.last = (char) pushed; //d will see raw utf8 chars. None of those are framing so it doesn't matter.
 
       if (pushed == '\n') {
         d.column = 1;//match pre-increment below.
@@ -146,88 +146,86 @@ public class PushedParser {
         ++d.column;
       }
 
-      UTF8 ch = new UTF8(pushed);
+      Char ch = new Char(pushed);
 
       if (pushed == 0) {//end of stream
         if (inQuote) {
           switch (phase) {
-            case Before: //file ended with a start quote.
-              return Illegal;
-            case Inside: //act like endquote was missing
-              return endValue(true);
-            case After:
-              return Illegal;//shouldn't be able to get here.
+          case Before: //file ended with a start quote.
+            return Illegal;
+          case Inside: //act like endquote was missing
+            return endToken(true);
+          case After:
+            return Illegal;//shouldn't be able to get here.
           }
         } else {
           switch (phase) {
-            case Before:
-              return Done;
-            case Inside:
-              return endValue(true);
-            case After:
-              return EndItem; //eof push out any partial node
+          case Before:
+            return Done;
+          case Inside:
+            return endToken(true);
+          case After:
+            return EndItem; //eof push out any partial node
           }
         }
         return Illegal;//can't get here
       }
 
-      if (utfFollowers.decrement()) {//it is to be treated as a generic text char
+      //we do not convert escape sequences here, we honor them somewhat
+      if (slashed) {//it and the follower are to be treated as a generic text char
+        slashed=false;
         ch.setto(Ascii.k);//will treat the same as some other non-framing character
-      } else if (ch.isMultibyte()) {//first byte of a utf8 multibyte character
-        utfFollowers.setto(ch.numFollowers());
+      } else if (ch.isSlash()) {//first byte of a utf8 multibyte character
+        slashed=true;
         ch.setto(Ascii.k);
       }
 
-      //we still process it
       if (inQuote) {
         if (ch.is('"')) {//end quote
-          return endValue(false);
-        }
-        if (ch.is('\\')) {
-          utfFollowers.increment();//ignores all escapes, especially \"
+          return endToken(false);
         }
         //still inside quotes
         if (phase == Before) {//first char after quote is first char of token
           beginValue();
-          return BeginValue;
+          return BeginToken;
         }
         return Continue;
       }
-
+      //not quoted nor is char a quote or a slash or the character after a slash
       switch (phase) {
-        case Inside:
-          if (ch.isWhite()) {
-            return endValue(false);
-          }
-          if (ch.in(separators)) {
-            return endValue(true);
-          }
-          return Continue;//end Inside
+      case Inside:
+        if (ch.isWhite()) {
+          return endToken(false);
+        }
+        if (ch.in(separators)) {
+          return endToken(true);
+        }
+        return Continue;//end Inside
 
-        case After:
-          if (ch.isWhite()) {
-            return Continue;
-          }
-          if (ch.in(separators)) {
-            phase = Before;
-            return EndItem;
-          }
-          return Illegal;
+      case After:
+        if (ch.isWhite()) {
+          return Continue;
+        }
+        if (ch.in(separators)) {
+          phase = Before;
+          return EndItem;
+        }
+        return Illegal;
 
-        case Before:  //expecting name or value
-          if (ch.isWhite()) {
-            return Continue;
-          }
-          if (ch.in(separators)) {
-            endValue(true);
-            return EndValueAndItem;//a null one
-          }
-          if (ch.is('"')) {
-            inQuote = true;
-            return Continue;//but not yet started in chunk, see if(inQuote)
-          }
-          beginValue();
-          return BeginValue;
+      case Before:  //expecting name or value
+        if (ch.isWhite()) {
+          return Continue;
+        }
+        if (ch.in(separators)) {
+          endToken(true);
+          return EndTokenAndItem;//a null one
+        }
+        if (ch.is('"')) {
+          inQuote = true;
+          return Continue;//but not yet started in chunk, see if(inQuote)
+        }
+        beginValue();
+        return BeginToken;
       } // switch
       return Illegal;// in case we have a missing case above, should never get here.
     } finally {

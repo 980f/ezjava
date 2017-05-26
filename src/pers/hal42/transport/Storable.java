@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.Vector;
 
+import static pers.hal42.lang.StringX.NonTrivial;
 import static pers.hal42.transport.JsonStorable.dbg;
 import static pers.hal42.transport.Storable.Origin.Defawlted;
 import static pers.hal42.transport.Storable.Origin.Ether;
@@ -65,6 +66,7 @@ public class Storable {
   @Target({ElementType.FIELD})
   public @interface Stored {
     //marker, field's own type is explored for information needed to write to it.
+    String legacy() default "";//if nontrivial AND child is not found by the field name then it is sought by this name.
   }
 
   /**
@@ -410,7 +412,16 @@ public class Storable {
       Stored stored = field.getAnnotation(Stored.class);
       if (stored != null) {
         String name = field.getName();
-        Storable child = this.existingChild(name);
+        Storable child = existingChild(name);
+        if(child==null){
+          String altname=stored.legacy();
+          if(NonTrivial(altname)){//optional search for prior equivalent
+            if(altname.endsWith("..")){//a minor conveience, drop if buggy.
+              altname += name;
+            }
+            child = findChild(altname,false);
+          }
+        }
         if (child != null) {
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();
@@ -426,13 +437,13 @@ public class Storable {
             } else if (fclaz == int.class) {
               field.setInt(obj, (int) child.getValue());
             }
-            //todo: add clauses for the remaining field.setXXX methods.
+            //todo:1 add clauses for the remaining field.setXXX methods.
             else {
               //time for recursive descent
               final Object nestedObject = field.get(obj);
               if(nestedObject==null){
-                dbg.WARNING("No object for field {0}",name);
-                //todo:1 option to create, which is not easy- it entails creating members recursively then finding a matching constructor, or we could require a nullargs constructor.
+                dbg.WARNING("No object for field {0}",name);//wtf?- ah, null member
+                //todo:2 autocreate members? I think reflection supports that, but only with a lot of work.
               } else {
                 child.setType(Type.Wad);
                 int subchanges = child.applyTo(nestedObject, narrow, aggressive);
@@ -467,6 +478,7 @@ public class Storable {
       if (stored != null) {
         String name = field.getName();
         Storable child = create? this.child(name):this.existingChild(name);
+        //note: do not update legacy fields, let them die a natural death.
         if (child != null) {
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();

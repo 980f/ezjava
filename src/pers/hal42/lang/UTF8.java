@@ -60,9 +60,8 @@ public class UTF8 extends Char {
     this((byte) raw);
   }
 
-  public UTF8 setto(byte raw) {
+  public void setto(byte raw) {
     this.raw = raw;
-    return this;
   }
 
   boolean is(UTF8 other) {
