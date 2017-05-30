@@ -271,15 +271,15 @@ public class Alarmer implements Runnable {
    */
   public static Alarmum reset(int fuse, Alarmum alarm) {
     Defuse(alarm);
-    dbg.Push("NewAlarm");
-    try {
+
+    try (AutoCloseable pop=dbg.Push("NewAlarm")){
       if (alarm != null) {
         return Set(alarm.refuse(fuse)); //to provide access so that it can be defused.
       } else {
         return null;
       }
-    } finally {
-      dbg.Exit();
+    } catch (Exception e) {//won't happen
+      return null;
     }
   }
 

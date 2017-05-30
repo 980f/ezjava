@@ -35,6 +35,11 @@ public class Waiter {
    * after ignoring an interrupt conveniently also provides a response time
    */
   private StopWatch resleeper = new StopWatch();
+
+  /** time spent sleeping. */
+  public double seconds(){
+    return resleeper.seconds();
+  }
   ////////////////////
   public enum State {
     Ready, Notified, Timedout, Interrupted, Excepted, Extending
@@ -203,8 +208,8 @@ public class Waiter {
         state = Excepted;
       } finally {
         resleeper.Stop();//valiant attempt at figuring out when a problem occured.
-        return state();
       }
+      return state();
     }//end synch
   }
 

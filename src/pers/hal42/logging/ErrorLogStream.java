@@ -232,14 +232,15 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   }
 
   public void close() {
-    Exit();
+      Message(TRACE,"Exits");
+      ActiveMethod = context.pop();
   }
 
   /** push teh context stack, @returns object that will pop it when 'closed' */
   public ErrorLogStream Push(String methodName) {
     context.push(ActiveMethod);
     ActiveMethod = methodName;
-    VERBOSE("Entered");
+    Message(TRACE,"Entered");
     return this;
   }
 
@@ -263,11 +264,6 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
         Caught(ex);
       }
     }
-  }
-
-  public void Exit() {
-    VERBOSE("Exits");
-    ActiveMethod = context.pop();
   }
 
 //  public void WARNING(String message) {
@@ -410,6 +406,10 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
         }
       }
     }
+  }
+
+  public void Exit() {
+    close();
   }
 
   //this had to be implmented with a lazy init due to classloader loops.

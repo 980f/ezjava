@@ -480,9 +480,9 @@ public class EasyProperties extends Properties {
       }
       return String.valueOf(baos);
     } catch (Exception caught) {
-      dbg.Push("toString");
-      dbg.Caught(caught);
-      dbg.Exit();
+//      dbg.Push("toString");
+      dbg.Caught(caught,"in EasyPropertiers.toString()");
+//      dbg.Exit();
       return "#" + header + " is faulty";
     }
   }

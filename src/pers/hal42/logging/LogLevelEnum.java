@@ -7,6 +7,7 @@ import pers.hal42.lang.StringX;
  */
 public enum LogLevelEnum {
   OFF(0),
+  TRACE(5),
   VERBOSE(10),
   WARNING(20),
   ERROR(30),

@@ -34,9 +34,9 @@ public class Executor {
         msgs.add(in.readLine());
       }
     } catch (IOException ioe) {
-      dbg.Push("pStream");
+//      dbg.Push("pStream");
       dbg.Caught(ioe);
-      dbg.Exit();
+//      dbg.Exit();
     }
   }
 
