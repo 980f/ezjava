@@ -81,7 +81,7 @@ public class DBMacros extends GenericDB {
   // +++ eventually an enumeration?
   protected static final int DONE = 0;
   protected static final int ALREADY = 1;
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(DBMacros.class);
+  public static final ErrorLogStream dbg = ErrorLogStream.getForClass(DBMacros.class);
   private static final Fstring timerStr = new Fstring(7, ' ');
   private static final int NOT_A_COLUMN = ObjectX.INVALIDINDEX;
 

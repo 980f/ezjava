@@ -7,10 +7,13 @@ import pers.hal42.lang.ByteArray;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Vector;
 
@@ -38,13 +41,39 @@ public class JsonStorable extends PushedJSONParser {
     super(equalsAndSemi);
   }
 
+  public static IOException editFile(Path optsFile, String path, String image) {
+    Storable workspace=FromFile(optsFile);
+    if(workspace!=null){
+      Storable child=workspace.findChild(path,true);
+      child.setValue(image);
+      try {
+        PrintStream ps = new PrintStream(new File(optsFile.toString()));
+        SaveOptions(workspace,ps,0);
+        return null;
+      } catch (FileNotFoundException e) {
+        return e;
+      }
+    } else {
+      return new NoSuchFileException(optsFile.toString());
+    }
+  }
+
+  public static Storable FromFile(Path optsfile){
+    Storable root = new Storable(optsfile.toString());//name in file gets lost
+    final JsonStorable optsloader = new JsonStorable(true);
+    if (optsloader.loadFile(optsfile.toString())) {//todo: path versions of this method
+      optsloader.parse(root);
+      root.child("#filename").setValue(optsfile.toString());
+    }
+    //todo:2 either dbg the stats or print them to a '#attribute field
+    return root;
+  }
   /**
    * load options use @param claz to generate a file name.
    */
   public static Storable ClassOptions(Class claz) {
-    String optsfile = claz.getSimpleName();
+    String optsfile = Filename(claz);
     Storable root = new Storable(optsfile);//named 4 debug
-    optsfile += ".json";
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile)) {
       optsloader.parse(root);
@@ -52,6 +81,12 @@ public class JsonStorable extends PushedJSONParser {
     }
     //todo:2 either dbg the stats or print them to a '#attribute field
     return root;
+  }
+
+  public static String Filename(Class claz){
+    String optsfile = claz.getSimpleName();
+    optsfile += ".json";
+    return optsfile;
   }
 
   /**
