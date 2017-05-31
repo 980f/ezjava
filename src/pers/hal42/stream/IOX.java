@@ -5,11 +5,27 @@ import pers.hal42.text.TextList;
 import pers.hal42.timer.UTC;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-/** utilties related to fiels and stream.  Look in java.nio for newer equivalents */
+/** utilties related to files and stream.  Look in java.nio for newer equivalents */
 public class IOX {
   private IOX() {
     // don't construct me; I am for static functions
+  }
+
+  public static Exception writeBlob(Path path,byte[]content){
+    IOX.createDir(path.getParent());
+    try {
+      Files.write(path, content);
+      return null;
+    } catch (IOException e) {
+      return e;
+    }
+  }
+
+  private static boolean createDir(Path parent) {
+    return createDir(parent.toString());//todo: find Path implementation for this.
   }
 
   public static File[] listFiles(File dir) {

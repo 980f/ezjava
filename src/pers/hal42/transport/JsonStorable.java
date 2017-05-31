@@ -195,7 +195,7 @@ public class JsonStorable extends PushedJSONParser {
             if(haveName|| token.isValid()) {
               makeChild(parent);
             } else {
-              //most likley a comma after an end brace.
+              //todo:1 to filter this out need a flag 'lastItem was an endWad'
               dbg.VERBOSE("Ignoring null item, probably gratuitous comma or comma after end brace");
             }
             return true;//might be more children
