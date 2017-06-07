@@ -76,12 +76,12 @@ public class DBMacros extends GenericDB {
   private static PrintFork pf = null;
   public static final String ALLTABLES = null;
   public static final int FAILED = -1; //where #of rows is expected
+  public static final ErrorLogStream dbg = ErrorLogStream.getForClass(DBMacros.class);
   protected static final Tracer dbv = new Tracer(DBMacros.class, "Validator");
   protected static final int ONLYCOLUMN = 1;
   // +++ eventually an enumeration?
   protected static final int DONE = 0;
   protected static final int ALREADY = 1;
-  public static final ErrorLogStream dbg = ErrorLogStream.getForClass(DBMacros.class);
   private static final Fstring timerStr = new Fstring(7, ' ');
   private static final int NOT_A_COLUMN = ObjectX.INVALIDINDEX;
 
@@ -1356,19 +1356,18 @@ public class DBMacros extends GenericDB {
     String functionName = "dropTableConstraint";
     int success = FAILED;
     String toDrop = "drop constraint " + tablename + "." + constraintname;
-    try {
-      dbv.Push(functionName);//#gc
+    try (AutoCloseable pop=dbv.Push(functionName)){
       dbv.mark(toDrop);
       TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
       success = (tableExists(tablename)) ? update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) : ALREADY;
+      return (success != FAILED);
     } catch (Exception e) {
       // muffle
       //dbv.Caught(e);
+      return false;
     } finally {
       dbv.ERROR(functionName + ": '" + toDrop + ((success == ALREADY) ? " Can't perform since table doesn't exist." : ((success == DONE) ? "' Succeeded!" : "' FAILED!  Constraint probably didn't exist.")));
       dbv.mark("");
-      dbv.Exit();//#gc
-      return (success != FAILED);
     }
   }
 
@@ -1382,22 +1381,18 @@ public class DBMacros extends GenericDB {
     return (count == 0);
   }
 
-  // +++ use dbmd's getMaxTableNameLength to see if the name is too long
+  //todo: use dbmd's getMaxTableNameLength to see if the name is too long
   protected final boolean createTable(TableProfile tp) {
-    boolean ret = false;
-    try {
-      dbg.Push("haveTable");
+    try (AutoCloseable pop= dbg.Push("haveTable")){
       if (!tableExists(tp.name())) {
         dbg.ERROR("haveTable " + tp.name() + " returned " + update(QueryString.genCreateTable(tp)));
-        ret = tableExists(tp.name());
+        return tableExists(tp.name());
       } else {
-        ret = true;
+        return true;
       }
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      dbg.Exit();
-      return ret;
+      return false;
     }
   }
 
@@ -1445,18 +1440,22 @@ public class DBMacros extends GenericDB {
   }
 
   private static void logQuery(DBFunctionType qt, long millis, int retval, boolean regularLog, long qn) {
-    String toLog = "exception attempting to log the query";
+
     try (AutoCloseable free = timerStrMon.getMonitor()) {
+      StringBuilder toLog = new StringBuilder();//"exception attempting to log the query";
       // create a pool of DBFunctionTypes and Fstrings that you can reuse [no mutexing == faster].
-      toLog = "'can'this figure out what javac doesn't like about the following complex message, ie replace with Message.Format ";
-//        qt.toString()
-//        + (qt==DBFunctionType.NEXT )? "" : " END   " + qn + " "
-//        +  timerStr.righted(String.valueOf(millis)) + " ms " +
-//          (qt==DBFunctionType.UPDATE) ? " returned " + retval : "";
-      if (regularLog) {
-        dbg.WARNING(toLog);
+      toLog.append(qt);
+      if (qt != DBFunctionType.NEXT) {
+        toLog.append(" END   ").append(qn).append(" ");
       }
-      log(toLog);
+      toLog.append(timerStr.righted(String.valueOf(millis))).append(" ms ");
+      if (qt == DBFunctionType.UPDATE) {
+        toLog.append(" returned ").append(retval);
+      }
+      if (regularLog) {
+        dbg.WARNING(toLog.toString());
+      }
+      log(toLog.toString());
     } catch (Exception e) {
       dbg.Caught(e);
     }
@@ -1550,7 +1549,7 @@ public class DBMacros extends GenericDB {
   }
 
   public static int getIntFromRS(int column, ResultSet myrs) {
-    return StringX.parseInt("0" + getStringFromRS(column, myrs));//--- parseInt can deal with null and non-decimal returns
+    return StringX.parseInt(getStringFromRS(column, myrs));
   }
 
   public static int getIntFromRS(String column, ResultSet myrs) {
@@ -1609,47 +1608,45 @@ public class DBMacros extends GenericDB {
   // if the timer is null, we create one locally,
   // as we use that timer to add times to our accumulator for service reporting.
   public static boolean next(ResultSet rs, StopWatch swatch) {
-    if (swatch == null) {
-      swatch = new StopWatch(false);
-    }
-    swatch.Start(); // to be sure to start either passed-in or locally-created ones
-    boolean ret = false;
-    try {
-      if (rs != null) {
+    if (rs != null) {
+      if (swatch == null) {
+        swatch = new StopWatch(false);
+      }
+      swatch.Start(); // to be sure to start either passed-in or locally-created ones
+      try {
         dbg.VERBOSE("Calling ResultSet.next() ...");
-        ret = rs.next();
-      }
-    } catch (Exception e) {
-      dbg.ERROR("next() excepted attempting to get the next row in the ResultSet ... ");
-      dbg.Caught(e);
-    } finally {
-      if (rs != null) {
+        return rs.next();
+      } catch (Exception e) {
+        dbg.ERROR("next() excepted attempting to get the next row in the ResultSet ... ");
+        dbg.Caught(e);
+        return false;
+      } finally {
+        long dur = swatch.Stop();
+        nextStats.add(dur);
         dbg.VERBOSE("Done calling ResultSet.next().");
+        if (dur > 0) {
+          logQuery(DBFunctionType.NEXT, dur, -1, false, -1);
+        }
       }
-      long dur = swatch.Stop();
-      nextStats.add(dur);
-      if (dur > 0) {
-        logQuery(DBFunctionType.NEXT, dur, -1, false, -1);
-      }
-      return ret;
+    } else {
+      return false;
     }
   }
 
   public static ResultSet getResultSet(Statement stmt) {
-    ResultSet ret = null;
-    try {
-      if (stmt != null) {
+    if (stmt != null) {
+      try {
         dbg.VERBOSE("Calling Statement.getResultSet() ...");
-        ret = stmt.getResultSet();
-      }
-    } catch (Exception e) {
-      dbg.ERROR("getRS excepted attempting to get the ResultSet from the executed statement");
-      dbg.Caught(e);
-    } finally {
-      if (stmt != null) {
+        return stmt.getResultSet();
+      } catch (Exception e) {
+        dbg.ERROR("getRS excepted attempting to get the ResultSet from the executed statement");
+        dbg.Caught(e);
+        return null;
+      } finally {
         dbg.VERBOSE("Done calling Statement.getResultSet().");
       }
-      return ret;
+    } else {
+      return null;
     }
   }
 

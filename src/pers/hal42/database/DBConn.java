@@ -1,6 +1,5 @@
 package pers.hal42.database;
 
-import com.fedfis.RefconTableManager;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.transport.Storable;
 

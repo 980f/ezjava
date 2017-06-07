@@ -69,7 +69,7 @@ public class JsonStorable extends PushedJSONParser {
     return root;
   }
   /**
-   * load options use @param claz to generate a file name.
+   * @returns newly created Storable with values loaded from file named for @param claz
    */
   public static Storable ClassOptions(Class claz) {
     String optsfile = Filename(claz);
@@ -83,6 +83,7 @@ public class JsonStorable extends PushedJSONParser {
     return root;
   }
 
+  /** @returns canonical filename for options file for @param claz*/
   public static String Filename(Class claz){
     String optsfile = claz.getSimpleName();
     optsfile += ".json";
@@ -90,7 +91,8 @@ public class JsonStorable extends PushedJSONParser {
   }
 
   /**
-   * before calling this you probably need to node.apply(Object obj)
+   * writes pretty-printed json formatted data on @param ps. @param tablevel is the number of tabs to put at the start of each line of text, must be >=0.
+   * before calling this you probably need to node.apply(Object obj) to update your storable from its related live object.
    */
   public static void SaveOptions(Storable node, PrintStream ps, int tablevel) {
     if (node != null && ps != null && tablevel >= 0) {
@@ -108,6 +110,7 @@ public class JsonStorable extends PushedJSONParser {
     return new String(ByteArray.subString(content, span.lowest, span.highest));
   }
 
+  /** read file content if not already done.*/
   public boolean cache() {
     if (!cached) {
       try {
@@ -121,7 +124,7 @@ public class JsonStorable extends PushedJSONParser {
   }
 
   /**
-   * just read the file
+   * just read the file, don't parse
    */
   public boolean loadFile(String filename) {
     this.filename = filename; //record for debug
@@ -131,7 +134,7 @@ public class JsonStorable extends PushedJSONParser {
 
   protected Storable makeChild(Storable parent) {
     ++stats.totalNodes;
-    Storable kid = parent.makeChild(haveName ? name : null);//ternary in case we forgot to erase previous one
+    Storable kid = parent.makeChild(haveName ? name : null);//ternary in case we forgot to erase previous parse results
     String value = super.token.isValid() ? getString(super.token) : null;
     if (value != null) {
       ++stats.totalScalar;//<=totalNodes.
@@ -143,7 +146,7 @@ public class JsonStorable extends PushedJSONParser {
   }
 
   /**
-   * file might have been truncated
+   * file might have been truncated, try to accept a final item even if commas and endbraces were clipped off.
    */
   protected void cleanup(Storable node) {
     if (token.isValid() || (haveName && super.name.isValid())) {
