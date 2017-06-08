@@ -5,6 +5,7 @@ import pers.hal42.text.TextList;
 import pers.hal42.transport.EasyCursor;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 
@@ -27,10 +28,10 @@ public class ReflectX {
     // I exist for static reasons only.
   }
 
+  /** @returns whether @param claz implements @param probate */
   public static boolean isImplementorOf(Class claz, Class probate) {
     if (claz != null && probate != null) {
-      Class supported[];
-      supported = claz.getInterfaces();
+      Class supported[] = claz.getInterfaces();
       for (int i = supported.length; i-- > 0; ) {
         if (supported[i] == probate) {
           return true;
@@ -106,6 +107,7 @@ public class ReflectX {
    */
   public static Object newInstance(String classname) {
     try {
+      //noinspection ConstantConditions
       return classForName(classname).newInstance();
     } catch (Exception ex) {
       return null;
@@ -138,12 +140,28 @@ public class ReflectX {
     try {
       Object[] arglist = new Object[1];
       arglist[0] = arg1;
+      //noinspection ConstantConditions
       return constructorFor(classForName(classname), arg1.getClass()).newInstance(arglist);
     } catch (Exception ex) {//all sorts of null pointer failures get you here.
       System.out.println("failed newInstance: " + ex.getLocalizedMessage());
       ex.printStackTrace(System.out);
       return null;
     }
+  }
+
+ /** @returns name of @param child within object @param parent, null if not an accessible child*/
+  public static String fieldName(Object parent,Object child){
+    for(Field field:parent.getClass().getDeclaredFields()){
+      try {
+        Object probate = field.get(parent);
+        if(probate==child){
+          return field.getName();
+        }
+      } catch (IllegalAccessException ignored) {
+        //
+      }
+    }
+    return null;
   }
 
   /**
@@ -158,7 +176,7 @@ public class ReflectX {
       dbg.VERBOSE(StringX.bracketed("Create:classname(", classname));
       Class claz = classForName(classname);
       dbg.VERBOSE("Create:class:" + claz);
-      Method meth = claz.getMethod("Create", creatorArgs);
+      @SuppressWarnings("unchecked") Method meth = claz.getMethod("Create", creatorArgs);
       dbg.VERBOSE("Create:Method:" + meth);
       Object obj = meth.invoke(null, arglist);
       dbg.VERBOSE("Create:Object:" + obj);
@@ -173,7 +191,7 @@ public class ReflectX {
     return Create(ezc, ErrorLogStream.Global());
   }
 
-  // +++ move to ObjectX?
+  //todo:2 move to ObjectX?
   public static String ObjectInfo(Object obj) {
     return obj == null ? " null!" : " type: " + shortClassName(obj);
   }

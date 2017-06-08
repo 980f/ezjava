@@ -19,10 +19,7 @@ public class ObjectRange<T extends Comparable<T>> {
   private boolean singular;
   private boolean broad;
   private boolean isDirty = true; //defer analyze
-//  //isEasy:
-//  protected final static String oneKey = "one";
-//  protected final static String twoKey = "two";
-//  protected final static String sortedKey = "sorted";
+
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ObjectRange.class);
 
 
@@ -92,24 +89,6 @@ public class ObjectRange<T extends Comparable<T>> {
     return this;
   }
 
-//  public T filter(String input) {
-//    return new T(input);
-//  }
-//  public ObjectRange setOne(String input) {
-//    return setOne(filter(input));
-//  }
-//
-//  public ObjectRange setTwo(String input) {
-//    return setTwo(filter(input));
-//  }
-//public ObjectRange setBoth(String oner, String twoer) {
-//  return setOne(oner).setTwo(twoer);
-//}
-//  protected ObjectRange(String one, String two, boolean sorted) {
-//    this(sorted);
-//    setBoth(one, two);
-//  }
-
   public ObjectRange<T> setBoth(T oner, T twoer) {
     return setOne(oner).setTwo(twoer);
   }
@@ -119,9 +98,7 @@ public class ObjectRange<T extends Comparable<T>> {
     if (isDirty) {
       analyze();
     }
-    boolean ret = singular || broad;
-    dbg.VERBOSE("" + (singular ? "singular " : "") + (broad ? "broad" : "") + (ret ? ": " + toString() : ""));
-    return ret;
+    return singular || broad;
   }
 
   /** @returns -1 if item is below range (<low), +1 if above range (>=high) , else 0 (inside halfOpen interval)
@@ -153,17 +130,13 @@ public class ObjectRange<T extends Comparable<T>> {
   }
 
   protected ObjectRange sort() {
-//    dbg.VERBOSE("SORTING[" + (broad ? "" : "NOT") + "broad]: one[" + ReflectX.shortClassName(one) + "]=" + one + ", two[" + ReflectX.shortClassName(two) + "]=" + two);
     if (broad) {
       int comp = two.compareTo(one);
       boolean shouldswap = (comp < 0);
-//      dbg.VERBOSE("two.compareTo(one)=" + comp + ", so comp<0=" + shouldswap);
-//      dbg.VERBOSE("fyi: one.compareTo(two)=" + one.compareTo(two));
       if (shouldswap) {
         swap();
       }
     }
-//    dbg.VERBOSE("SORTED: one=" + one + ", two=" + two);
     return this;
   }
 
@@ -176,7 +149,7 @@ public class ObjectRange<T extends Comparable<T>> {
       //temporarily make assignments, then make sense of them
       broad = ObjectX.NonTrivial(two);
       singular = ObjectX.NonTrivial(one);
-      dbg.VERBOSE("NonTrivials: " + singular + " " + broad);
+      dbg.VERBOSE("NonTrivials: {0} {1} ", singular ,broad);
       //if two is nonTrivial
       if (broad) {
         if (!singular || one.compareTo(two) == 0) {//and either one is trivial or the same as two
@@ -207,17 +180,6 @@ public class ObjectRange<T extends Comparable<T>> {
       setTwo(rhs.two);
     }
   }
-
-//  public void save(EasyCursor ezp) {
-//    ezp.setString(oneKey, oneImage());
-//    ezp.setString(twoKey, twoImage());
-//    ezp.setBoolean(sortedKey, sorted);
-//  }
-//
-//  public void load(EasyCursor ezp) {
-//    sorted = ezp.getBoolean(sortedKey, false); // do this one first (affects the rest) !!!
-//    setBoth(ezp.getString(oneKey, null), ezp.getString(twoKey, null));
-//  }
 
   public String toString() {
     return (sorted ? "" : "un") + "sorted: [" + one() + ", " + two() + "]";

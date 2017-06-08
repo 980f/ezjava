@@ -39,18 +39,17 @@ public abstract class Query {
   }
 
   public boolean rewind() {
-    boolean ret = false;
     try {
       if (rs != null) {
         if (rs.first()) {
           rs.previous(); // previous will return false if it is before the first row, but ignore
-          ret = rs.isBeforeFirst();
+          return rs.isBeforeFirst();
         }
       }
+      return false;
     } catch (Exception ex) {
       dbg.Caught(ex);
-    } finally {
-      return ret;
+      return false;
     }
   }
 

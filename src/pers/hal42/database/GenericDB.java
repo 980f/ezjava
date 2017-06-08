@@ -6,10 +6,7 @@ import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.thread.Counter;
 
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
 public class GenericDB {
 
@@ -159,6 +156,13 @@ public class GenericDB {
     }
   }
 
+  public PreparedStatement makePreparedStatement(String sql) throws SQLException {
+    if(haveConnection()){
+      return conn.prepareStatement(sql);
+    } else {
+      return null;
+    }
+  }
 
 }
 

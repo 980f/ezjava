@@ -1,24 +1,24 @@
 package pers.hal42.database;
 
 public enum ColumnTypes {
-  DECIMAL,
+  DECIMAL,   //money
   INT4,
   SMALLINT,
   BIGINT,
-  DOUBLE,
-  FLOAT,
+//only care about 64 bit hosts, remove distinction between float and  DOUBLE,
+//let NUMERIC cover numbers which don't have a precision requirement  FLOAT,
   TINYINT,
-  REAL,
+//get rid of this synonym, we aren't doing physics  REAL,
   NUMERIC,
   BOOL,
-  TIME,
-  TIMESTAMP,
+  TIME,       //externally supplied time
+  TIMESTAMP,  //databse generated time value
   DATE,
   DATETIME,
   BYTE,
   CHAR,
-  SERIAL,
-  TEXT,
+  SERIAL,     //as in serial number
+  TEXT,       //human readable tag, use varchar for content
   VARCHAR,
   ARRAY,
   BINARY,
@@ -35,6 +35,9 @@ public enum ColumnTypes {
   STRUCT,
   VARBINARY;
 
+  public String DeclarationText(){
+    return this.toString();//will work for most, add exceptions for the few.
+  }
   /**
    * frequently used query, @returns whether the associated datum is naturally human readable stuff
    */

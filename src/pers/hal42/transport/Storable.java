@@ -2,6 +2,7 @@ package pers.hal42.transport;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.text.TextList;
 
@@ -26,7 +27,7 @@ public class Storable {
   public final String name;
 
   /**
-   * sometimes a wad is just an array (all children are nameless
+   * sometimes a wad is just an array (all children are nameless)
    */
   protected int index = -1;
   @Nullable
@@ -63,10 +64,11 @@ public class Storable {
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
-  @Target({ElementType.FIELD})
+  @Target({ElementType.FIELD,ElementType.TYPE})
   public @interface Stored {
     //marker, field's own type is explored for information needed to write to it.
-    String legacy() default "";//if nontrivial AND child is not found by the field name then it is sought by this name.
+    /** //if nontrivial AND child is not found by the field name then it is sought by this name. */
+    String legacy() default "";
   }
 
   /**
@@ -400,7 +402,7 @@ public class Storable {
    *
    * @returns the number of assignments made (a diagnostic)
    */
-  public int applyTo(Object obj, boolean narrow, boolean aggressive) {
+  public int applyTo(Object obj, boolean narrow, boolean aggressive, boolean create) {
     if (obj == null) {
       return -1;
     }
@@ -416,13 +418,13 @@ public class Storable {
         if(child==null){
           String altname=stored.legacy();
           if(NonTrivial(altname)){//optional search for prior equivalent
-            if(altname.endsWith("..")){//a minor conveience, drop if buggy.
+            if(altname.endsWith("..")){//a minor convenience, drop if buggy.
               altname += name;
             }
             child = findChild(altname,false);
           }
         }
-        if (child != null) {
+        if (child != null) {//then we have init data for the field
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();
             if (aggressive) {
@@ -440,13 +442,21 @@ public class Storable {
             //todo:1 add clauses for the remaining field.setXXX methods.
             else {
               //time for recursive descent
-              final Object nestedObject = field.get(obj);
+              Object nestedObject = field.get(obj);
               if(nestedObject==null){
                 dbg.WARNING("No object for field {0}",name);//wtf?- ah, null member
-                //todo:2 autocreate members? I think reflection supports that, but only with a lot of work.
-              } else {
+                //autocreate members if no args constructor exists, which our typical usage pattern makes common.
+                if(create){
+                  try {
+                    nestedObject=fclaz.newInstance();
+                  } catch (InstantiationException e) {
+                    dbg.WARNING("No no-args constructor for field {0}",name);//todo: more context for message
+                  }
+                }
+              }
+              if(nestedObject!=null){
                 child.setType(Type.Wad);
-                int subchanges = child.applyTo(nestedObject, narrow, aggressive);
+                int subchanges = child.applyTo(nestedObject, narrow, aggressive,create);
                 if (subchanges >= 0) {
                   changes += subchanges;
                 } else {

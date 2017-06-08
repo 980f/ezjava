@@ -15,7 +15,7 @@ import java.util.Enumeration;
 *
 * */
 public class QueryString {
-  protected StringBuffer guts = new StringBuffer(200);//most queries are big
+  protected StringBuilder guts = new StringBuilder(200);//most queries are big
   public static final ErrorLogStream dbg = ErrorLogStream.getForClass(QueryString.class);
   ///////////////////////////////////////
   // Keywords:
@@ -119,7 +119,6 @@ public class QueryString {
 
   ///////////////////////////////
   private QueryString(String starter) {
-    guts.setLength(0);//removes contents but not allocation
     guts.append(starter);
   }
 
@@ -401,7 +400,7 @@ public class QueryString {
   }
 
   /**
-   * Use one function that takes an object and does intelligent things with it instead of all of these ???
+   * Use one function that takes an object and does intelligent things with it instead of cols of these ???
    */
   public QueryString nvPairNull(ColumnProfile field) {
     return word(field.fullName()).cat(EQUALS).cat(NULL);

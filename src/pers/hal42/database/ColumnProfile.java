@@ -1,5 +1,6 @@
 package pers.hal42.database;
 
+import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.ObjectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
@@ -88,7 +89,7 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
     return ObjectX.NonTrivial(table) ? table.name() + '.' + name() : name();
   }
 
-  public int compareTo(ColumnProfile o) {
+  public int compareTo(@NotNull ColumnProfile o) {
     if (ObjectX.NonTrivial(o)) {
       try {
         int i = name().compareTo(o.name());
@@ -201,4 +202,3 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
     }
   }
 }
-//$Id: ColumnProfile.java,v 1.28 2003/08/20 18:22:29 mattm Exp $

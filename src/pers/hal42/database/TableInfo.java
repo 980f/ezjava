@@ -3,8 +3,10 @@ package pers.hal42.database;
 import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.StringX;
 
-/**
+import static java.text.MessageFormat.format;
 
+/**
+ extend name of a table, plus some other metadata.
  */
 
 public class TableInfo implements Comparable<TableInfo> {
@@ -51,6 +53,9 @@ public class TableInfo implements Comparable<TableInfo> {
     return name;
   }
 
+  public String fullName(){
+    return format("{0}.{1}",schema,name);
+  }
   public String type() {
     return type;
   }
