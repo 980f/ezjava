@@ -21,31 +21,15 @@ import java.text.MessageFormat;
 import java.util.Vector;
 
 import static pers.hal42.logging.LogLevelEnum.*;
+
 /**
  * WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
  * this was done to improve efficiency the rest of the time.
  *
- * @todo finish applying logswitch
+ * todo: finish applying logswitch
  * auto closeable for Push/Exit context stack
  */
 public class ErrorLogStream implements AtExit, AutoCloseable {
-
-  public boolean bare = false; //+_+ made a state to expedite big change.
-  //public
-  protected LogSwitch myLevel = null;
-  /**
-   * used to provide a stackable context, rather than having to fake an exception to get a stack trace.
-   */
-  protected StringStack context;
-  /**
-   * top of context stack
-   */
-  protected String ActiveMethod = "?"; //cached top of context stack
-  public static LogFile fpf = null; //just  so that we can close the file explicitly on program exit.
-  private static LogSwitch DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
-  private static Tracer Debug; // use Global() to get it!
-  private static NullBugger bitbucket;
-// for the embedded exceptions
 
   static class NullBugger extends ErrorLogStream {
     NullBugger() {
@@ -62,6 +46,22 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
       return "User requested stack trace, not a real exception";
     }
   }
+  public boolean bare = false; //+_+ made a state to expedite big change.
+  //public
+  protected LogSwitch myLevel = null;
+  /**
+   * used to provide a stackable context, rather than having to fake an exception to get a stack trace.
+   */
+  protected StringStack context;
+  /**
+   * top of context stack
+   */
+  protected String ActiveMethod = "?"; //cached top of context stack
+  public static LogFile fpf = null; //just  so that we can close the file explicitly on program exit.
+  private static LogSwitch DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
+// for the embedded exceptions
+  private static Tracer Debug; // use Global() to get it!
+  private static NullBugger bitbucket;
 
   protected ErrorLogStream(LogSwitch ls) {
     if (ls != null) {
@@ -232,15 +232,17 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   }
 
   public void close() {
-      Message(TRACE,"Exits");
-      ActiveMethod = context.pop();
+    Message(TRACE, "Exits");
+    ActiveMethod = context.pop();
   }
 
-  /** push teh context stack, @returns object that will pop it when 'closed' */
+  /**
+   * push teh context stack, @returns object that will pop it when 'closed'
+   */
   public ErrorLogStream Push(String methodName) {
     context.push(ActiveMethod);
     ActiveMethod = methodName;
-    Message(TRACE,"Entered");
+    Message(TRACE, "Entered");
     return this;
   }
 
@@ -266,9 +268,6 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     }
   }
 
-//  public void WARNING(String message) {
-//    Message(WARNING, message);
-//  }
 
   public void _objectDump(Object o, String path, TextList tl) {
     try {
@@ -287,7 +286,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     boolean logit = (tl == null);
     Class[] paramTypes = {Object.class, String.class, TextList.class};
     try {
-      if(logit) {
+      if (logit) {
         Method method = c.getMethod("toSpam");
         try {
           Object result = method.invoke(o);
@@ -392,8 +391,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
         }
       }
       if (fo != null) {
-        if ((fo instanceof Boolean) || (fo instanceof Character) ||
-          (fo instanceof Number) || //handles byte, double, float, integer, long, short
+        if ((fo instanceof Boolean) || (fo instanceof Character) || (fo instanceof Number) || //handles byte, double, float, integer, long, short
           (fo instanceof String) || (fo instanceof StringBuffer)) {
           String msg = newPath + "=" + fo;
           if (logit) {
@@ -410,6 +408,16 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
 
   public void Exit() {
     close();
+  }
+
+  public void dump(int level, String path, String content) {
+    if (willOutput(level)) {
+      try {
+        Files.write(Paths.get("bigquery.sql"), content.getBytes());
+      } catch (IOException e) {
+        ERROR("Couldn't save debug copy of content, oh well.");
+      }
+    }
   }
 
   //this had to be implmented with a lazy init due to classloader loops.
@@ -617,16 +625,6 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
 
   public static void objectDump(Object o, String path, TextList tl) {
     Global()._objectDump(o, path, tl);
-  }
-
-  public void dump(int level,String path,String content){
-    if(willOutput(level)) {
-      try {
-        Files.write(Paths.get("bigquery.sql"), content.getBytes());
-      } catch (IOException e) {
-        ERROR("Couldn't save debug copy of content, oh well.");
-      }
-    }
   }
 
 }

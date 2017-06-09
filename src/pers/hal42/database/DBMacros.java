@@ -480,7 +480,9 @@ public class DBMacros extends GenericDB {
       dbg.Caught(ex);
     } finally {
       try {
-        mycon.clearWarnings();
+        if (mycon != null) {
+          mycon.clearWarnings();
+        }
       } catch (Exception ex) {
         dbg.Caught(ex);
       }
@@ -497,125 +499,86 @@ public class DBMacros extends GenericDB {
   }
 
   public Statement query(QueryString queryStr) {
-    Statement stmt = null;
     try {
-      stmt = query(queryStr, false);
+      return query(queryStr, false);
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      return stmt;
+      return null;
     }
   }
 
-  public int update(QueryString queryStr, boolean throwException) throws SQLException {
-    return update(queryStr, throwException, /*canReattempt*/ true);
-  }
-
-  //todo: replace 'throwException' with an exception member on the QueryString and never throw from herein, instead return an error code.
-  private int update(QueryString queryStr, boolean throwException, boolean canReattempt) throws SQLException {
+  private int update(QueryString queryStr, boolean throwException) throws SQLException {
 //    checkDBthreadSelect();
-    int retval = FAILED; // the error code
-    SQLException tothrow = null;
+    if (queryStr == null) {
+      dbg.WARNING("queryStr == null");
+      return 0;//todo:1 perhaps Failed?
+    }
     String qs = String.valueOf(queryStr);
     StopWatch swatch = new StopWatch();
-    Connection mycon = null;
-    boolean needsReattempt = false;
+    Connection mycon = getConnection();
+    if (mycon == null) {
+      return FAILED;
+    }
     long qn = queryCounter.incr();
-    try {
-      dbg.Push("update");
-      Statement stmt = null;
-      // do the query
-      try {
-        dbg.Push("update" + (throwException ? "(RAW)" : ""));
-        mycon = getConnection();
-        if (mycon != null) {
-          dbg.VERBOSE("Calling Connection.createStatement() ...");
-          stmt = mycon.createStatement();
-          dbg.VERBOSE("Done calling Connection.createStatement().");
-          if (stmt != null) {
-            // insert it into the table
-            dbg.VERBOSE("Calling Connection.executeUpdate() ...");
+    try (AutoCloseable pop = dbg.Push("update" + (throwException ? "(RAW)" : "")); Statement stmt = mycon.createStatement()) {
+      if (stmt != null) {
+        // insert it into the table
+        dbg.VERBOSE("Calling Connection.executeUpdate() ...");
 //            preLogQuery(DBFunctionType.UPDATE, queryStr, true, qn);
-            retval = stmt.executeUpdate(qs); // this is where sql exceptions will most likely occur
-            dbg.VERBOSE("Done calling Connection.executeUpdate().");
-          } else {
-            dbg.VERBOSE("attempted to execute null statement");
-          }
-        } else {
-          dbg.ERROR("Cannot call update() unless connection exists!");
-        }
-      } catch (SQLException e) {
-        if (throwException) {
-          tothrow = e;
-        } else {
-          dbg.Caught(e, "Exception performing update [recycled]: " + queryStr);
-          if (mycon == null) {
-            dbg.WARNING("mycon == null");
-          }
-          if (stmt == null) {
-            dbg.WARNING("stmt == null");
-          } else {
-            try {
-              SQLWarning warn = stmt.getWarnings();
-              while (warn != null) {
-                dbg.WARNING("warn: " + warn);
-                warn = warn.getNextWarning();
-              }
-            } catch (Exception trash) {
-              // who cares
-            }
-          }
-          if (queryStr == null) {
-            dbg.WARNING("queryStr == null");
-          }
-        }
-        recycleConnection(e, mycon, queryStr); // +++ testing this !!!
-        needsReattempt = true;
-      } finally {
+        int retval = stmt.executeUpdate(qs); // this is where sql exceptions will most likely occur
         try {
           dbg.VERBOSE("Calling Connection.getAutoCommit() ...");
-          if ((mycon != null) && !mycon.getAutoCommit()) {
+          if (!mycon.getAutoCommit()) {
             mycon.commit();
           }
         } catch (Exception e) {
           dbg.Caught(e);
-        } finally {
-          dbg.VERBOSE("Done calling Connection.getAutoCommit().");
-          closeStmt(stmt);
         }
-        dbg.Exit();
+        return retval;
+      } else {
+        dbg.WARNING("Could not create a statement");
       }
-    } finally {
-      try {
-        updateStats.add(swatch.millis());
-        logQuery(DBFunctionType.UPDATE, swatch.millis(), retval, true, qn);
-      } catch (Exception e2) {
-        dbg.Caught(e2);
-      } finally {
-        printWarnings(mycon);
-        dbg.Exit();
-        if (canReattempt && needsReattempt) { // +++ check the time it took last time?
-          return update(queryStr, throwException, false /*canReattempt*/);
-        } else {
-          if (tothrow != null) {
-            dbg.WARNING("Throwing " + tothrow);
-            throw tothrow;
-          } else {
-            return retval;
-          }
-        }
+      return FAILED; // the error code
+    } catch (SQLException e) {
+      if (throwException) {
+        throw e;
       }
+      dbg.Caught(e, "Exception performing update: " + queryStr);
+
+      recycleConnection(e, mycon, queryStr); // +++ testing this !!!
+      return FAILED;
+    } catch (Exception e1) {
+      dbg.Caught(e1, "closing resources");
+      return FAILED;
     }
+//    } catch (Exception e) {
+//      //ignore, won't be thrown
+//    } finally {
+//      try {
+//        updateStats.add(swatch.millis());
+//        logQuery(DBFunctionType.UPDATE, swatch.millis(), retval, true, qn);
+//      } catch (Exception e2) {
+//        dbg.Caught(e2);
+//      } finally {
+//        printWarnings(mycon);
+//        if (canReattempt && needsReattempt) { // +++ check the time it took last time?
+//          return update(queryStr, throwException, false /*canReattempt*/);
+//        } else {
+//          if (tothrow != null) {
+//            dbg.WARNING("Throwing " + tothrow);
+//            throw tothrow;
+//          }
+//        }
+//      }
+//    }
   }
 
   public int update(QueryString queryStr) {
-    int retval = FAILED; // changed from 0 recently.  should have?
     try {
-      retval = update(queryStr, false);
+      return update(queryStr, false);
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      return retval;
+      return FAILED; // changed from 0 recently.  should have?
     }
   }
 
@@ -1033,111 +996,93 @@ public class DBMacros extends GenericDB {
 //  }
 
   /**
-   * Returns true if the index was properly dropped
+   * @returns true if the index no logner exists
    */
   protected final boolean dropIndex(String indexname, String tablename) {
     int i = -1;
-    try {
-      dbg.Push("dropIndex");
+    try (AutoCloseable pop= dbg.Push("dropIndex")){
       if (indexExists(indexname, tablename)) {
-        i = update(QueryString.genDropIndex(indexname));
+        return update(QueryString.genDropIndex(indexname))>=0;
       } else {
         dbg.ERROR("dropIndex " + indexname + ": index doesn't exist; can't drop.");
+        return true;
       }
-    } catch (Exception e) {
+    } catch (SQLException e) {
       dbg.Caught(e);
-    } finally {
-      dbg.ERROR("dropIndex " + indexname + ": returned " + i);
-      dbg.Exit();
-      return (i > -1) || !indexExists(indexname, tablename);
+      return false;//it existed or we wouldn't have called a function that threw an exception.
+    } catch (Exception e) {
+      //ignore closing errors.
+      return true;//won't get here.
     }
   }
 
   /**
-   * Returns true if the table was properly dropped
+   * @returns true if the table is gone
    */
   protected final boolean dropTable(String tablename) {
-    boolean ret = false;
-    try {
-      dbg.Push("dropTable");
+    try (AutoCloseable pop= dbg.Push("dropTable")){
       if (tableExists(tablename)) {
         dbg.ERROR("dropTable" + tablename + " returned " + update(QueryString.genDropTable(tablename)));
-        ret = !tableExists(tablename);
+        return !tableExists(tablename);
       } else {
-        ret = true;
+        return true;
       }
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      dbg.Exit();
-      return ret;
+      return false;
     }
   }
 
   // +++ use dbmd's getMaxColumnNameLength to see if the name is too long
-  // +++ combine this and prev function
   protected final boolean addField(ColumnProfile column) {
-    boolean ret = false;
-    try {
-      dbg.Push("addField");
+
+    try (AutoCloseable pop= dbg.Push("addField")){
       if (!fieldExists(column.tq(), column.name())) {
-        dbg.ERROR("addField" + column.fullName() + " returned " + update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
+        dbg.ERROR("addField {0} returned {1}",column.fullName() , update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
           QueryString.genAddField(column)));
-        ret = fieldExists(column.tq(), column.name());
+        return fieldExists(column.tq(), column.name());
       } else {
-        ret = true;
+        return true;
       }
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      dbg.Exit();
-      return ret;
+      return false;
     }
   }
 
   protected final boolean changeFieldType(ColumnProfile from, ColumnProfile to) {
-    try {
-      dbg.Push("changeFieldType");
+    try (AutoCloseable pop= dbg.Push("changeFieldType")){
 //      dbg.ERROR("changeFieldType " + to.fullName() + " returned " + update(QueryString.genChangeFieldType(to)));
       dbg.ERROR("changeFieldType is not yet supported.  Write code in the content validator to handle this!");
       return false;//fieldExists(to.table().name(), to.name()); // +++ instead, need to do the things you do to check that a column is correct, not just check to see if it is added!
     } catch (Exception e) {
       dbg.Caught(e);
       return false;
-    } finally {
-      dbg.Exit();
     }
   }
 
   protected final boolean changeFieldNullable(ColumnProfile to) {
-    boolean ret = false;
-    try {
-      dbg.Push("changeFieldNullable");
+    try (AutoCloseable pop= dbg.Push("changeFieldNullable")){
       dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
-      ret = to.sameNullableAs(aftercolumn);
+      return  to.sameNullableAs(aftercolumn);
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      dbg.Exit();
-      return ret;
+      return false;
     }
   }
 
   protected final boolean changeFieldDefault(ColumnProfile to) {
-    boolean ret = false;
-    try {
-      dbg.Push("changeFieldDefault");
+
+    try (AutoCloseable pop= dbg.Push("changeFieldDefault")){
       dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(QueryString.genChangeFieldDefault(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
-      ret = to.sameDefaultAs(aftercolumn);
+      return to.sameDefaultAs(aftercolumn);
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      dbg.Exit();
-      return ret;
+      return false;
     }
   }
 
@@ -1162,8 +1107,7 @@ public class DBMacros extends GenericDB {
     String tableName = index.table.name();
     String fieldExpression = index.columnNamesCommad();
 
-    try {
-      dbv.Push(functionName);//#gc
+    try (AutoCloseable pop=dbv.Push(functionName)){
       dbv.mark("Add Index " + indexName + " for " + tableName + ":" + fieldExpression);
       if (!indexExists(index)) {
         QueryString qs = QueryString.genCreateIndex(index);
@@ -1177,15 +1121,14 @@ public class DBMacros extends GenericDB {
         success = ALREADY;
         dbv.ERROR("Index " + indexName + " already exists!");
       }
+      return success;
     } catch (Exception e) {
       dbv.Caught(e);
+      return FAILED;
     } finally {
       if (success == FAILED) {
         dbv.ERROR(functionName + ": FAILED!");
       }
-      dbv.mark("");
-      dbv.Exit();//#gc
-      return success;
     }
   }
 
@@ -1356,7 +1299,7 @@ public class DBMacros extends GenericDB {
     String functionName = "dropTableConstraint";
     int success = FAILED;
     String toDrop = "drop constraint " + tablename + "." + constraintname;
-    try (AutoCloseable pop=dbv.Push(functionName)){
+    try (AutoCloseable pop = dbv.Push(functionName)) {
       dbv.mark(toDrop);
       TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
       success = (tableExists(tablename)) ? update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) : ALREADY;
@@ -1383,7 +1326,7 @@ public class DBMacros extends GenericDB {
 
   //todo: use dbmd's getMaxTableNameLength to see if the name is too long
   protected final boolean createTable(TableProfile tp) {
-    try (AutoCloseable pop= dbg.Push("haveTable")){
+    try (AutoCloseable pop = dbg.Push("haveTable")) {
       if (!tableExists(tp.name())) {
         dbg.ERROR("haveTable " + tp.name() + " returned " + update(QueryString.genCreateTable(tp)));
         return tableExists(tp.name());
@@ -1394,6 +1337,10 @@ public class DBMacros extends GenericDB {
       dbg.Caught(e);
       return false;
     }
+  }
+
+  public Blob makeBlob(byte[] content) {
+    return new Blobber(content);
   }
 
   public static ResultSetMetaData getRSMD(ResultSet rs) {
@@ -1706,6 +1653,16 @@ public class DBMacros extends GenericDB {
       }
     }
     return null;
+  }
+
+  public static boolean isStringy(String image) {
+    try {
+      //noinspection ResultOfMethodCallIgnored
+      Double.parseDouble(image);
+      return false;//if we get here without an exception then the string is a number
+    } catch (Exception any) {
+      return true;
+    }
   }
 
 }
