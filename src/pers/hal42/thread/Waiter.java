@@ -5,6 +5,7 @@ package pers.hal42.thread;
   call waiter.prepare() BEFORE triggering behavior that will eventually notify you.
   call waiter.Start(...) to wait for notification. It returns "state" or you can get
   that same value from the state() function.
+
   All parameters are set by prepare(...) variations, internal defaults used for ones omitted
   Start(...) variations only modify the parameters passed, retaining ones set by the last prepare()
 
