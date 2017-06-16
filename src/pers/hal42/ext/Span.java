@@ -1,9 +1,5 @@
 package pers.hal42.ext;
 
-import pers.hal42.lang.ObjectX;
-
-import static pers.hal42.lang.ObjectX.INVALIDINDEX;
-
 /**
  * Created by andyh on 4/3/17.
  * <p>
@@ -12,6 +8,7 @@ import static pers.hal42.lang.ObjectX.INVALIDINDEX;
 public class Span {
   public int lowest;
   public int highest;
+  public static final int Invalid = -1;  //what indexOf returns when it doesn't find a char
 
   public Span(int lowest, int highest) {
     this.lowest = lowest;
@@ -26,12 +23,18 @@ public class Span {
    * set the low bound, invalidate the high one
    */
   public void begin(int low) {
-    highest = ObjectX.INVALIDINDEX; //for safety
+    highest = Invalid; //for safety
     lowest = low;
   }
 
+  /** @returns whether subString will return something other than null */
+  public boolean isStarted() {
+    return lowest != Invalid;
+  }
+
+  /** @returns whether subString will return an actual subString as one normally thinks of that word. */
   public boolean isValid() {
-    return INVALIDINDEX != highest && lowest != INVALIDINDEX;//often the low is valid but the high is not
+    return Invalid != highest && lowest != Invalid;//often the low is valid but the high is not
   }
 
   /**
@@ -54,19 +57,23 @@ public class Span {
 
 
   public void leapfrog(int skip) {
-    lowest = highest + skip;
-    highest = INVALIDINDEX;
+    if (highest == Invalid) {//if at or past the end
+      lowest = Invalid;   //we are past the end for sure.
+    } else {//begin next field
+      lowest = highest + skip;
+      highest = Invalid;
+    }
   }
 
   public void clear() {
-    highest = lowest = INVALIDINDEX;
+    highest = lowest = Invalid;
   }
 
   public void shift(int offset) {
-    if (lowest != INVALIDINDEX) {
+    if (lowest != Invalid) {
       lowest -= offset;
     }
-    if (highest != INVALIDINDEX) {
+    if (highest != Invalid) {
       highest -= offset;
     }
   }
@@ -78,12 +85,12 @@ public class Span {
   }
 
   public String subString(String tocut, int skip) {
-    if (lowest == INVALIDINDEX) {
+    if (lowest == Invalid) {
       return "";
       //and skipping doesn't make sense
     }
     try {
-      if (highest == INVALIDINDEX) {//then take tail
+      if (highest == Invalid) {//then take tail
         return tocut.substring(lowest);
       } else {
         return tocut.substring(lowest, highest);

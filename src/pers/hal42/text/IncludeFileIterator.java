@@ -1,5 +1,6 @@
 package pers.hal42.text;
 
+import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.stream.FileListIterator;
 
@@ -10,15 +11,29 @@ import java.io.FileNotFoundException;
  * It would be easy to add a 'maximum depth' to guard against that
  */
 public class IncludeFileIterator extends FancyArgIterator {
+  public boolean filterPounds = true;
+
+  public IncludeFileIterator(boolean filterPounds) {
+    this.filterPounds = filterPounds;
+  }
+
   @Override
   public String next() {
     String arg = super.next();
-    while (arg.charAt(0) == '@') {//then read some args from a file
+    while (StringX.firstCharIs(arg, '@')) {//then read some args from a file
       try {
         push(new FileListIterator(arg.substring(1)));
         arg = super.next();
       } catch (FileNotFoundException e) {
         ErrorLogStream.Global().Caught(e, "Trying to include a file in IncludeFileIterator");
+      }
+    }
+    if (filterPounds && StringX.firstCharIs(arg, '#')) {
+      if (hasNext()) {
+        return next();
+      } else {
+        //we lied about their being another string, pass an empty one
+        return "";
       }
     }
     return arg;

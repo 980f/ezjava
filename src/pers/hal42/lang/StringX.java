@@ -13,6 +13,10 @@ public class StringX {
     //#namespace
   }
 
+  public static boolean firstCharIs(String arg, char c) {
+    return firstChar(arg) == c;
+  }
+
   /**
    * Takes an array of strings and makes one big string by putting ", " in between each.
    * This function preserves the order of the items in the list.
@@ -47,7 +51,7 @@ public class StringX {
     int lookLen = toReplace.length();
     int withLen = with.length();
     int searchFrom = 0;
-    int foundAt = 0;
+    int foundAt;//= 0;
     while ((foundAt = source.substring(searchFrom).indexOf(toReplace)) > -1) {
       int reallyAt = foundAt + searchFrom; //foundat is relative to searchFrom
       // +_+ improve this by dealing with cases separately (srcLen == repLen, srcLen < repLen, srcLen > repLen)

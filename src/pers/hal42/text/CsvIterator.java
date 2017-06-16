@@ -11,26 +11,30 @@ public class CsvIterator implements StringIterator {
 
   protected String line;
   Span span=new Span();
+
+  public CsvIterator(String line) {
+    this.line = line;
+    if (line.length() > 0) {
+      span.lowest = 0;
+      bump();
+    }
+  }
+
   @Override
   public boolean hasNext() {
-    return line!=null && span.isValid();
+    return line != null && span.isStarted();
   }
 
   @Override
   public String next() {
     try {
-      return span.subString(line, 0).trim();
+      return span.subString(line, 1).trim();
     } finally {
       bump();
     }
   }
 
   private void bump() {
-    span.highest=line.indexOf('=',span.lowest);
-  }
-
-  public CsvIterator(String line) {
-    this.line = line;
-    bump();
+    span.highest = line.indexOf(',', span.lowest);
   }
 }
