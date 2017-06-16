@@ -1,16 +1,39 @@
 package pers.hal42.lang;
 
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Vector;
+import java.util.function.Predicate;
 
+import static pers.hal42.lang.Index.BadIndex;
+
+/**
+ * Collections omissions, IE things the java creators forgot.
+ */
 public class VectorX {
   private VectorX() {
     // I exist for static purposes
   }
 
-  ///////// Collections omissions
+
+  public static <T> int indexOfFirst(Vector<T> v, Predicate<T> pred) {
+    for (int i = 0; i < v.size(); ++i) {
+      if (pred.test(v.get(i))) {
+        return i;
+      }
+    }
+    return BadIndex;
+  }
+
+  /** if you know the predicate will only fire for one T then this is microscopicaaly faster thatn indexOf. */
+  public static <T> int indexOfLast(Vector<T> v, Predicate<T> pred) {
+    for (int i = v.size(); i-- > 0; ) {
+      if (pred.test(v.get(i))) {
+        return i;
+      }
+    }
+    return BadIndex;
+  }
 
   /**
    * @return @param v after reversing the order of its elements.

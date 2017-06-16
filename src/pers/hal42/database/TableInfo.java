@@ -6,7 +6,7 @@ import pers.hal42.lang.StringX;
 import static java.text.MessageFormat.format;
 
 /**
- extend name of a table, plus some other metadata.
+ * extend name of a table, plus some other metadata.
  */
 
 public class TableInfo implements Comparable<TableInfo> {
@@ -53,9 +53,10 @@ public class TableInfo implements Comparable<TableInfo> {
     return name;
   }
 
-  public String fullName(){
-    return format("{0}.{1}",schema,name);
+  public String fullName() {
+    return format("{0}.{1}", schema, name);
   }
+
   public String type() {
     return type;
   }
@@ -66,11 +67,11 @@ public class TableInfo implements Comparable<TableInfo> {
 
   @Override
   public int compareTo(@NotNull TableInfo o) {
-    int diff=catalog.compareTo(o.catalog);
-    if(diff==0){
-      diff=schema.compareTo(o.schema);
-      if(diff==0){
-        diff=name.compareTo(o.name);
+    int diff = catalog.compareTo(o.catalog);
+    if (diff == 0) {
+      diff = schema.compareTo(o.schema);
+      if (diff == 0) {
+        diff = name.compareTo(o.name);
       }
     }
     return diff;
