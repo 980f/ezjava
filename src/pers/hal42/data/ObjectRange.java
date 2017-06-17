@@ -152,10 +152,12 @@ public class ObjectRange<T extends Comparable<T>> {
       dbg.VERBOSE("NonTrivials: {0} {1} ", singular ,broad);
       //if two is nonTrivial
       if (broad) {
-        if (!singular || one.compareTo(two) == 0) {//and either one is trivial or the same as two
+        if (singular && !broad) {
+          two = one;//copy so we can be sloppy elsewhere
+        }
+        if (!singular || one.compareTo(two) == 0) {//and either one is trivial or operationally the same as two
           dbg.VERBOSE("is actually singular");
           one = two;
-          two = null;
           singular = true;
           broad = false;
         } else {

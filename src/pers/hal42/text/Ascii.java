@@ -143,6 +143,11 @@ public class Ascii {
   public final static byte TILDE = 0x7E;// ~
   public static final String CRLF = "\r\n";
 
+  public static String computed(char a, int which) {
+    int netascii = (int) a + which;
+    return "" + Char(netascii);
+  }
+
   //move to safe {
   public static String bracket(String text) {//--->>safe
     return "[" + text + "]";
@@ -285,8 +290,6 @@ public class Ascii {
       for (int i = start; i < end; i++) {
         newone.append(image(ba[i], bracketSpace));
       }
-    } else {
-      // +++ do something if we get a null?
     }
     return newone;
   }
@@ -330,7 +333,7 @@ public class Ascii {
             break;
         }
       }
-      return clean.toString();//someone elses job to do any trimming.
+      return clean.toString();//someone else's job to do any trimming.
     } else {
       return "";//trivial but not null.
     }

@@ -341,13 +341,10 @@ public class DBMacros extends GenericDB {
     TextList tl = new TextList(50, 50);
     int col = 1;
     if ((cp != null) && (rs != null)) {
-      try {
-        dbg.VERBOSE("Calling ResultSet.findColumn() ...");
+      try (AutoCloseable pop = dbg.Push("Calling ResultSet.findColumn() ...")) {
         col = rs.findColumn(cp.name());
       } catch (Exception e) {
         dbg.Caught(e);
-      } finally {
-        dbg.VERBOSE("Done calling ResultSet.findColumn().");
       }
     }
     while (next(rs)) {
@@ -463,7 +460,6 @@ public class DBMacros extends GenericDB {
       }
       return stmt;
     }
-
   }
 
   protected void printWarnings(Connection mycon) {
@@ -616,11 +612,8 @@ public class DBMacros extends GenericDB {
           String query = MessageFormat.format("SELECT * FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name WHERE t.table_schema = ''{0}'' and t.table_name LIKE ''{1}'';", ti.schema(), ti.name());
           if (stmt.execute(query)) {
             rs = stmt.getResultSet();
-
           }
-
         }
-
       }
       SQLWarning barf = rs.getWarnings();
       dbg.WARNING(barf.getMessage());
@@ -678,7 +671,6 @@ public class DBMacros extends GenericDB {
       }
       tables.add(tp);
     } else { // Profile ALLTABLES
-
 
       TableInfoList tablelist = getTableList(tq);
       for (int i = 0; i < tablelist.size(); i++) {
@@ -1000,9 +992,9 @@ public class DBMacros extends GenericDB {
    */
   protected final boolean dropIndex(String indexname, String tablename) {
     int i = -1;
-    try (AutoCloseable pop= dbg.Push("dropIndex")){
+    try (AutoCloseable pop = dbg.Push("dropIndex")) {
       if (indexExists(indexname, tablename)) {
-        return update(QueryString.genDropIndex(indexname))>=0;
+        return update(QueryString.genDropIndex(indexname)) >= 0;
       } else {
         dbg.ERROR("dropIndex " + indexname + ": index doesn't exist; can't drop.");
         return true;
@@ -1020,7 +1012,7 @@ public class DBMacros extends GenericDB {
    * @returns true if the table is gone
    */
   protected final boolean dropTable(String tablename) {
-    try (AutoCloseable pop= dbg.Push("dropTable")){
+    try (AutoCloseable pop = dbg.Push("dropTable")) {
       if (tableExists(tablename)) {
         dbg.ERROR("dropTable" + tablename + " returned " + update(QueryString.genDropTable(tablename)));
         return !tableExists(tablename);
@@ -1036,9 +1028,9 @@ public class DBMacros extends GenericDB {
   // +++ use dbmd's getMaxColumnNameLength to see if the name is too long
   protected final boolean addField(ColumnProfile column) {
 
-    try (AutoCloseable pop= dbg.Push("addField")){
+    try (AutoCloseable pop = dbg.Push("addField")) {
       if (!fieldExists(column.tq(), column.name())) {
-        dbg.ERROR("addField {0} returned {1}",column.fullName() , update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
+        dbg.ERROR("addField {0} returned {1}", column.fullName(), update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
           QueryString.genAddField(column)));
         return fieldExists(column.tq(), column.name());
       } else {
@@ -1051,7 +1043,7 @@ public class DBMacros extends GenericDB {
   }
 
   protected final boolean changeFieldType(ColumnProfile from, ColumnProfile to) {
-    try (AutoCloseable pop= dbg.Push("changeFieldType")){
+    try (AutoCloseable pop = dbg.Push("changeFieldType")) {
 //      dbg.ERROR("changeFieldType " + to.fullName() + " returned " + update(QueryString.genChangeFieldType(to)));
       dbg.ERROR("changeFieldType is not yet supported.  Write code in the content validator to handle this!");
       return false;//fieldExists(to.table().name(), to.name()); // +++ instead, need to do the things you do to check that a column is correct, not just check to see if it is added!
@@ -1062,11 +1054,11 @@ public class DBMacros extends GenericDB {
   }
 
   protected final boolean changeFieldNullable(ColumnProfile to) {
-    try (AutoCloseable pop= dbg.Push("changeFieldNullable")){
+    try (AutoCloseable pop = dbg.Push("changeFieldNullable")) {
       dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
-      return  to.sameNullableAs(aftercolumn);
+      return to.sameNullableAs(aftercolumn);
     } catch (Exception e) {
       dbg.Caught(e);
       return false;
@@ -1075,7 +1067,7 @@ public class DBMacros extends GenericDB {
 
   protected final boolean changeFieldDefault(ColumnProfile to) {
 
-    try (AutoCloseable pop= dbg.Push("changeFieldDefault")){
+    try (AutoCloseable pop = dbg.Push("changeFieldDefault")) {
       dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(QueryString.genChangeFieldDefault(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
@@ -1107,7 +1099,7 @@ public class DBMacros extends GenericDB {
     String tableName = index.table.name();
     String fieldExpression = index.columnNamesCommad();
 
-    try (AutoCloseable pop=dbv.Push(functionName)){
+    try (AutoCloseable pop = dbv.Push(functionName)) {
       dbv.mark("Add Index " + indexName + " for " + tableName + ":" + fieldExpression);
       if (!indexExists(index)) {
         QueryString qs = QueryString.genCreateIndex(index);
@@ -1135,8 +1127,7 @@ public class DBMacros extends GenericDB {
   protected final int validateAddField(ColumnProfile column) {
     String functionName = "validateAddField(fromProfile)";
     int success = FAILED;
-    try {
-      dbv.Push(functionName);//#gc
+    try (AutoCloseable pop = dbv.Push(functionName)) {
       dbv.mark("Add field " + column.fullName());
       if (!fieldExists(column.tq(), column.name())) {
         boolean did = addField(column);
@@ -1146,15 +1137,10 @@ public class DBMacros extends GenericDB {
         success = ALREADY;
         dbv.ERROR("Field " + column.fullName() + " already added.");
       }
+      return success;
     } catch (Exception e) {
       dbv.Caught(e);
-    } finally {
-      if (success == FAILED) {
-        dbv.ERROR(functionName + ":" + " FAILED!");
-      }
-      dbv.mark("");
-      dbv.Exit();//#gc
-      return success;
+      return FAILED;
     }
   }
 
@@ -1211,8 +1197,7 @@ public class DBMacros extends GenericDB {
   protected final int validateAddPrimaryKey(PrimaryKeyProfile primaryKey) {
     String functionName = "validateAddPrimaryKey";
     int success = FAILED;
-    try {
-      dbv.Push(functionName);//#gc
+    try (AutoCloseable pop = dbv.Push(functionName)) {
       String blurb = "Primary Key " + primaryKey.name + " for " + primaryKey.table.name() + "." + primaryKey.field.name();
       dbv.mark("Add " + blurb);
       if (!primaryKeyExists(primaryKey)) {
@@ -1225,92 +1210,73 @@ public class DBMacros extends GenericDB {
         success = ALREADY;
         dbv.ERROR(blurb + " already added.");
       }
+      return success;
     } catch (Exception e) {
       dbv.Caught(e);
-    } finally {
-      if (success == FAILED) {
-        dbv.ERROR(functionName + ": FAILED!");
-      }
-      dbv.mark("");
-      dbv.Exit();//#gc
-      return success;
+      return FAILED;
     }
   }
 
   // +++ generalize internal parts and move to DBMacros!
   protected final int validateAddForeignKey(ForeignKeyProfile foreignKey) {
     String functionName = "validateAddForeignKey";
-    int success = FAILED;
-    try {
-      dbv.Push(functionName);//#gc
+
+    try (AutoCloseable pop = dbv.Push(functionName)) {
       String blurb = "Foreign Key " + foreignKey.name + " for " + foreignKey.table.name() + "." + foreignKey.field.name() + " against " + foreignKey.referenceTable.name();
       dbv.mark("Add " + blurb);
       if (!foreignKeyExists(foreignKey)) {
         QueryString qs = QueryString.genAddForeignKeyConstraint(foreignKey);
         if (update(qs) != -1) {
-          success = DONE;
-          dbv.ERROR(functionName + ": SUCCEEDED!");
+          dbv.VERBOSE(": SUCCEEDED!");
+          return DONE;
+        } else {
+          return FAILED;
         }
       } else {
-        success = ALREADY;
-        dbv.ERROR(blurb + " already added.");
+        dbv.VERBOSE(blurb + " already added.");
+        return ALREADY;
       }
     } catch (Exception e) {
       dbv.Caught(e);
-    } finally {
-      if (success == FAILED) {
-        dbv.ERROR(functionName + ": FAILED!");
-      }
-      dbv.mark("");
-      dbv.Exit();//#gc
-      return success;
+      return FAILED;
     }
   }
 
   protected final int validateAddTable(TableProfile table) {
     String functionName = "validateAddTable";
-    int success = FAILED;
-    try {
-      dbv.Push(functionName);//#gc
+
+    try (AutoCloseable pop = dbv.Push(functionName)) {
       dbv.mark("Add table " + table.name());
       if (!tableExists(table.name())) {
         boolean did = createTable(table);
-        success = (did ? DONE : FAILED);
         dbv.ERROR((did ? "Added" : "!! COULD NOT ADD") + " table " + table.name());
+        return (did ? DONE : FAILED);
       } else {
-        success = ALREADY;
-        dbv.ERROR("Table " + table.name() + " already added.");
+        dbv.VERBOSE("Table " + table.name() + " already added.");
+        return ALREADY;
+
       }
     } catch (Exception e) {
       dbv.Caught(e);
-    } finally {
-      if (success == FAILED) {
-        dbv.ERROR(functionName + ":" + " FAILED!");
-      }
-      dbv.mark("");
-      dbv.Exit();//#gc
-      return success;
+      return FAILED;
     }
   }
 
-  // +++ use dbmd's getMaxColumnNameLength to see if the name is too long
-  // +++ generalize and move into DBMacros!
+  //todo:2 use dbmd's getMaxColumnNameLength to see if the name is too long
+
   protected final boolean dropTableConstraint(String tablename, String constraintname) {
     String functionName = "dropTableConstraint";
-    int success = FAILED;
+
     String toDrop = "drop constraint " + tablename + "." + constraintname;
     try (AutoCloseable pop = dbv.Push(functionName)) {
-      dbv.mark(toDrop);
+//      dbv.mark(toDrop);
       TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
-      success = (tableExists(tablename)) ? update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) : ALREADY;
+      int success = (tableExists(tablename)) ? update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) : ALREADY;
       return (success != FAILED);
     } catch (Exception e) {
       // muffle
       //dbv.Caught(e);
       return false;
-    } finally {
-      dbv.ERROR(functionName + ": '" + toDrop + ((success == ALREADY) ? " Can't perform since table doesn't exist." : ((success == DONE) ? "' Succeeded!" : "' FAILED!  Constraint probably didn't exist.")));
-      dbv.mark("");
     }
   }
 
@@ -1664,7 +1630,6 @@ public class DBMacros extends GenericDB {
       return true;
     }
   }
-
 }
 
 class NamedStatementList extends Vector<NamedStatement> {
