@@ -4,6 +4,7 @@ import pers.hal42.lang.ByteArray;
 import pers.hal42.lang.CharX;
 import pers.hal42.lang.StringX;
 
+/** I think this was created for dealing with ascii terminal communications, where bytes are chars. */
 public class Ascii {
 
   public final static byte NUL = 0x00;
@@ -191,72 +192,72 @@ public class Ascii {
 
   private static String image(byte b, boolean bracketSpace) {
     switch (b) {
-      case NUL:
-        return bracket("nul");
-      case SOH:
-        return bracket("soh");
-      case STX:
-        return bracket("STX");
-      case ETX:
-        return bracket("ETX");
-      case EOT:
-        return bracket("EOT");
-      case ENQ:
-        return bracket("ENQ");
-      case ACK:
-        return bracket("ACK");
-      case BEL:
-        return bracket("bel");
-      case BS:
-        return bracket("bs");
-      case TAB:
-        return bracket("tab");
-      case LF:
-        return bracket("LF");
-      case VT:
-        return bracket("vt");
-      case FF:
-        return bracket("ff");
-      case CR:
-        return bracket("CR");
-      case SO:
-        return bracket("so");
-      case SI:
-        return bracket("si");
-      case DLE:
-        return bracket("dle");
-      case DC1:
-        return bracket("dc1");
-      case DC2:
-        return bracket("dc2");
-      case DC3:
-        return bracket("dc3");
-      case DC4:
-        return bracket("dc4");
-      case NAK:
-        return bracket("NAK");
-      case SYN:
-        return bracket("syn");
-      case ETB:
-        return bracket("etb");
-      case CAN:
-        return bracket("can");
-      case EM:
-        return bracket("em");
-      case SUB:
-        return bracket("sub");
-      case ESC:
-        return bracket("esc");
-      case FS:
-        return bracket("FS");
-      case GS:
-        return bracket("GS");
-      case RS:
-        return bracket("RS");
-      case US:
-        return bracket("US");
-      case SP:
-        return bracketSpace ? bracket("sp") : " ";
+    case NUL:
+      return bracket("nul");
+    case SOH:
+      return bracket("soh");
+    case STX:
+      return bracket("STX");
+    case ETX:
+      return bracket("ETX");
+    case EOT:
+      return bracket("EOT");
+    case ENQ:
+      return bracket("ENQ");
+    case ACK:
+      return bracket("ACK");
+    case BEL:
+      return bracket("bel");
+    case BS:
+      return bracket("bs");
+    case TAB:
+      return bracket("tab");
+    case LF:
+      return bracket("LF");
+    case VT:
+      return bracket("vt");
+    case FF:
+      return bracket("ff");
+    case CR:
+      return bracket("CR");
+    case SO:
+      return bracket("so");
+    case SI:
+      return bracket("si");
+    case DLE:
+      return bracket("dle");
+    case DC1:
+      return bracket("dc1");
+    case DC2:
+      return bracket("dc2");
+    case DC3:
+      return bracket("dc3");
+    case DC4:
+      return bracket("dc4");
+    case NAK:
+      return bracket("NAK");
+    case SYN:
+      return bracket("syn");
+    case ETB:
+      return bracket("etb");
+    case CAN:
+      return bracket("can");
+    case EM:
+      return bracket("em");
+    case SUB:
+      return bracket("sub");
+    case ESC:
+      return bracket("esc");
+    case FS:
+      return bracket("FS");
+    case GS:
+      return bracket("GS");
+    case RS:
+      return bracket("RS");
+    case US:
+      return bracket("US");
+    case SP:
+      return bracketSpace ? bracket("sp") : " ";
     }
     if (b < 32 || b > 126) {//non-printables as hex
       return bracket(Formatter.ox2(b));
@@ -303,34 +304,34 @@ public class Ascii {
       StringBuilder clean = new StringBuilder(raw.length);
       for (byte c : raw) {
         switch (c) {
-          default:
-            clean.append(image(c));
-            break;
-          case NUL:
-            continue; //simply omit nulls
-          case STX:
-            clean.setLength(0);
-            break; //erase preceding stuff
-          case ETX:
-          case EOT:
-            return clean.toString();//"clear to end of line"
+        default:
+          clean.append(image(c));
+          break;
+        case NUL:
+          continue; //simply omit nulls
+        case STX:
+          clean.setLength(0);
+          break; //erase preceding stuff
+        case ETX:
+        case EOT:
+          return clean.toString();//"clear to end of line"
 
-          case ESC: //common "oops" characters
-            return "";  //todo:1 this seems like not the best choice.
+        case ESC: //common "oops" characters
+          return "";  //todo:1 this seems like not the best choice.
 
-          case CR:
-          case LF:
-          case BEL:
-          case TAB:
-          case FF:
-            clean.append(' ');
-            break; //whitespace
+        case CR:
+        case LF:
+        case BEL:
+        case TAB:
+        case FF:
+          clean.append(' ');
+          break; //whitespace
 
-          case BS:
-            if (clean.length() > 0) {
-              clean.setLength(clean.length() - 1);
-            }
-            break;
+        case BS:
+          if (clean.length() > 0) {
+            clean.setLength(clean.length() - 1);
+          }
+          break;
         }
       }
       return clean.toString();//someone else's job to do any trimming.
@@ -364,6 +365,5 @@ public class Ascii {
   public static byte[] emptyArray() {
     return new byte[0];
   }
-
 }
 

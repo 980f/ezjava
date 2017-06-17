@@ -5,7 +5,6 @@ import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
-
 /**
  * an interval of generic type
  *
