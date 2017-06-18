@@ -29,6 +29,7 @@ import static pers.hal42.transport.Storable.Type.*;
  * This can be viewed as a DOM good for JSON data. It is intended to replace usage of java properties, despite us having nice classes to make properties look like a tree.
  */
 public class Storable {
+  /** immutable key to the value, never abuse for a secondary value */
   public final String name;
 
   /**
