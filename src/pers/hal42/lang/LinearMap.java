@@ -97,7 +97,7 @@ public class LinearMap<K, V> implements Map<K, V>, VectorSet.StructureWatcher {
       values.set(which, value);
     } else {
       keys.addElement(key); //creates a null entry for the value
-      values.set(keys.size() - 1, value);
+//done by watcher:      values.set(keys.size() - 1, value);
     }
     return previous;
   }
@@ -173,8 +173,9 @@ public class LinearMap<K, V> implements Map<K, V>, VectorSet.StructureWatcher {
 
   @Override
   public void afterAdd(int which) {
+    values.setSize(keys.size());
     if (which >= 0) { //single add
-      values.add(which, null);
+      values.set(which, null);
     } else {
       for (int i = ~which; i < keys.size(); ++i) {
         values.add(null);
