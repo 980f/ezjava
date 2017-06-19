@@ -14,6 +14,15 @@ public class IOX {
     // don't construct me; I am for static functions
   }
 
+  /** @returns bytes from file, on any error null */
+  public static byte[] readBlob(Path path) {
+    try {
+      return Files.readAllBytes(path);
+    } catch (IOException e) {
+      return null;
+    }
+  }
+
   public static Exception writeBlob(Path path,byte[]content){
     IOX.createDir(path.getParent());
     try {
@@ -119,6 +128,7 @@ public class IOX {
 
   public static void createDirs(File file) {
     try {
+      //noinspection ResultOfMethodCallIgnored
       file.mkdirs();
     } catch (Exception ex) {
       // gulp
@@ -136,8 +146,11 @@ public class IOX {
 
   public static String fromStream(ByteArrayInputStream bais, int len) {
     byte[] chunk = new byte[len];
-    bais.read(chunk, 0, len);
-    return new String(chunk);
+    if (bais.read(chunk, 0, len) >= 0) {
+      return new String(chunk);
+    } else {
+      return "";
+    }
   }
 
   //////////
@@ -160,16 +173,13 @@ public class IOX {
   }
 
   public static String FileToString(String filename) {
-    String ret = "";
     try {
       FileInputStream filein = new FileInputStream(filename);
       ByteArrayOutputStream baos = new ByteArrayOutputStream((int) fileSize(filename));
       Streamer.Buffered(filein, baos);
-      ret = new String(baos.toByteArray());
+      return new String(baos.toByteArray());
     } catch (Exception ex) {
-      // +++ bitch
-    } finally {
-      return ret;
+      return "";
     }
   }
 
@@ -273,8 +283,8 @@ public class IOX {
 
   /**
    * @param fname name of file to read lines from
-   * @return reader that can read whole lines from a file
-   * @todo return a reader that passes back error messages instead of returning null.
+   * @returns reader that can read whole lines from a file
+   * todo:2 return a reader that passes back error messages instead of returning null.
    */
   public static BufferedReader FileLineReader(String fname) {
     try {
@@ -302,14 +312,16 @@ public class IOX {
   public static TextList TextFileContent(File file) {
     TextList content = new TextList();
     BufferedReader reader = FileLineReader(file);
-    try {
-      while (reader.ready()) {
-        content.add(reader.readLine());
+    if (reader != null) {
+      try {
+        while (reader.ready()) {
+          content.add(reader.readLine());
+        }
+      } catch (Throwable ex) {
+        //on exception break while and keep what we got, adding note:
+        content.add("Exception while reading file");
+        content.add(ex.getLocalizedMessage());
       }
-    } catch (Throwable ex) {
-      //on exception break while and keep what we got, adding note:
-      content.add("Exception while reading file");
-      content.add(ex.getLocalizedMessage());
     }
 
     return content;
