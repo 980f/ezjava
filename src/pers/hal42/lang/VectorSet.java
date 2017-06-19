@@ -107,7 +107,7 @@ public class VectorSet<T> extends Vector<T> implements Set<T> {
   @Override
   public synchronized void addElement(T obj) {
     super.addElement(obj);
-    watchers.forEach(x -> x.afterAdd(size()));
+    watchers.forEach(x -> x.afterAdd(size() - 1));   //index of last
   }
 
   /**

@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import pers.hal42.ext.CountedLock;
 import pers.hal42.ext.Span;
 import pers.hal42.lang.ByteArray;
+import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
@@ -83,11 +84,17 @@ public class JsonStorable extends PushedJSONParser {
     return root;
   }
 
-  /** @returns canonical filename for options file for @param claz*/
-  public static String Filename(Class claz){
-    String optsfile = claz.getSimpleName();
-    optsfile += ".json";
-    return optsfile;
+  /** read file content if not already done. */
+  public boolean cache() {
+    if (!cached) {
+      try {
+        content = Files.readAllBytes(path);
+        cached = content.length > 0;
+      } catch (IOException e) {
+        dbg.ERROR("reading json as bytes threw {0}", e.getMessage());
+      }
+    }
+    return cached;
   }
 
   /**
@@ -110,17 +117,11 @@ public class JsonStorable extends PushedJSONParser {
     return new String(ByteArray.subString(content, span.lowest, span.highest));
   }
 
-  /** read file content if not already done.*/
-  public boolean cache() {
-    if (!cached) {
-      try {
-        content = Files.readAllBytes(path);
-        cached = content.length > 0;
-      } catch (IOException e) {
-        dbg.Caught(e, "reading json as bytes");
-      }
-    }
-    return cached;
+  /** @returns canonical filename for options file for @param claz */
+  public static String Filename(Class claz) {
+    String optsfile = ReflectX.justClassName(claz); //wouold prefer outer class name, but at least outer.inner, inner alone wasn't usually unique.
+    optsfile += ".json";
+    return optsfile;
   }
 
   /**

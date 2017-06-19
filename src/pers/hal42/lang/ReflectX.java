@@ -52,7 +52,19 @@ public class ReflectX {
    * @return the class name with out package of @param classy
    */
   public static String justClassName(Class classy) {
-    return classy != null ? StringX.afterLastDot(classy.getName()) : "NULL";
+    if (classy != null) {
+      String fullname = classy.getName();
+      Package packer = classy.getPackage();
+      String packname = packer.getName();
+      if (fullname.startsWith(packname)) {
+        //below creates CamelCase name
+        return StringX.removeAll("$*?:;", fullname.substring(packname.length() + 1));
+      } else {
+        return fullname;//let caller figure out what the problem is
+      }
+    } else {
+      return "NULL";
+    }
   }
 
   /**
