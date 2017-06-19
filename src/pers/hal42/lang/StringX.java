@@ -494,7 +494,7 @@ public class StringX {
   }
 
   public static String removeAll(String badchars, String source) {
-    if (!NonTrivial(badchars)) {
+    if (!NonTrivial(badchars) || !NonTrivial(source)) {
       return source;
     }
     StringBuffer copy = new StringBuffer(source.length());
