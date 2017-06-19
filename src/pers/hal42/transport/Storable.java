@@ -39,6 +39,16 @@ public class Storable {
   @Nullable
   Storable parent; //can be null.
   Type type = Unclassified;
+
+  public enum Type {
+    Unclassified,
+    Null,
+    Boolean,
+    Enummy,
+    Numeric,
+    Textual,
+    Wad
+  }
   Origin origin = Ether;
   String image = "";
   double value;
@@ -56,14 +66,8 @@ public class Storable {
     Assigned
   }
 
-  public enum Type {
-    Unclassified,
-    Null,
-    Boolean,
-    Numeric,
-    Textual,
-    Wad
-  }
+  /** if not null then value and image are related by this class's enum[] */
+  public Class<? extends Enum> enumerizer;
 
   /**
    * marker annotation for use by applyTo and apply()
@@ -85,6 +89,19 @@ public class Storable {
   public @interface Generatable {
     /** if nontrivial then it is the classname for creating objects from a node. */
     String fcqn() default "";
+  }
+
+  /** do NOT genericize this class just for this guy, who probably shouldn't be public. */
+  public Object getEnum() {
+    if (enumerizer != null) {
+      try {
+        return enumerizer.getEnumConstants()[(int) value];
+      } catch (Exception any) {
+        return null;
+      }
+    } else {
+      return null;
+    }
   }
 
   /** used to create objects from Storable's */
@@ -153,21 +170,44 @@ public class Storable {
     return index;
   }
 
-  public static class Rules {
-    /** find all the fields even if they aren't public */
-    public static final Rules Deep = new Rules(false, true, false);
-    /** for most cases this is adequate and fast, usual case means all fields are public and reated by constructors (or native) */
-    public static final Rules Fast = new Rules(true, false, false);
-    /** the Storable is the prime source of initialization, rather than a tweaker */
-    public static final Rules Master = new Rules(false, true, true);
-    public final boolean narrow;
-    public final boolean aggressive;
-    public final boolean create;
-
-    public Rules(boolean narrow, boolean aggressive, boolean create) {
-      this.narrow = narrow;
-      this.aggressive = aggressive;
-      this.create = create;
+  /**
+   * set value from string. This will parse the string if the type is not textual
+   */
+  public void setValue(String text) {
+    if (origin == Origin.Ether) {
+      origin = Origin.Parsed;
+    }
+    if (text == null) {
+      type = Null;
+      image = "";
+      bit = false;
+      value = Double.NaN;
+      return;
+    }
+    image = text.trim();
+    switch (type) {
+    case Unclassified:
+      break;
+    case Null:
+      setType(Textual);
+      break;
+    case Boolean:
+      parseBool(image);
+      //else silently ignore garbage.
+      break;
+    case Numeric:
+      try {
+        value = Double.parseDouble(image);//leave this as the overly picky parser
+      } catch (Throwable any) {
+        value = Double.NaN;
+      }
+      break;
+    case Enummy:
+      enumOnSetImage();
+    case Textual:
+      break;
+    case Wad:
+      break;
     }
   }
 
@@ -207,43 +247,16 @@ public class Storable {
     image = java.lang.Boolean.toString(bit);
   }
 
-  /**
-   * set value from string. This will parse the string if the type is not textual
-   */
-  public void setValue(String text) {
-    if (origin == Origin.Ether) {
-      origin = Origin.Parsed;
+  public void setValue(double dee) {
+    if (type == Type.Unclassified) {
+      setType(Numeric);
     }
-    if (text == null) {
-      type = Null;
-      image = "";
-      bit = false;
-      value = Double.NaN;
-      return;
+    value = dee;
+    bit = !Double.isNaN(value);
+    if (enumerizer != null) {
+      enumOnSetNumber();
     }
-    image = text.trim();
-    switch (type) {
-    case Unclassified:
-      break;
-    case Null:
-      setType(Textual);
-      break;
-    case Boolean:
-      parseBool(image);
-      //else silently ignore garbage.
-      break;
-    case Numeric:
-      try {
-        value = Double.parseDouble(image);//leave this as the overly picky parser
-      } catch (Throwable any) {
-        value = Double.NaN;
-      }
-      break;
-    case Textual:
-      break;
-    case Wad:
-      break;
-    }
+//    image= unchanged, can't afford to render to text on every change
   }
 
   protected boolean parseBool(String image) {
@@ -304,13 +317,17 @@ public class Storable {
     return value;
   }
 
-  public void setValue(double dee) {
-    if (type == Type.Unclassified) {
-      setType(Numeric);
+  public void setEnumerizer(Class<? extends Enum> enumer) {
+    if (enumer != null && enumer != enumerizer) {//#object identity compare intended.
+      this.enumerizer = enumer;
+      if (type == Numeric) {
+        enumOnSetNumber();
+      } else {
+        //what basis do we have for validating enum?
+        enumOnSetImage();//set number
+      }
+      setType(Enummy);
     }
-    value = dee;
-    bit = !Double.isNaN(value);
-//    image= unchanged, can't afford to render to text on every change
   }
 
   public void setDefault(double number) {
@@ -368,6 +385,121 @@ public class Storable {
       type = newtype;
     }
     return wasUnknown;
+  }
+
+  private void enumOnSetImage() {
+    //noinspection unchecked
+    try {
+      value = Enum.valueOf(enumerizer, image).ordinal();
+    } catch (NullPointerException | IllegalArgumentException e) {
+      dbg.Caught(e); //not our job to enforce validity
+    }
+  }
+
+  private void enumOnSetNumber() {
+    try {
+      image = enumerizer.getEnumConstants()[(int) value].toString();
+    } catch (Exception e) {
+      dbg.Caught(e);
+      image = "#invalid";
+    }
+  }
+
+  /**
+   * set the values of fields marked 'Stored' (and set the local types).
+   * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
+   * if @param aggressive then private fields are modified. (untested)
+   *
+   * @returns the number of assignments made (a diagnostic)
+   */
+  public int applyTo(Object obj, Rules r) {
+    if (obj == null) {
+      return -1;
+    }
+    int changes = 0;
+
+    Class claz = obj.getClass();
+    final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
+    for (Field field : fields) {
+      Stored stored = field.getAnnotation(Stored.class);
+      if (stored != null) {
+        String name = field.getName();
+        Storable child = existingChild(name);
+        if (child == null) {
+          String altname = stored.legacy();
+          if (NonTrivial(altname)) {//optional search for prior equivalent
+            if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
+              altname += name;
+            }
+            child = findChild(altname, false);
+          }
+        }
+        if (child != null) {//then we have init data for the field
+          try {
+            Class fclaz = field.getType();//parent class: getDeclaringClass();
+            if (r.aggressive) {
+              field.setAccessible(true);
+            }
+            if (fclaz == String.class) {
+              field.set(obj, child.getImage());//this is our only exception to recursing on non-natives.
+            } else if (fclaz == boolean.class) {
+              field.setBoolean(obj, child.getTruth());
+            } else if (fclaz == double.class) {
+              field.setDouble(obj, child.getValue());
+            } else if (fclaz == int.class) {
+              field.setInt(obj, (int) child.getValue());
+            } else if (fclaz.isEnum()) {
+              //noinspection unchecked
+              child.setEnumerizer(fclaz);
+              final Object childEnum = child.getEnum();
+              if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
+                field.set(obj, childEnum);
+              }
+            }
+            //todo:1 add clauses for the remaining field.setXXX methods.
+            else {
+              //time for recursive descent
+              Object nestedObject = field.get(obj);
+              if (nestedObject == null) {
+                dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
+                //autocreate members if no args constructor exists, which our typical usage pattern makes common.
+                if (r.create) {
+                  Generator generator = new Generator(fclaz);
+                  nestedObject = generator.newInstance(this, r);
+                  //if object is compound ..
+                  if (nestedObject != null && nestedObject instanceof Collection) {
+                    Collection objs = (Collection) nestedObject;
+                    applyTo(objs, r);
+                    return changes;
+                  }
+                }
+              }
+              if (nestedObject != null) {
+                child.setType(Type.Wad);//should already be true
+                if (nestedObject instanceof Map) {
+                  return changes;
+                } else if (nestedObject instanceof Collection) {
+                  Collection objs = (Collection) nestedObject;
+                  changes += applyTo(objs, r);
+                } else { //simple treewalk
+                  int subchanges = child.applyTo(nestedObject, r);
+                  if (subchanges >= 0) {
+                    changes += subchanges;
+                  } else {
+                    dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
+                  }
+                }
+              }
+              continue;//in order to not increment 'changes'
+            }
+            ++changes;
+          } catch (IllegalAccessException e) {
+            dbg.Caught(e, MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()));
+          }
+        }
+      }
+    }
+    return changes;
   }
 
   /**
@@ -540,14 +672,7 @@ public class Storable {
     return changes;
   }
 
-  /**
-   * set the values of fields marked 'Stored' (and set the local types).
-   * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
-   * if @param aggressive then private fields are modified. (untested)
-   *
-   * @returns the number of assignments made (a diagnostic)
-   */
-  public int applyTo(Object obj, Rules r) {
+  public int apply(Object obj, Rules r) {
     if (obj == null) {
       return -1;
     }
@@ -559,95 +684,12 @@ public class Storable {
       Stored stored = field.getAnnotation(Stored.class);
       if (stored != null) {
         String name = field.getName();
-        Storable child = existingChild(name);
-        if (child == null) {
-          String altname = stored.legacy();
-          if (NonTrivial(altname)) {//optional search for prior equivalent
-            if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
-              altname += name;
-            }
-            child = findChild(altname, false);
-          }
-        }
-        if (child != null) {//then we have init data for the field
-          try {
-            Class fclaz = field.getType();//parent class: getDeclaringClass();
-            if (r.aggressive) {
-              field.setAccessible(true);
-            }
-            if (fclaz == String.class) {
-              field.set(obj, child.getImage());//this is our only exception to recursing on non-natives.
-            } else if (fclaz == boolean.class) {
-              field.setBoolean(obj, child.getTruth());
-            } else if (fclaz == double.class) {
-              field.setDouble(obj, child.getValue());
-            } else if (fclaz == int.class) {
-              field.setInt(obj, (int) child.getValue());
-            }
-            //todo:1 add clauses for the remaining field.setXXX methods.
-            else {
-              //time for recursive descent
-              Object nestedObject = field.get(obj);
-              if (nestedObject == null) {
-                dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
-                //autocreate members if no args constructor exists, which our typical usage pattern makes common.
-                if (r.create) {
-                  Generator generator = new Generator(fclaz);
-                  nestedObject = generator.newInstance(this, r);
-                  //if object is compound ..
-                  if (nestedObject != null && nestedObject instanceof Collection) {
-                    Collection objs = (Collection) nestedObject;
-                    applyTo(objs, r);
-                    return changes;
-                  }
-                }
-              }
-              if (nestedObject != null) {
-                child.setType(Type.Wad);//should already be true
-                if (nestedObject instanceof Map) {
-                  return changes;
-                } else if (nestedObject instanceof Collection) {
-                  Collection objs = (Collection) nestedObject;
-                  changes += applyTo(objs, r);
-                } else { //simple treewalk
-                  int subchanges = child.applyTo(nestedObject, r);
-                  if (subchanges >= 0) {
-                    changes += subchanges;
-                  } else {
-                    dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
-                  }
-                }
-              }
-              continue;//in order to not increment 'changes'
-            }
-            ++changes;
-          } catch (IllegalAccessException e) {
-            dbg.Caught(e, MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()));
-          }
-        }
-      }
-    }
-    return changes;
-  }
-
-  public int apply(Object obj, boolean narrow, boolean aggressive, boolean create) {
-    if (obj == null) {
-      return -1;
-    }
-    int changes = 0;
-
-    Class claz = obj.getClass();
-    final Field[] fields = narrow ? claz.getDeclaredFields() : claz.getFields();
-    for (Field field : fields) {
-      Stored stored = field.getAnnotation(Stored.class);
-      if (stored != null) {
-        String name = field.getName();
-        Storable child = create ? this.child(name) : this.existingChild(name);
+        Storable child = r.create ? this.child(name) : this.existingChild(name);
         //note: do not update legacy fields, let them die a natural death.
         if (child != null) {
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();
-            if (aggressive) {
+            if (r.aggressive) {
               field.setAccessible(true);
             }
             if (fclaz == String.class) {
@@ -658,15 +700,17 @@ public class Storable {
               child.setValue(field.getDouble(obj));
             } else if (fclaz == int.class) {
               child.setValue(field.getInt(obj));
+            } else if (fclaz.isEnum()) {
+              child.setValue(field.get(obj).toString());
             }
             //todo: add clauses for the remaining field.getXXX methods.
             else {
               //time for recursive descent
               final Object nestedObject = field.get(obj);
               if (nestedObject == null) {
-                dbg.WARNING("No object for field {0}", name);
+                dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
               } else {
-                int subchanges = child.apply(nestedObject, narrow, aggressive, create);
+                int subchanges = child.apply(nestedObject, r);
                 if (subchanges >= 0) {
                   changes += subchanges;
                 } else {
@@ -683,5 +727,23 @@ public class Storable {
       }
     }
     return changes;
+  }
+
+  public static class Rules {
+    /** find all the fields even if they aren't public */
+    public static final Rules Deep = new Rules(false, true, false);
+    /** for most cases this is adequate and fast, usual case means all fields are public and created by constructors (or native) */
+    public static final Rules Fast = new Rules(true, false, false);
+    /** the Storable is the prime source of initialization, rather than a tweaker */
+    public static final Rules Master = new Rules(false, true, true);
+    public final boolean narrow;
+    public final boolean aggressive;
+    public final boolean create;
+
+    public Rules(boolean narrow, boolean aggressive, boolean create) {
+      this.narrow = narrow;
+      this.aggressive = aggressive;
+      this.create = create;
+    }
   }
 }

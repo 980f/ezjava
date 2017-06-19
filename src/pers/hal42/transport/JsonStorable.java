@@ -25,6 +25,7 @@ import java.util.Vector;
  */
 public class JsonStorable extends PushedJSONParser {
   static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonStorable.class);
+  private static final String filenameTag = "#filename";
   public Storable root;
   public String filename;
   public boolean specialRootTreatment = true;//@see BeginWad clause of parse().
@@ -42,7 +43,22 @@ public class JsonStorable extends PushedJSONParser {
     super(equalsAndSemi);
   }
 
-  public static IOException editFile(Path optsFile, String path, String image) {
+  /** called by parser when it discovers the end of a value */
+  protected Storable makeChild(Storable parent) {
+    ++stats.totalNodes;
+    Storable kid = parent.makeChild(haveName ? name : null);//ternary in case we forgot to erase previous parse results
+    String value = super.token.isValid() ? getString(super.token) : null;
+    if (value != null) {
+      ++stats.totalScalar;//<=totalNodes.
+    }
+    kid.setValue(value);
+    itemCompleted();//to prevent duplication or propagation of values over nulls.
+    name = "";
+    return kid;
+  }
+
+  /** alter one member of the file */
+  public static IOException patchFile(Path optsFile, String path, String image) {
     Storable workspace=FromFile(optsFile);
     if(workspace!=null){
       Storable child=workspace.findChild(path,true);
@@ -64,11 +80,12 @@ public class JsonStorable extends PushedJSONParser {
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile.toString())) {//todo: path versions of this method
       optsloader.parse(root);
-      root.child("#filename").setValue(optsfile.toString());
+      root.child(filenameTag).setValue(optsfile.toString());
     }
     //todo:2 either dbg the stats or print them to a '#attribute field
     return root;
   }
+
   /**
    * @returns newly created Storable with values loaded from file named for @param claz
    */
@@ -78,7 +95,7 @@ public class JsonStorable extends PushedJSONParser {
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile)) {
       optsloader.parse(root);
-      root.child("#filename").setValue(optsfile);
+      root.child(filenameTag).setValue(optsfile);
     }
     //todo:2 either dbg the stats or print them to a '#attribute field
     return root;
@@ -133,17 +150,15 @@ public class JsonStorable extends PushedJSONParser {
     return cache();
   }
 
-  protected Storable makeChild(Storable parent) {
-    ++stats.totalNodes;
-    Storable kid = parent.makeChild(haveName ? name : null);//ternary in case we forgot to erase previous parse results
-    String value = super.token.isValid() ? getString(super.token) : null;
-    if (value != null) {
-      ++stats.totalScalar;//<=totalNodes.
+  public static String Filenamer(Storable root, String filename) {
+    if (root == null) {
+      return null;
     }
-    kid.setValue(value);
-    itemCompleted();//to prevent duplication or propagation of values over nulls.
-    name="";
-    return kid;
+    Storable tagged = root.existingChild(filenameTag);
+    if (tagged != null) {
+      return tagged.getImage();
+    }
+    return StringX.NonTrivial(root.name) ? root.name : filename;
   }
 
   /**
