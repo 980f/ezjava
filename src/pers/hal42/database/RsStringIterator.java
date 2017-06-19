@@ -4,6 +4,7 @@ import pers.hal42.text.StringIterator;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * for a resultSet that only supplies one (meaningful) value, this lets you iterate over it.
@@ -12,13 +13,15 @@ import java.sql.SQLException;
  * If you need multiple fields you must extract them in parallel.
  */
 public class RsStringIterator implements StringIterator {
+  /** we must hold on to the statement in order to keep the resultset open */
+  private Statement st;
   ResultSet rs;
   int col;
   //must lookahead
   private boolean haveNext;
 
   /** you already know which column is of interest */
-  public RsStringIterator(ResultSet rs, int whichColumn) {
+  public RsStringIterator(Statement st, ResultSet rs, int whichColumn) {
     this.rs = rs;
     col = whichColumn;
     if (col > 0) {
@@ -29,8 +32,8 @@ public class RsStringIterator implements StringIterator {
   }
 
   /** single column resultset */
-  public RsStringIterator(ResultSet rs) {
-    this(rs, 1);
+  public RsStringIterator(Statement st, ResultSet rs) {
+    this(st, rs, 1);
   }
 
   /** column by name, but see class doc for why use of this is likely to be rare */
@@ -46,15 +49,19 @@ public class RsStringIterator implements StringIterator {
     }
   }
 
+
   private void bump() {
     try {
       haveNext = rs.next();
       if (!haveNext) {
-        rs.close();
+        //noinspection FinalizeCalledExplicitly
+        finalize();
       }
     } catch (SQLException e) {
       DBMacros.dbg.Caught(e);
       haveNext = false;
+    } catch (Throwable throwable) {
+      //ignore
     }
   }
 
@@ -82,5 +89,6 @@ public class RsStringIterator implements StringIterator {
   @Override
   protected void finalize() throws Throwable {
     rs.close();
+    st.close();
   }
 }
