@@ -4,6 +4,7 @@ import pers.hal42.lang.*;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.logging.LogSwitch;
+import pers.hal42.stream.IOX;
 import pers.hal42.text.TextList;
 import pers.hal42.thread.ThreadX;
 import pers.hal42.timer.Ticks;
@@ -180,11 +181,11 @@ public class Main {
     }
     try {
       File logcontrol = new File(aName);
-      if (!logcontrol.exists()) {
-        if (!logcontrol.isAbsolute()) {
-          logcontrol = OS.TempFile(aName);
-        }
-      }
+//      if (!logcontrol.exists()) {
+//        if (!logcontrol.isAbsolute()) {
+//          logcontrol = OS.TempFile(aName);
+//        }
+//      }
       OutputStream saver = new FileOutputStream(logcontrol);
       EasyProperties allLogswitches = LogSwitch.asProperties();
       allLogswitches.storeSorted(saver, "debug stream controls");
@@ -192,6 +193,26 @@ public class Main {
     } catch (IOException ignored) {
       // this function is for debug only
     }
+  }
+
+  public static EasyCursor loadLogging(String aName) {
+    if (!StringX.NonTrivial(aName)) {
+      aName = logcontrolName;
+    }
+    EasyCursor fordebug = null;
+    FileInputStream fis = null;
+    try {
+      if (IOX.FileExists(aName)) {
+        fis = new FileInputStream(aName);
+        fordebug = EasyCursor.New(fis);
+        LogSwitch.apply(fordebug);
+      }//best if precedes many classes starting up.
+    } catch (IOException ignored) {
+      //yep, ignored. this is just debug control after all...
+    } finally {
+      Close(fis);//so that we can edit the file while program is running, for next run.
+    }
+    return fordebug;
   }
 
   public static void stdExit(int exitvalue) {
@@ -271,5 +292,4 @@ public class Main {
   public static Main cli(Object mained, String[] args) {
     return cli(mained != null ? mained.getClass() : null, args);
   }
-
 }

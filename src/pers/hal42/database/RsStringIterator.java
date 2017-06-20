@@ -13,33 +13,52 @@ import java.sql.Statement;
  * If you need multiple fields you must extract them in parallel.
  */
 public class RsStringIterator implements StringIterator {
+  public interface onExhaustion {
+    @SuppressWarnings("MethodNameSameAsClassName")
+    void onExhaustion(RsStringIterator si);
+  }
+
+  public onExhaustion notifyWhenDone;
   /** we must hold on to the statement in order to keep the resultset open */
   private Statement st;
+
   ResultSet rs;
   int col;
+  /** a diagnostic added when resultset was getting closed by some outside agency. */
+  private int count = 0;
   //must lookahead
   private boolean haveNext;
 
+
   /** you already know which column is of interest */
-  public RsStringIterator(Statement st, ResultSet rs, int whichColumn) {
-    this.rs = rs;
-    col = whichColumn;
-    if (col > 0) {
-      bump();
-    } else {
-      haveNext = false;
+  public RsStringIterator(ResultSet rs, int whichColumn) {
+
+    try {
+      this.rs = rs;
+      st = rs.getStatement();
+      col = whichColumn;
+      if (col > 0) {
+        bump();
+      } else {
+        haveNext = false;
+      }
+    } catch (SQLException e) {
+      DBMacros.dbg.Caught(e);
     }
+
   }
 
   /** single column resultset */
-  public RsStringIterator(Statement st, ResultSet rs) {
-    this(st, rs, 1);
+  public RsStringIterator(ResultSet rs) {
+    this(rs, 1);
   }
 
   /** column by name, but see class doc for why use of this is likely to be rare */
   public RsStringIterator(ResultSet rs, String cname) {
-    this.rs = rs;
+
     try {
+      this.rs = rs;
+      st = rs.getStatement();
       col = rs.findColumn(cname);
       bump();
     } catch (SQLException e) {
@@ -53,9 +72,16 @@ public class RsStringIterator implements StringIterator {
   private void bump() {
     try {
       haveNext = rs.next();
-      if (!haveNext) {
-        //noinspection FinalizeCalledExplicitly
-        finalize();
+      if (haveNext) {
+        ++count;
+      } else {
+        if (notifyWhenDone != null) {
+          notifyWhenDone.onExhaustion(this);
+        } else {  //at least try to release resources in a timely fashion.
+          //noinspection FinalizeCalledExplicitly
+          finalize();
+        }
+
       }
     } catch (SQLException e) {
       DBMacros.dbg.Caught(e);
@@ -88,7 +114,18 @@ public class RsStringIterator implements StringIterator {
   /** just in case someone abandons an iterator */
   @Override
   protected void finalize() throws Throwable {
-    rs.close();
-    st.close();
+    unlink();
+    //but don't close the connection, in case we aren't the only user.
+  }
+
+  public void unlink() {
+    try {
+      rs.close(); //we own the result set.
+      st.close(); //and its statement.
+      notifyWhenDone = null;
+    } catch (SQLException ignored) {
+      //
+    }
+
   }
 }
