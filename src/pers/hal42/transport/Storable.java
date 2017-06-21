@@ -713,7 +713,7 @@ public class Storable {
           nullary = glass.getConstructor();
           viable = true;
         } catch (NoSuchMethodException e1) {
-          dbg.Caught(e1);
+          dbg.ERROR("Constructing Storable.Generator for {0} ignoring {1}", glass.getName(), e1);
         }
       }
     }
