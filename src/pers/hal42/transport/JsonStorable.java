@@ -124,10 +124,7 @@ public class JsonStorable extends PushedJSONParser {
    */
   public static Storable StandardRoot(Class claz) {
     String optsfile = Filename(claz);
-    int clipper = optsfile.lastIndexOf("Options");
-    if (clipper >= 0) {
-      optsfile = optsfile.substring(0, clipper);
-    }
+
     return new Storable(optsfile);
   }
 
@@ -153,7 +150,11 @@ public class JsonStorable extends PushedJSONParser {
 
   /** @returns canonical filename for options file for @param claz */
   public static String Filename(Class claz) {
-    String optsfile = ReflectX.justClassName(claz); //wouold prefer outer class name, but at least outer.inner, inner alone wasn't usually unique.
+    String optsfile = ReflectX.justClassName(claz);
+    int clipper = optsfile.lastIndexOf("Options");//got tired of seeing the obvious.
+    if (clipper >= 0) {
+      optsfile = optsfile.substring(0, clipper);
+    }
     optsfile += ".json";
     return optsfile;
   }
