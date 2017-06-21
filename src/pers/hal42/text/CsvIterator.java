@@ -37,4 +37,10 @@ public class CsvIterator implements StringIterator {
   private void bump() {
     span.highest = line.indexOf(',', span.lowest);
   }
+
+  /** makes hasNext() return false, frees and resources */
+  @Override
+  public void discard() {
+    span.clear();
+  }
 }

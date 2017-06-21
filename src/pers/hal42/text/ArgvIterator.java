@@ -29,4 +29,10 @@ public class ArgvIterator implements StringIterator {
       return null;
     }
   }
+
+  /** makes hasNext() return false, frees and resources */
+  @Override
+  public void discard() {
+    argc = argv.length;
+  }
 }

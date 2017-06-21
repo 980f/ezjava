@@ -49,4 +49,11 @@ public class FileListIterator implements StringIterator {
     }
     return nextly;
   }
+
+  /** makes hasNext() return false, frees and resources */
+  @Override
+  public void discard() {
+    nextValue = null;
+    IOX.Close(file);
+  }
 }

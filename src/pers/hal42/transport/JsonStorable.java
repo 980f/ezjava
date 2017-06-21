@@ -25,7 +25,7 @@ import java.util.Vector;
  */
 public class JsonStorable extends PushedJSONParser {
   static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonStorable.class);
-  private static final String filenameTag = "#filename";
+  public static final String filenameTag = "#filename";
   public Storable root;
   public String filename;
   public boolean specialRootTreatment = true;//@see BeginWad clause of parse().
@@ -86,21 +86,6 @@ public class JsonStorable extends PushedJSONParser {
     return root;
   }
 
-  /**
-   * @returns newly created Storable with values loaded from file named for @param claz
-   */
-  public static Storable ClassOptions(Class claz) {
-    String optsfile = Filename(claz);
-    Storable root = new Storable(optsfile);//named 4 debug
-    final JsonStorable optsloader = new JsonStorable(true);
-    if (optsloader.loadFile(optsfile)) {
-      optsloader.parse(root);
-      root.child(filenameTag).setValue(optsfile);
-    }
-    //todo:2 either dbg the stats or print them to a '#attribute field
-    return root;
-  }
-
   /** read file content if not already done. */
   public boolean cache() {
     if (!cached) {
@@ -112,6 +97,38 @@ public class JsonStorable extends PushedJSONParser {
       }
     }
     return cached;
+  }
+
+  /**
+   * @returns newly created Storable with values loaded from file named for @param claz
+   */
+  public static Storable ClassOptions(Class claz) {
+    String optsfile = Filename(claz);
+    int clipper = optsfile.lastIndexOf("Options");
+    if (clipper >= 0) {
+      optsfile = optsfile.substring(0, clipper);
+    }
+    Storable root = new Storable(optsfile);//named 4 debug
+
+    final JsonStorable optsloader = new JsonStorable(true);
+    if (optsloader.loadFile(optsfile)) {
+      optsloader.parse(root);
+      root.child(filenameTag).setValue(optsfile);
+    }
+    //todo:2 either dbg the stats or print them to a '#attribute field
+    return root;
+  }
+
+  /**
+   * @returns newly created Storable with values loaded from file named for @param claz
+   */
+  public static Storable StandardRoot(Class claz) {
+    String optsfile = Filename(claz);
+    int clipper = optsfile.lastIndexOf("Options");
+    if (clipper >= 0) {
+      optsfile = optsfile.substring(0, clipper);
+    }
+    return new Storable(optsfile);
   }
 
   /**

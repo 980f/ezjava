@@ -71,6 +71,7 @@ public class Storable {
 
   /**
    * marker annotation for use by applyTo and apply()
+   * todo: if class is annotated with @Stored then process all fields, not just those annotated with Stored.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
@@ -388,8 +389,8 @@ public class Storable {
   }
 
   private void enumOnSetImage() {
-    //noinspection unchecked
     try {
+      //noinspection unchecked
       value = Enum.valueOf(enumerizer, image).ordinal();
     } catch (NullPointerException | IllegalArgumentException e) {
       dbg.Caught(e); //not our job to enforce validity
@@ -419,14 +420,15 @@ public class Storable {
     int changes = 0;
 
     Class claz = obj.getClass();
+    Stored all = (Stored) claz.getAnnotation(Stored.class);
     final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
     for (Field field : fields) {
       Stored stored = field.getAnnotation(Stored.class);
-      if (stored != null) {
+      if (stored != null || all != null) {
         String name = field.getName();
         Storable child = existingChild(name);
         if (child == null) {
-          String altname = stored.legacy();
+          String altname = stored != null ? stored.legacy() : all.legacy();
           if (NonTrivial(altname)) {//optional search for prior equivalent
             if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
               altname += name;
@@ -679,10 +681,11 @@ public class Storable {
     int changes = 0;
 
     Class claz = obj.getClass();
+    Stored all = (Stored) claz.getAnnotation(Stored.class);
     final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
     for (Field field : fields) {
       Stored stored = field.getAnnotation(Stored.class);
-      if (stored != null) {
+      if (stored != null || all != null) {
         String name = field.getName();
         Storable child = r.create ? this.child(name) : this.existingChild(name);
         //note: do not update legacy fields, let them die a natural death.

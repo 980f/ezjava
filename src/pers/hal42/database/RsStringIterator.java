@@ -45,7 +45,6 @@ public class RsStringIterator implements StringIterator {
     } catch (SQLException e) {
       DBMacros.dbg.Caught(e);
     }
-
   }
 
   /** single column resultset */
@@ -65,9 +64,17 @@ public class RsStringIterator implements StringIterator {
       DBMacros.dbg.Caught(e);
       col = 0;//an illegal value for sql
       haveNext = false;
+      unlink();
     }
   }
 
+
+  /** makes hasNext() return false, frees any resources */
+  @Override
+  public void discard() {
+    haveNext = false;
+    close(); //externally forced end of iteration
+  }
 
   private void bump() {
     try {
@@ -75,19 +82,21 @@ public class RsStringIterator implements StringIterator {
       if (haveNext) {
         ++count;
       } else {
-        if (notifyWhenDone != null) {
-          notifyWhenDone.onExhaustion(this);
-        } else {  //at least try to release resources in a timely fashion.
-          //noinspection FinalizeCalledExplicitly
-          finalize();
-        }
-
+        close();//normal end of iteration
       }
     } catch (SQLException e) {
       DBMacros.dbg.Caught(e);
       haveNext = false;
     } catch (Throwable throwable) {
       //ignore
+    }
+  }
+
+  private void close() {
+    if (notifyWhenDone != null) {
+      notifyWhenDone.onExhaustion(this);
+    } else {  //at least try to release resources in a timely fashion.
+      unlink();
     }
   }
 
@@ -126,6 +135,5 @@ public class RsStringIterator implements StringIterator {
     } catch (SQLException ignored) {
       //
     }
-
   }
 }

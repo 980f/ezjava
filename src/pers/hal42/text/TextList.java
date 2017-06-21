@@ -379,7 +379,7 @@ public class TextList {
    * append text list to end of this one
    *
    * @return how many added
-   * @todo: decide if strings should be cloned
+   * todo: decide if strings should be cloned
    */
 
   public int appendMore(TextList from) {
@@ -467,7 +467,7 @@ public class TextList {
   /**
    * @return comma separated value string
    * @ see CSVstream
-   * @todo recognize decimal strings and DON'T quote them.
+   * todo recognize decimal strings and DON'T quote them.
    * note: this preserves leading and trailing space as well as internal space
    */
   public StringBuffer csv(boolean started) {
@@ -568,6 +568,7 @@ public class TextList {
     if (ascending) {
       Collections.sort(storage);
     } else {
+      //noinspection unchecked
       storage.sort(ReversedCompare.New());//untested
     }
     return this;
@@ -626,7 +627,7 @@ public class TextList {
   public TextList[] demultiplex(int interleave) {
     TextList[] demux = new TextList[interleave];
     int length = (size() + interleave - 1) / interleave;
-    int leaf = 0;
+    int leaf;
     for (leaf = interleave; leaf-- > 0; ) {
       demux[leaf] = new TextList(length);
     }
@@ -638,6 +639,12 @@ public class TextList {
       }
     }
     return demux;
+  }
+
+  public void add(StringIterator it) {
+    while (it.hasNext()) {
+      add(it.next());
+    }
   }
 
   public static String safe(String o) {

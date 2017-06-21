@@ -55,7 +55,7 @@ public class Span {
     return !isValid() || span() == 0;
   }
 
-
+  /** move low @param skip past high, set high to 'invalid' */
   public void leapfrog(int skip) {
     if (highest == Invalid) {//if at or past the end
       lowest = Invalid;   //we are past the end for sure.
@@ -65,10 +65,15 @@ public class Span {
     }
   }
 
+  /** set both ends of span to 'invalid' */
   public void clear() {
     highest = lowest = Invalid;
   }
 
+  /**
+   * move both ends by the given amount (invalid ones stay invalid).
+   * this is intended for when the span looks into a buffer that is a moving window into some data stream.
+   */
   public void shift(int offset) {
     if (lowest != Invalid) {
       lowest -= offset;
@@ -78,12 +83,14 @@ public class Span {
     }
   }
 
+  /** copy values from @param other then clear() other */
   public void take(Span other) {
     this.lowest = other.lowest;
     this.highest = other.highest;
     other.clear();
   }
 
+  /** @returns a substring from @param tocut, moves the span past its present value by @param skip. skip is usually 1 when there is a comma or the like to be skipped past. */
   public String subString(String tocut, int skip) {
     if (lowest == Invalid) {
       return "";

@@ -40,14 +40,25 @@ public class FancyArgIterator implements StringIterator {
   /** iteration will exhaust the @param pusher then return to using the present one. */
   public void push(StringIterator pusher) {
     if (pusher.hasNext()) {
-      if (top != null && top.hasNext()) {//by testing hasNext we can replace  instead of pushing an exhausted iterator
+      if (top != null && top.hasNext()) {//by testing hasNext we can replace instead of pushing an exhausted iterator
         if (nesters == null) {
           nesters = new Stack<>();
         }
         nesters.push(top);
-      } else {
-        top = pusher;
       }
+      top = pusher;
+    }
+  }
+
+  /** makes hasNext() return false, frees and resources */
+  @Override
+  public void discard() {
+    if (top != null) {
+      top.discard();
+      if (nesters != null) {
+        nesters.forEach(StringIterator::discard);
+      }
+      nesters = null;
     }
   }
 }
