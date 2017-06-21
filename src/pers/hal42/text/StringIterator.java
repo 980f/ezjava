@@ -5,15 +5,19 @@ import java.util.Iterator;
 /**
  * Created by Andy on 5/23/2017.
  * <p>
- * TO allow multiple string sources to exist in a FancyArgITerator
+ * An iterator of strings with enough defaults to operate as a useless instance of the interface.
  */
 public interface StringIterator extends Iterator<String> {
-  boolean hasNext();
+  default boolean hasNext() {
+    return false;
+  }
 
   /**
    * @returns null if hasNext() returned false;
    */
-  String next();
+  default String next() {
+    return null;
+  }
 
   /** for those who like to run off the end of iteration */
   default String nextElse(String defawlt) {

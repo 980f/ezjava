@@ -5,6 +5,8 @@ import pers.hal42.transport.Storable;
 
 import java.text.MessageFormat;
 
+import static java.text.MessageFormat.format;
+
 /**
  * database connection info, typically feeds jdbc connect string.
  *
@@ -12,8 +14,9 @@ import java.text.MessageFormat;
  */
 public class DBConnInfo {
   @Storable.Stored
-  public String drivername = "";
+  public String drivername = "com.mysql.jdbc.Driver";
 
+  /** {0} will be 'server' field. */
   @Storable.Stored(legacy="connDatasource")
   public String urlFormat ="jdbc:mysql://{0}.fedfis.com";
   @Storable.Stored
@@ -44,12 +47,12 @@ public class DBConnInfo {
   }
 
   public String fullUrl(){
-    return MessageFormat.format(urlFormat,server);
+    return format(urlFormat, server);
   }
 
   @Override
   public String toString() {
-    return "DBConnInfo{" + "drivername='" + drivername + '\'' + ", urlFormat='" + urlFormat + '\'' + ", server='" + server + '\'' + ", username='" + username + '\'' + ", password='" + password + '\'' + ", autoCommit=" + autoCommit + ", oversize=" + oversize + ", intervalsecs=" + intervalsecs + ", keepaliveSQL='" + keepaliveSQL + '\'' + '}';
+    return MessageFormat.format("DBConnInfo driver:{0}  url:{1} server:{2} username:{3} password:{4} ", drivername, urlFormat, server, username, StringX.NonTrivial(password) ? "<set>" : "<blank>");
   }
 
 }

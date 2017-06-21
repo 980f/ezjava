@@ -10,6 +10,7 @@ import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Iterator;
@@ -71,12 +72,25 @@ public class Storable {
 
   /**
    * marker annotation for use by applyTo and apply()
-   * todo: if class is annotated with @Stored then process all fields, not just those annotated with Stored.
+   * if class is annotated with @Stored then process all fields, not just those annotated with Stored.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.TYPE})
   public @interface Stored {
+    /** if nontrivial AND child is not found by the field name then it is sought by this name. */
+    String legacy() default "";
+  }
+
+  /**
+   * marker annotation for use by applyTo and apply()
+   * if class is annotated with @Stored then process all fields except those marked with this.
+   * todo:0 automatically ignore static final fields.
+   */
+  @Documented
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.FIELD, ElementType.TYPE})
+  public @interface Ignore {
     /** if nontrivial AND child is not found by the field name then it is sought by this name. */
     String legacy() default "";
   }
@@ -89,7 +103,7 @@ public class Storable {
   @Target({ElementType.FIELD, ElementType.TYPE})
   public @interface Generatable {
     /** if nontrivial then it is the classname for creating objects from a node. */
-    String fcqn() default "";
+    String fqcn() default "";
   }
 
   /** do NOT genericize this class just for this guy, who probably shouldn't be public. */
@@ -105,63 +119,102 @@ public class Storable {
     }
   }
 
-  /** used to create objects from Storable's */
-  @SuppressWarnings("unchecked")
-  private static class Generator {
-    final Class glass;// = ReflectX.classForName(gen.fcqn());
-    Constructor storied = null;//
-    Constructor nullary = null;  // ctor= glass.getConstructor()
-    boolean viable = false;
+  /**
+   * set the values of fields marked 'Stored' (and set the local types).
+   * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
+   * if @param aggressive then private fields are modified. (untested)
+   *
+   * @returns the number of assignments made (a diagnostic)
+   */
+  public int applyTo(Object obj, Rules r) {
+    if (obj == null) {
+      return -1;
+    }
+    int changes = 0;
 
-    public Generator(Class glass) {
-      this.glass = glass;
-      try {
-        storied = glass.getConstructor(Storable.class);
-        viable = true;
-      } catch (NoSuchMethodException e) {
-        try {
-          nullary = glass.getConstructor();
-          viable = true;
-        } catch (NoSuchMethodException e1) {
-          dbg.Caught(e1);
+    Class claz = obj.getClass();
+    Stored all = (Stored) claz.getAnnotation(Stored.class);
+    final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
+    for (Field field : fields) {
+      Stored stored = field.getAnnotation(Stored.class);
+      if (stored != null || (all != null && !usuallySkip(field))) {
+        String name = field.getName();
+        Storable child = existingChild(name);
+        if (child == null) {
+          String altname = stored != null ? stored.legacy() : all.legacy();
+          if (NonTrivial(altname)) {//optional search for prior equivalent
+            if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
+              altname += name;
+            }
+            child = findChild(altname, false);
+          }
+        }
+        if (child != null) {//then we have init data for the field
+          try {
+            Class fclaz = field.getType();//parent class: getDeclaringClass();
+            if (r.aggressive) {
+              field.setAccessible(true);
+            }
+            if (fclaz == String.class) {
+              field.set(obj, child.getImage());//this is our only exception to recursing on non-natives.
+            } else if (fclaz == boolean.class) {
+              field.setBoolean(obj, child.getTruth());
+            } else if (fclaz == double.class) {
+              field.setDouble(obj, child.getValue());
+            } else if (fclaz == int.class) {
+              field.setInt(obj, (int) child.getValue());
+            } else if (fclaz.isEnum()) {
+              //noinspection unchecked
+              child.setEnumerizer(fclaz);
+              final Object childEnum = child.getEnum();
+              if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
+                field.set(obj, childEnum);
+              }
+            }
+            //todo:1 add clauses for the remaining field.setXXX methods.
+            else {
+              //time for recursive descent
+              Object nestedObject = field.get(obj);
+              if (nestedObject == null) {
+                dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
+                //autocreate members if no args constructor exists, which our typical usage pattern makes common.
+                if (r.create) {
+                  Generator generator = new Generator(fclaz);
+                  nestedObject = generator.newInstance(this, r);
+                  //if object is compound ..
+                  if (nestedObject != null && nestedObject instanceof Collection) {
+                    Collection objs = (Collection) nestedObject;
+                    applyTo(objs, r);
+                    return changes;
+                  }
+                }
+              }
+              if (nestedObject != null) {
+                child.setType(Type.Wad);//should already be true
+                if (nestedObject instanceof Map) {
+                  return changes;
+                } else if (nestedObject instanceof Collection) {
+                  Collection objs = (Collection) nestedObject;
+                  changes += applyTo(objs, r);
+                } else { //simple treewalk
+                  int subchanges = child.applyTo(nestedObject, r);
+                  if (subchanges >= 0) {
+                    changes += subchanges;
+                  } else {
+                    dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
+                  }
+                }
+              }
+              continue;//in order to not increment 'changes'
+            }
+            ++changes;
+          } catch (IllegalAccessException e) {
+            dbg.Caught(e, MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()));
+          }
         }
       }
     }
-
-    /** can't try/catch inside a delegating constructor :( */
-    private Generator(Field field) {
-      this(ReflectX.classForName(field.getAnnotation(Generatable.class).fcqn()));
-    }
-
-    Object newInstance(Storable child, Rules r) {
-      if (!viable) {
-        return null;
-      }
-      try {
-        if (storied != null) {
-          return storied.newInstance(child);
-        } else {
-          Object noob = nullary.newInstance();
-          child.applyTo(noob, r);
-          return noob;
-        }
-      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-        dbg.Caught(e);
-        viable = false;
-        return null;
-      }
-    }
-
-    /** to create normal fields (not collection-like) */
-    static Generator forField(Field field) {
-      try {
-        return new Generator(field);
-      } catch (NullPointerException e) {
-        //either field isn't annotated, or the annotation is not a known class name.
-        dbg.Caught(e);
-        return null;
-      }
-    }
+    return changes;
   }
 
   /**
@@ -406,14 +459,7 @@ public class Storable {
     }
   }
 
-  /**
-   * set the values of fields marked 'Stored' (and set the local types).
-   * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
-   * if @param aggressive then private fields are modified. (untested)
-   *
-   * @returns the number of assignments made (a diagnostic)
-   */
-  public int applyTo(Object obj, Rules r) {
+  public int apply(Object obj, Rules r) {
     if (obj == null) {
       return -1;
     }
@@ -424,84 +470,59 @@ public class Storable {
     final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
     for (Field field : fields) {
       Stored stored = field.getAnnotation(Stored.class);
-      if (stored != null || all != null) {
+      if (stored != null || (all != null && !usuallySkip(field))) {
         String name = field.getName();
-        Storable child = existingChild(name);
-        if (child == null) {
-          String altname = stored != null ? stored.legacy() : all.legacy();
-          if (NonTrivial(altname)) {//optional search for prior equivalent
-            if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
-              altname += name;
-            }
-            child = findChild(altname, false);
-          }
-        }
-        if (child != null) {//then we have init data for the field
+        Storable child = r.create ? this.child(name) : this.existingChild(name);
+        //note: do not update legacy fields, let them die a natural death.
+        if (child != null) {
           try {
             Class fclaz = field.getType();//parent class: getDeclaringClass();
             if (r.aggressive) {
               field.setAccessible(true);
             }
             if (fclaz == String.class) {
-              field.set(obj, child.getImage());//this is our only exception to recursing on non-natives.
+              child.setValue(field.get(obj).toString());//this is our only exception to recursing on non-natives.
             } else if (fclaz == boolean.class) {
-              field.setBoolean(obj, child.getTruth());
+              child.setValue(field.getBoolean(obj));
             } else if (fclaz == double.class) {
-              field.setDouble(obj, child.getValue());
+              child.setValue(field.getDouble(obj));
             } else if (fclaz == int.class) {
-              field.setInt(obj, (int) child.getValue());
+              child.setValue(field.getInt(obj));
             } else if (fclaz.isEnum()) {
-              //noinspection unchecked
-              child.setEnumerizer(fclaz);
-              final Object childEnum = child.getEnum();
-              if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
-                field.set(obj, childEnum);
-              }
+              child.setValue(field.get(obj).toString());
             }
-            //todo:1 add clauses for the remaining field.setXXX methods.
+            //todo: add clauses for the remaining field.getXXX methods.
             else {
               //time for recursive descent
-              Object nestedObject = field.get(obj);
+              final Object nestedObject = field.get(obj);
               if (nestedObject == null) {
-                dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
-                //autocreate members if no args constructor exists, which our typical usage pattern makes common.
-                if (r.create) {
-                  Generator generator = new Generator(fclaz);
-                  nestedObject = generator.newInstance(this, r);
-                  //if object is compound ..
-                  if (nestedObject != null && nestedObject instanceof Collection) {
-                    Collection objs = (Collection) nestedObject;
-                    applyTo(objs, r);
-                    return changes;
-                  }
-                }
-              }
-              if (nestedObject != null) {
-                child.setType(Type.Wad);//should already be true
-                if (nestedObject instanceof Map) {
-                  return changes;
-                } else if (nestedObject instanceof Collection) {
-                  Collection objs = (Collection) nestedObject;
-                  changes += applyTo(objs, r);
-                } else { //simple treewalk
-                  int subchanges = child.applyTo(nestedObject, r);
-                  if (subchanges >= 0) {
-                    changes += subchanges;
-                  } else {
-                    dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
-                  }
+                dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
+              } else {
+                int subchanges = child.apply(nestedObject, r);
+                if (subchanges >= 0) {
+                  changes += subchanges;
+                } else {
+                  dbg.ERROR(MessageFormat.format("Not yet recording fields of type {0}", fclaz.getCanonicalName()));
                 }
               }
               continue;//in order to not increment 'changes'
             }
             ++changes;
           } catch (IllegalAccessException e) {
-            dbg.Caught(e, MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()));
+            dbg.Caught(e, MessageFormat.format("applying {0} to Storable", claz.getCanonicalName()));
           }
         }
       }
     }
     return changes;
+  }
+
+  public static boolean usuallySkip(Field field) {
+    boolean skipper = field.isAnnotationPresent(Ignore.class);
+    int modifiers = field.getModifiers();
+    skipper |= Modifier.isFinal(modifiers);
+    skipper |= Modifier.isTransient(modifiers);
+    return skipper;
   }
 
   /**
@@ -674,62 +695,63 @@ public class Storable {
     return changes;
   }
 
-  public int apply(Object obj, Rules r) {
-    if (obj == null) {
-      return -1;
-    }
-    int changes = 0;
+  /** used to create objects from Storable's */
+  @SuppressWarnings("unchecked")
+  private static class Generator {
+    final Class glass;// = ReflectX.classForName(gen.fcqn());
+    Constructor storied = null;//
+    Constructor nullary = null;  // ctor= glass.getConstructor()
+    boolean viable = false;
 
-    Class claz = obj.getClass();
-    Stored all = (Stored) claz.getAnnotation(Stored.class);
-    final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
-    for (Field field : fields) {
-      Stored stored = field.getAnnotation(Stored.class);
-      if (stored != null || all != null) {
-        String name = field.getName();
-        Storable child = r.create ? this.child(name) : this.existingChild(name);
-        //note: do not update legacy fields, let them die a natural death.
-        if (child != null) {
-          try {
-            Class fclaz = field.getType();//parent class: getDeclaringClass();
-            if (r.aggressive) {
-              field.setAccessible(true);
-            }
-            if (fclaz == String.class) {
-              child.setValue(field.get(obj).toString());//this is our only exception to recursing on non-natives.
-            } else if (fclaz == boolean.class) {
-              child.setValue(field.getBoolean(obj));
-            } else if (fclaz == double.class) {
-              child.setValue(field.getDouble(obj));
-            } else if (fclaz == int.class) {
-              child.setValue(field.getInt(obj));
-            } else if (fclaz.isEnum()) {
-              child.setValue(field.get(obj).toString());
-            }
-            //todo: add clauses for the remaining field.getXXX methods.
-            else {
-              //time for recursive descent
-              final Object nestedObject = field.get(obj);
-              if (nestedObject == null) {
-                dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
-              } else {
-                int subchanges = child.apply(nestedObject, r);
-                if (subchanges >= 0) {
-                  changes += subchanges;
-                } else {
-                  dbg.ERROR(MessageFormat.format("Not yet recording fields of type {0}", fclaz.getCanonicalName()));
-                }
-              }
-              continue;//in order to not increment 'changes'
-            }
-            ++changes;
-          } catch (IllegalAccessException e) {
-            dbg.Caught(e, MessageFormat.format("applying {0} to Storable", claz.getCanonicalName()));
-          }
+    public Generator(Class glass) {
+      this.glass = glass;
+      try {
+        storied = glass.getConstructor(Storable.class);
+        viable = true;
+      } catch (NoSuchMethodException e) {
+        try {
+          nullary = glass.getConstructor();
+          viable = true;
+        } catch (NoSuchMethodException e1) {
+          dbg.Caught(e1);
         }
       }
     }
-    return changes;
+
+    /** can't try/catch inside a delegating constructor :( */
+    private Generator(Field field) {
+      this(ReflectX.classForName(field.getAnnotation(Generatable.class).fqcn()));
+    }
+
+    Object newInstance(Storable child, Rules r) {
+      if (!viable) {
+        return null;
+      }
+      try {
+        if (storied != null) {
+          return storied.newInstance(child);
+        } else {
+          Object noob = nullary.newInstance();
+          child.applyTo(noob, r);
+          return noob;
+        }
+      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        dbg.Caught(e);
+        viable = false;
+        return null;
+      }
+    }
+
+    /** to create normal fields (not collection-like) */
+    static Generator forField(Field field) {
+      try {
+        return new Generator(field);
+      } catch (NullPointerException e) {
+        //either field isn't annotated, or the annotation is not a known class name.
+        dbg.Caught(e);
+        return null;
+      }
+    }
   }
 
   public static class Rules {
