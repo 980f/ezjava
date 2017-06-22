@@ -340,6 +340,7 @@ public class EasyProperties extends Properties {
     setString(key, target.name());
   }
 
+  //java Enums are not mutable
   public void loadEnum(String key, Enum target) {
     String prop = getString(key);
     if (prop != null) {
@@ -352,7 +353,7 @@ public class EasyProperties extends Properties {
    * it is strongly suggested that the TrueEnum.Prop member be used for this.
    * only in that case is this function (somewhat) multi-thread safe.
    */
-  //todo: Enum
+
 //  public int getEnumValue(String key, Enum proto){
 //    String prop=getString(key);
 //    if(StringX.NonTrivial(prop)){

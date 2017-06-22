@@ -69,10 +69,10 @@ public class Fstring {
 
   public Fstring righted(String newtext) {
     buffer = new StringBuffer(length);
-    int gap = length - newtext.length();
     if (newtext == null) {
       newtext = "";
     }
+    int gap = length - newtext.length();
     if (filled(gap)) {
       buffer.append(newtext);
     } else { //keep only the rear end
@@ -134,7 +134,7 @@ public class Fstring {
   }
 
   /**
-   * todo: null s give null fstring. need to fix this. Til then use "".
+   * todo:1 null s give null fstring. need to fix this. Til then use "".
    */
   public static String fill(String s, int len, char fillChar) {
     return String.valueOf(new Fstring(len, fillChar, s));

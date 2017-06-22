@@ -6,7 +6,7 @@ import pers.hal42.transport.EasyCursor;
 import pers.hal42.transport.isEasy;
 
 /**
- * TODO:
+ * TODO:2
  * +++ ColumnJustification and/or TextColumn rework to:
  * Justification.Left fill right side with spacer
  * Justification.right fill left side with spacer

@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Vector;
 
+import static java.text.MessageFormat.format;
+
 /**
  * a vector of strings with handy functions. It has gotten big enough to have a baser class extracted without so many fancy things like support for TextColumn class
  */
@@ -379,7 +381,7 @@ public class TextList {
    * append text list to end of this one
    *
    * @return how many added
-   * todo: decide if strings should be cloned
+   * todo:1 decide if strings should be cloned
    */
 
   public int appendMore(TextList from) {
@@ -467,7 +469,7 @@ public class TextList {
   /**
    * @return comma separated value string
    * @ see CSVstream
-   * todo recognize decimal strings and DON'T quote them.
+   * todo:1 recognize decimal strings and DON'T quote them.
    * note: this preserves leading and trailing space as well as internal space
    */
   public StringBuffer csv(boolean started) {
@@ -475,7 +477,7 @@ public class TextList {
     boolean quoteit;
     for (String item : storage) {
       String thing = StringX.unNull(item);
-      quoteit = thing.indexOf('"') >= 0; //todo: need to add more whitespace chars
+      quoteit = thing.indexOf('"') >= 0; //todo:1 need to add more whitespace chars
       if (started) {
         block.append(quoteit ? ",\"" : ",");
       } else {
@@ -680,19 +682,13 @@ public class TextList {
     return ret;
   }
 
-  //todo: add intermediate base class to enum so that we can get to the peer values.
-//  // anything you pass to this you sacrifice!
-//  public static TextList enumAsMenu(Enum ennum) {
-//    TextList newone = TextList.Empty();
-//    ennum.getClass()
-//    int value = ennum.Value();
-//    for (Enum item:ennum.getClass().getvalues();int i = 0; i < ennum.numValues(); i++) { //# natural order
-//      ennum.setto(i);
-//      newone.add(ennum.menuImage());
-//    }
-//    ennum.setto(value);
-//    return newone;
-//  }
-
+  public static TextList EnumMenu(Class<? extends Enum> eclaz) {
+    TextList newone = TextList.Empty();
+    final Enum[] ees = eclaz.getEnumConstants();
+    for (Enum item : ees) {
+      newone.add(format("{0}[{1}]", item.toString(), item.ordinal()));
+    }
+    return newone;
+  }
 }
 

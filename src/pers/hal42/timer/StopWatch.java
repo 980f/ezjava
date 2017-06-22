@@ -10,7 +10,7 @@ import pers.hal42.lang.DateX;
  * far less expense than locks.
  * Synch'ing is only needed for non-atomic data that might get written while it is being read.
  *
- * todo: add registry so that we can do the same adjustments done by Alarmer. (true for anything that uses DateX)
+ * todo:2 add registry so that we can do the same adjustments done by Alarmer. (true for anything that uses DateX)
  */
 public class StopWatch {
   long started;

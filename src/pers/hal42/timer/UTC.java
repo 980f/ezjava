@@ -5,17 +5,10 @@ import pers.hal42.lang.DateX;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.StringX;
 import pers.hal42.math.IntegralPower;
-import pers.hal42.math.MathX;
 
-import java.util.Calendar;
 import java.util.Date;
-import java.util.GregorianCalendar;
-import java.util.TimeZone;
 
-/**
- * todo:? Use a monitor for setting/getting? seems to be done
- * todo:x <strike>Merge Ticks.java into this class? NO. ticks are intervals more often than absolute.</strike>
- */
+/** simple time class. */
 
 public class UTC implements Comparable<UTC> {
   /**
@@ -88,28 +81,14 @@ public class UTC implements Comparable<UTC> {
   //end comparable service utilities
   /////////////////
 
-  public static UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
-    if (startdate == null) {
-      return null;
-    }
-    Date date = ChangeByDays(new Date(startdate.getTime()), days);
-    if (date == null) {
-      return null;
-    }
-    return UTC.New(date.getTime());
+  /**
+   * @return int for ascending sort
+   */
+  public int compareTo(@NotNull UTC o) {
+    return Long.compare(utc, o.utc);
   }
 
-  public static Date ChangeByDays(Date startdate, int days) { // can be positive or negative
-    if (startdate == null) {
-      return null;
-    }
-    // calculate the end date (start of next day)
-    // +++ copy this stuff into and use it in the Search screen!
-    GregorianCalendar zoned = (GregorianCalendar) Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-    zoned.setTimeInMillis(startdate.getTime());
-    zoned.add(GregorianCalendar.DATE, days);
-    return zoned.getTime();
-  }
+
 
   /**
    * @return whether value is not ridiculously trivial
@@ -118,11 +97,11 @@ public class UTC implements Comparable<UTC> {
     return utc > 0;
   }
 
-  /**
-   * @return int for ascending sort
-   */
-  public int compareTo(@NotNull UTC o) {
-    return MathX.signum(utc - o.utc);//or could >>>32.
+  public static UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
+    if (startdate == null) {
+      return null;
+    }
+    return UTC.New(startdate.utc + days * Ticks.forDays(days));
   }
 
   //////////////////////

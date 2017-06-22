@@ -1,9 +1,6 @@
 package pers.hal42.transport;
 
-import pers.hal42.lang.OS;
-import pers.hal42.lang.ReflectX;
-import pers.hal42.lang.StringX;
-import pers.hal42.lang.VectorX;
+import pers.hal42.lang.*;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
 import pers.hal42.text.TextListIterator;
@@ -13,7 +10,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Vector;
 
 /**
  * hierarchy traverser, over property set that it is derived from
@@ -419,12 +419,11 @@ public class EasyCursor extends EasyProperties {
   }
 
   /**
-   * @param act is type of object
+   * @param act is type of object which can be constructed from properties
    * @return map
-   * todo:1 convert to actually using a map. All map users were hashtables....
    */
-  public <T> Hashtable<String, T> getMap(String mapname, Class<? extends T> act) {
-    Hashtable<String, T> table = new Hashtable<>();
+  public <T> Map<String, T> getMap(String mapname, Class<? extends T> act) {
+    Map<String, T> table = new LinearMap<>();
     push(mapname);
     try {
       //for each item on branch its key becomes the hashtable key, we make an object out of its value.
@@ -436,9 +435,9 @@ public class EasyCursor extends EasyProperties {
 //          continue; //recover as much as possible.
         }
       }
+      return table;
     } finally {
       pop();
-      return table;
     }
   }
 

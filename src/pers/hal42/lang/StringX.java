@@ -4,7 +4,7 @@ package pers.hal42.lang;
 import pers.hal42.math.MathX;
 
 public class StringX {
-  //todo: replace replacers with cppext's logic.
+  //todo:1 replace replacers with cppext's logic.
   protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
   private static final String SINGLEQUOTE = "'";
   private static final char SINGLEQUOTECHAR = '\'';
@@ -188,7 +188,7 @@ public class StringX {
    */
   public static String fill(String source, char filler, int length, boolean left) {
     source = TrivialDefault(source, "");
-    source.trim();
+    source = source.trim();
     if (length == source.length()) {
       return source;
     }

@@ -3,6 +3,7 @@ package pers.hal42.lang;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
 
+/** this class is probably obsolete in java 8. genericizing it was a waste of time. */
 public final class WeakObject<T> extends WeakReference<T> {
   private WeakObject(T k) {
     super(k);

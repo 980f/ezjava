@@ -1,5 +1,6 @@
 package pers.hal42.stream;
 
+import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.ReflectX;
 
@@ -79,24 +80,6 @@ public class URLEncoderFilterInputStream extends FilterInputStream {
     return count;
   }
 
-  public int read(byte[] b) throws IOException {
-    return read(b, 0, b.length);
-  }
-
-  public int read(byte[] b, int off, int len) throws IOException {
-    int end = off + len;
-    int count = 0;
-    for (int i = off; i < end; i++) {
-      int c = read();
-      if (c == -1) {
-        break;
-      }
-      b[i] = (byte) c;
-      count++;
-    }
-    return ((count == 0) && (len > 0)) ? -1 : count;
-  }
-
   /**
    * Reads the specified byte from this URLEncoded input stream.
    *
@@ -124,7 +107,7 @@ public class URLEncoderFilterInputStream extends FilterInputStream {
           }
           return b;
         } else {
-          //todo: this is ox2 method.
+          //todo:2 this is ox2 method.
           for (int i = 0; i < 2; i++) {
             int b2 = (i == 0) ? (b >> 4) : b;
             char ch = Character.forDigit(b2 & 0xF, 16);
@@ -142,5 +125,23 @@ public class URLEncoderFilterInputStream extends FilterInputStream {
       e.printStackTrace();
       return 0;
     }
+  }
+
+  public int read(@NotNull byte[] b) throws IOException {
+    return read(b, 0, b.length);
+  }
+
+  public int read(@NotNull byte[] b, int off, int len) throws IOException {
+    int end = off + len;
+    int count = 0;
+    for (int i = off; i < end; i++) {
+      int c = read();
+      if (c == -1) {
+        break;
+      }
+      b[i] = (byte) c;
+      count++;
+    }
+    return ((count == 0) && (len > 0)) ? -1 : count;
   }
 }

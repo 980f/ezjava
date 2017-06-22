@@ -30,11 +30,13 @@ public class PushedJSONParser extends PushedParser {
    */
   public boolean orderedWad;
   public final JsonStats stats = new JsonStats();
+  private final boolean equalsAndSemi;
 
   /**
    * @param equalsAndSemi determines dialect of JSON allowed.
    */
   public PushedJSONParser(boolean equalsAndSemi) {
+    this.equalsAndSemi = equalsAndSemi;
     String seps = "{}[]:,";
     if (equalsAndSemi) {
       seps += "=;";
@@ -61,7 +63,7 @@ public class PushedJSONParser extends PushedParser {
     case EndTokenAndItem:
     case EndItem:
       switch (d.last) {
-      case '='://treat equals like colon// todo: an enable for this feature
+      case '='://treat equals like colon
         d.last = ':';
         //join
       case ':':
@@ -86,7 +88,7 @@ public class PushedJSONParser extends PushedParser {
       case '}': //normal
         orderedWad = false;
         return EndWad;
-      case ';': //treat semis like commas, //todo: an enable for this
+      case ';': //treat semis like commas
         d.last = ',';
         //join
       case ',': //sometimes is an extraneous comma, we choose to ignore those.

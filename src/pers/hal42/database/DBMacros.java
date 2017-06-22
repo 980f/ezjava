@@ -1290,7 +1290,7 @@ public class DBMacros extends GenericDB {
     return (count == 0);
   }
 
-  //todo: use dbmd's getMaxTableNameLength to see if the name is too long
+  //todo:1 use dbmd's getMaxTableNameLength to see if the name is too long
   protected final boolean createTable(TableProfile tp) {
     try (AutoCloseable pop = dbg.Push("haveTable")) {
       if (!tableExists(tp.name())) {
@@ -1496,22 +1496,6 @@ public class DBMacros extends GenericDB {
     return getBooleanFromRS(column.name(), myrs);
   }
 
-  /**
-   * TODO:
-   * +++ Improve the pagination of records [only for search screen, drawers listing, etc.]:
-   * boolean isBeforeFirst() throws SQLException;
-   * boolean isAfterLast() throws SQLException;
-   * boolean isFirst() throws SQLException;
-   * boolean isLast() throws SQLException;
-   * void beforeFirst() throws SQLException;
-   * void afterLast() throws SQLException;
-   * boolean first() throws SQLException;
-   * boolean last() throws SQLException;
-   * int getRow() throws SQLException;
-   * boolean absolute( int row ) throws SQLException;
-   * boolean relative( int rows ) throws SQLException;
-   * boolean previous() throws SQLException;
-   */
   public static boolean next(ResultSet rs) {
     return next(rs, null);
   }

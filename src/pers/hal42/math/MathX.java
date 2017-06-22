@@ -45,7 +45,6 @@ public class MathX {
    * @return a signed number extracted from a set of bits within an integer.
    * initially used by ncrA parsing.
    * doesn't deal with end before start (field crossing boundary)
-   * @todo: move into a byte package!
    */
   public static int getSignedField(int datum, int start, int end) {
     return (datum << (31 - start)) & ~((1 << end) - 1);
@@ -53,7 +52,7 @@ public class MathX {
 
   /**
    * @return two nibbles from @param high and @param low ls digits in the ls byte of an int.
-   * @todo: move into a byte package!
+   * todo:2 move into a byte package!
    */
   public static int packNibbles(int high, int low) {
     return ((high & 15) << 4) + (low & 15);

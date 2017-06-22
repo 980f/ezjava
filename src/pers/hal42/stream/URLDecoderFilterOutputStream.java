@@ -68,7 +68,7 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
           // prime for decoding
           int chr;
           try {
-            super.write(0);//todo:000 apply Char here
+            super.write(0);//todo:0 apply Char here
           } catch (NumberFormatException e) {
             // if it is misformatted, just spew as normal
             flush();

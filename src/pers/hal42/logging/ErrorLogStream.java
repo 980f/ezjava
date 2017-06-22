@@ -22,12 +22,12 @@ import java.util.Vector;
 
 import static pers.hal42.logging.LogLevelEnum.*;
 
-/**
+/** conditional printing of messages.
+ * See PrintFork for where the messages are sent.
+ *
  * WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
  * this was done to improve efficiency the rest of the time.
  *
- * todo: finish applying logswitch
- * auto closeable for Push/Exit context stack
  */
 public class ErrorLogStream implements AtExit, AutoCloseable {
 

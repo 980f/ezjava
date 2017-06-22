@@ -5,10 +5,7 @@ import org.jetbrains.annotations.NotNull;
 import java.lang.ref.WeakReference;
 import java.util.*;
 
-/**
- * +++ TODO: Propagate this to other classes that can/should use it:
- * TempFile, LogFile, FileZipper, LogSwitch, SyncMonitorList, but NOT PrintForks.
- * <p>
+/** A set of weakly referenced objects of class T
  * The comments here were badly copied from an actual WeakMap implementation.
  *
  * @author Mark Reinhold

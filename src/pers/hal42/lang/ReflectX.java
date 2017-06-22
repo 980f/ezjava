@@ -9,12 +9,14 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 
-/* to get rid of debug create an exception object with all of the messages that are currently debug messages placed inside of it.
+/** Utilities to ease use of reflection.
+ *
+ * todo:2 get rid of debug class use by create an exception object with all of the messages that are currently debug messages placed inside of it.
  */
 
 public class ReflectX {
 
-  private static final String packageRoot = "pers.hal42.";//todo: better means of default package root.
+  private static final String packageRoot = "pers.hal42.";//todo:1 better means of default package root.
   /**
    * debug was removed from the following function as it is called during the initialization
    * of the classes need by the debug stuff. Any debug will have to be raw stdout debugging.
@@ -115,7 +117,6 @@ public class ReflectX {
    * @return no-args constructor instance of given class.
    * will try to prefix package root to classes that aren't found.
    * On "not found" returns null,
-   * todo:? change to returning the exception!
    */
   public static Object newInstance(String classname) {
     try {

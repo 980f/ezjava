@@ -97,7 +97,8 @@ public class UTF8 extends Char {
    * first byte tells you how many follow, number of leadings ones -2 (FE and FF are both 5)
    * subsequent bytes start with 0b10xx xxxx 80..BF, which are not legal single byte chars.
    */
-  public int numFollowers() {//todo:00 fix signedness problems
+  public int numFollowers() {
+    int raw = this.raw & 255;//'byte' is signed and direct compares to these hex constants don't work
     if (raw < 0xC0) { //80..BF are illegal raw, we ignore that here, C0 and C1  are not specfied so lump them in as well
       return 0;   //7 bits    128
     }

@@ -8,7 +8,6 @@ import java.util.Comparator;
 
 /**
  * Message Queue processor component
- * todo: should check for null actor. would simplify startup code for users of this class.
  */
 public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   protected final PrioritizedQueue<Qtype> fifo;//accessible for input filtering based upon present content
@@ -71,6 +70,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
 
 ///////////////////////////
 
+  /** set something to do when the periodic check finds nothing queued */
   public QAgent setIdleObject(Qtype demon) {
     idleObject = demon;//will run periodically when there is nothing else to do.
     return this;

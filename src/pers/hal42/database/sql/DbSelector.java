@@ -69,11 +69,11 @@ import java.util.*;
  * SELECT * from PEOPLE WHERE PEOPLE.NAME IN (SELECT CAPTAIN FROM TEAM);
  *
  * @author Chris Bitmead
- * @created 5 September 2001
+ * created 5 September 2001
  */
 public class DbSelector extends DbExpr {
   ResultSet result;
-  Map<DbExpr, String> asMap = new HashMap();
+  Map<DbExpr, String> asMap = new HashMap<>();
   List<DbExpr> columnList = new ArrayList<>();
   DbExpr where;
   List<DbExpr> orderBy = new LinkedList<>();
@@ -222,7 +222,6 @@ public class DbSelector extends DbExpr {
    * SELECT * from table.
    *
    * @param table the table whose columns we wish to add
-   * @throws Exception Description of Exception
    */
   public void addAll(TableProfile table) {
     for (ColumnProfile column : table.columns()) {
@@ -241,7 +240,7 @@ public class DbSelector extends DbExpr {
   public void addAllExcept(TableProfile table, Set<ColumnProfile> set) {
     for (ColumnProfile col : table.columns()) {
       if (!set.contains(col)) {
-        addColumn(columnExpr(col));  //todo: addmethod for making dpexpre for column
+        addColumn(columnExpr(col));  //todo:1 addmethod for making dpexpression for column
       }
     }
   }

@@ -91,7 +91,7 @@ public class IntegralPower {
   }
 
   /**
-   * todo: deal properly with negative @param value.
+   * todo:1 deal properly with negative @param value.
    */
   public static IntegralPower Above(int value, int radix) {
     IntegralPower igp = IntegralPower.forRadix(radix);

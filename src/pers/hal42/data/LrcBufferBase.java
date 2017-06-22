@@ -1,12 +1,10 @@
 package pers.hal42.data;
-/*
-  @todo: tie debugger into extended class instance.
- */
 
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.Formatter;
 import pers.hal42.text.TextList;
 
+/** ascii block with simple longitudinal redundancy checksum */
 public class LrcBufferBase extends Packet {
   //configuration flags
   protected byte lrcStart = 0;//allows extension to omit stx's or such from lrc
@@ -161,5 +159,4 @@ public class LrcBufferBase extends Packet {
     spam.add("lrcbb.isOk()", isOk());
     return super.dump(spam);
   }
-
 }

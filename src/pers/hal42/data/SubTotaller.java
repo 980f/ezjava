@@ -1,17 +1,18 @@
 package pers.hal42.data;
 
 
+import pers.hal42.lang.LinearMap;
 import pers.hal42.math.Accumulator;
 import pers.hal42.text.TextList;
 import pers.hal42.transport.EasyCursor;
 import pers.hal42.transport.isEasy;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map;
 
 public class SubTotaller implements isEasy {
   Accumulator grandTotal = new Accumulator();
-  Hashtable<String, Accumulator> subTotals = new Hashtable<>();
+  Map<String, Accumulator> subTotals;
 
   public SubTotaller() {
 //see initializers
@@ -62,7 +63,14 @@ public class SubTotaller implements isEasy {
 
   // creates 0 valued accumulators at need.
   public final Accumulator getAccumulator(String key) {
+    assureTotalersExist();
     return subTotals.computeIfAbsent(key, k -> new Accumulator());
+  }
+
+  protected void assureTotalersExist() {
+    if (subTotals == null) {
+      subTotals = new LinearMap<>(10);
+    }
   }
 
   public long Total() {
@@ -77,15 +85,14 @@ public class SubTotaller implements isEasy {
     return grandTotal;
   }
 
-  public Enumeration subbers() {
-    return subTotals.keys();
+  public Iterator<String> subbers() {
+    assureTotalersExist();
+    return subTotals.keySet().iterator();
   }
 
   public TextList subtotalNames() {
     TextList names = new TextList();
-    for (Enumeration umf = subbers(); umf.hasMoreElements(); ) {
-      names.add((String) umf.nextElement());
-    }
+    subbers().forEachRemaining(names::add);
     return names;
   }
 
@@ -112,6 +119,4 @@ public class SubTotaller implements isEasy {
     grandTotal = ezp.getObject("grand", Accumulator.class);
     subTotals = ezp.getMap("subs", Accumulator.class);
   }
-
 }
-//$Id: SubTotaller.java,v 1.10 2003/07/24 19:11:21 mattm Exp $

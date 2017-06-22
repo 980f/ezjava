@@ -154,7 +154,7 @@ public class PrintFork {
     EasyCursor blob = new EasyCursor(/* presize to di*/);
     Vector<PrintFork> debuggers = LogSwitchRegistry.printForkRegistry; // get a second list copy to prevent exceptions
     for (PrintFork bugger : debuggers) {
-      blob.setString(bugger.Name(), bugger.myLevel.toString());//todo:0 proper enum vaue saving
+      blob.setString(bugger.Name(), bugger.myLevel.toString());
     }
     return blob;
   }

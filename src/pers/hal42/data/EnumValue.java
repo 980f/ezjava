@@ -1,7 +1,7 @@
 package pers.hal42.data;
 
 /**
- * todo: serious reworok, java Enum isn't much like the original TrueEnum hierarchy.
+ * todo: serious rework, java Enum isn't much like the original TrueEnum hierarchy.
  */
 
 public class EnumValue extends Value {

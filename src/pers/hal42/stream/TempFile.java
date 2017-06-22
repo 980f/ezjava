@@ -20,7 +20,7 @@ public class TempFile {
     return fname;
   }
 
-  public OutputStream outputStream() {
+  public OutputStream outputStream(String extra) {
     if (closed) {
       dbg.VERBOSE("Attempting to reaccess closed stream: " + filename());
       return null;
@@ -29,13 +29,12 @@ public class TempFile {
       while (file == null) {
         // give it a new name and try to create it again
         try {
-          file = File.createTempFile("paymate", BaseConverter.itoa(DateX.Now().getTime())); // very random
+          file = File.createTempFile(extra, BaseConverter.itoa(DateX.Now().getTime())); // very random
           fos = new FileOutputStream(file);
         } catch (Exception t) {
           dbg.ERROR("Exception trying to create a temporary file. ");// Trying again ...");
           dbg.Caught(t);
         }
-        //todo: make this try several times but not forever
       }
       fname = file.getPath();
       file.deleteOnExit(); // in case we miss it for some reason (crash?)

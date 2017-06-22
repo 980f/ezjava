@@ -75,15 +75,73 @@ public class JsonStorable extends PushedJSONParser {
     }
   }
 
-  public static Storable FromFile(Path optsfile){
-    Storable root = new Storable(optsfile.toString());//name in file gets lost
-    final JsonStorable optsloader = new JsonStorable(true);
-    if (optsloader.loadFile(optsfile.toString())) {//todo: path versions of this method
-      optsloader.parse(root);
-      root.child(filenameTag).setValue(optsfile.toString());
+  /**
+   * the return value here is inspected by the BeginWad clause's while.
+   * The initial call should get a false if the file is well formed, a true suggests a truncated file.
+   * Inspecting the parser.stats member for depth also would help decipher truncation.
+   */
+  public boolean parse(Storable parent) {
+    try (CountedLock popper = stats.depthTracker.open(d.location)) {
+//      dbg.VERBOSE("Json File Depth now {0}/{1}", popper.asInt(), stats.depthTracker.maxDepth);
+      if (root == null) {
+        root = parent;//wild stab at averting NPE's. often is the expected thing.
+      }
+      if (cached) {
+        while (d.location < content.length) {
+          byte b = content[d.location];
+          switch (nextitem(b)) {
+          case Continue:
+            continue;//like the case says ;)
+          case Illegal://not much is illegal.
+            if (++illegalsCount < 100) {//give up complaining after a while, so as to speed up failure.
+              dbg.ERROR("Illegal character at row {0}:column {1}, will pretend it's not there. (1-based coords)", d.row, d.column);
+            }
+            break;
+          case BeginWad: {
+            Storable kid;
+            if (parent == root && specialRootTreatment) {//#same object, not just equivalent.
+              specialRootTreatment = false;//only do once else we flatten the input file.
+              //ignore 'begin wad' on root node, so that a standard json file (one value) can parse into an already existing node.
+              itemCompleted();//erase dregs, name is ignored
+              kid = parent;
+            } else {//this is a wad type child node
+              //save present item as a wad
+              kid = makeChild(parent);
+              kid.setType(Storable.Type.Wad);
+            }
+            //noinspection StatementWithEmptyBody
+            while (parse(kid)) {//recurse
+              //nothing to do here.
+            }
+            return true;
+          }
+          case EndItem:
+            if (haveName || token.isValid()) {
+              makeChild(parent);
+            } else {
+              //todo:1 to filter this out need a flag 'lastItem was an endWad'
+              dbg.VERBOSE("Ignoring null item, probably gratuitous comma or comma after end brace");
+            }
+            return true;//might be more children
+          case Done://terminate children all the way up.
+            return false;//end wad because we are at end of file.
+          case EndWad:
+            //if there is an item pending add it to wad, this will be the case if the last item of a wad doesn't have a gratuitous comma after it.
+            cleanup(parent);
+            return false;//no more children
+          }
+        }
+        //no more content
+        //were we in the middle of an item?
+        cleanup(parent);
+      } else {
+        return false;
+      }
+      return false;
+    } catch (Exception e) {
+      dbg.Caught(e, "parsing");
+      return true;
     }
-    //todo:2 either dbg the stats or print them to a '#attribute field
-    return root;
   }
 
   /** read file content if not already done. */
@@ -188,73 +246,15 @@ public class JsonStorable extends PushedJSONParser {
     }
   }
 
-  /**
-   * the return value here is inspected by the BeginWad clause's while.
-   * The initial call should get a false if the file is well formed, a true suggests a truncated file.
-   * Inspecting the parser.stats member for depth also would help decipher truncation.
-   */
-  public boolean parse(Storable parent) {
-    try (CountedLock popper = stats.depthTracker.open(d.location)) {
-//      dbg.VERBOSE("Json File Depth now {0}/{1}", popper.asInt(), stats.depthTracker.maxDepth);
-      if (root == null) {
-        root = parent;//wild stab at averting NPE's. often is the expected thing.
-      }
-      if (cached) {
-        while (d.location < content.length) {//todo: use a bytearraystream
-          byte b = content[d.location];
-          switch (nextitem(b)) {
-          case Continue:
-            continue;//like the case says ;)
-          case Illegal://not much is illegal.
-            if (++illegalsCount < 100) {//give up complaining after a while, so as to speed up failure.
-              dbg.ERROR("Illegal character at row {0}:column {1}, will pretend it's not there. (1-based coords)", d.row, d.column);
-            }
-            break;
-          case BeginWad: {
-            Storable kid;
-            if (parent == root && specialRootTreatment) {//#same object, not just equivalent.
-              specialRootTreatment = false;//only do once else we flatten the input file.
-              //ignore 'begin wad' on root node, so that a standard json file (one value) can parse into an already existing node.
-              itemCompleted();//erase dregs, name is ignored
-              kid = parent;
-            } else {//this is a wad type child node
-              //save present item as a wad
-              kid = makeChild(parent);
-              kid.setType(Storable.Type.Wad);
-            }
-            //noinspection StatementWithEmptyBody
-            while (parse(kid)) {//recurse
-              //nothing to do here.
-            }
-            return true;
-          }
-          case EndItem:
-            if(haveName|| token.isValid()) {
-              makeChild(parent);
-            } else {
-              //todo:1 to filter this out need a flag 'lastItem was an endWad'
-              dbg.VERBOSE("Ignoring null item, probably gratuitous comma or comma after end brace");
-            }
-            return true;//might be more children
-          case Done://terminate children all the way up.
-            return false;//end wad because we are at end of file.
-          case EndWad:
-            //if there is an item pending add it to wad, this will be the case if the last item of a wad doesn't have a gratuitous comma after it.
-            cleanup(parent);
-            return false;//no more children
-          }
-        }
-        //no more content
-        //were we in the middle of an item?
-        cleanup(parent);
-      } else {
-        return false;
-      }
-      return false;
-    } catch (Exception e) {
-      dbg.Caught(e, "parsing");
-      return true;
+  public static Storable FromFile(Path optsfile) {
+    Storable root = new Storable(optsfile.toString());//name in file gets lost
+    final JsonStorable optsloader = new JsonStorable(true);
+    if (optsloader.loadFile(optsfile.toString())) {//todo:1 path versions of this method
+      optsloader.parse(root);
+      root.child(filenameTag).setValue(optsfile.toString());
     }
+    //todo:2 either dbg the stats or print them to a '#attribute field
+    return root;
   }
 
   public static class Printer {
@@ -273,7 +273,7 @@ public class JsonStorable extends PushedJSONParser {
     }
 
     void printText(String p, boolean forceQuote) {
-      if (forceQuote) {//todo: or of string contains any of the parse separators or a space or ...
+      if (forceQuote) {//todo:1 or if string contains any of the parse separators or a space or ...
         ps.append('"');
       }
       ps.append(p);

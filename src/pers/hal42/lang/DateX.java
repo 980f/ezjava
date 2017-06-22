@@ -8,7 +8,10 @@ import pers.hal42.timer.UTC;
 import java.text.DecimalFormat;
 import java.text.FieldPosition;
 import java.text.NumberFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
+import java.util.TimeZone;
 
 public class DateX {
   /////////////////////////////////////////////////////////////////////////////
@@ -134,4 +137,14 @@ public class DateX {
     return new Date();//default Date constructor returns "now"
   }
 
+  public static Date ChangeByDays(Date startdate, int days) { // can be positive or negative
+    if (startdate == null) {
+      return null;
+    }
+    // calculate the end date (start of next day)
+    GregorianCalendar zoned = (GregorianCalendar) Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+    zoned.setTimeInMillis(startdate.getTime());
+    zoned.add(GregorianCalendar.DATE, days);
+    return zoned.getTime();
+  }
 }

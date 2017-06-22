@@ -42,7 +42,7 @@ public class AsciiBuffer extends Buffer {
    * @return this after appending @param text left justified blank extended to file @param size places.
    * if longer than given size trailing chars are truncated.
    * when smart trim before truncation
-   * @todo trim leading then trailing to deal with overflow. (rather than all)
+   * todo:2 trim leading then trailing to deal with overflow. (rather than all)
    */
   public AsciiBuffer appendAlpha(int size, String text) {
     if (text.length() > size) {
@@ -59,7 +59,7 @@ public class AsciiBuffer extends Buffer {
 
   /**
    * number type fixed length fields are UNSIGNED right justified zero extended
-   * @todo check digits for non-decimal characters, we have that somewhere....
+   * todo:2 check digits for non-decimal characters, we have that somewhere....
    */
   public AsciiBuffer appendNumeric(int size, String digits) {
     digits = StringX.OnTrivial(digits, "0"); //not our job to complain about bad values

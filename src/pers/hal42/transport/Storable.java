@@ -85,7 +85,6 @@ public class Storable {
   /**
    * marker annotation for use by applyTo and apply()
    * if class is annotated with @Stored then process all fields except those marked with this.
-   * todo:0 automatically ignore static final fields.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
@@ -491,7 +490,7 @@ public class Storable {
             } else if (fclaz.isEnum()) {
               child.setValue(field.get(obj).toString());
             }
-            //todo: add clauses for the remaining field.getXXX methods.
+            //todo:1 add clauses for the remaining field.getXXX methods.
             else {
               //time for recursive descent
               final Object nestedObject = field.get(obj);

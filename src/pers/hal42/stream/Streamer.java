@@ -30,7 +30,7 @@ public class Streamer implements Runnable {
   static final int DONE = 1;
   static final int ERRORED = 2;
   private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Streamer.class, LogLevelEnum.WARNING);
-  //@todo code in swapStreams make DEFAULTBUFFERSIZE be an absolute max!!!
+  //todo:1 code in swapStreams make DEFAULTBUFFERSIZE be an absolute max!!!
   private static final int DEFAULTBUFFERSIZE = 10000;
   private static final int MAXBUFFERSIZE = 100000;
   //need to distinguish threads while debugging:

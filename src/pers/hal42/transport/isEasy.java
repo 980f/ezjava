@@ -15,6 +15,4 @@ another option at that time is to have 'beforeSave()' and 'afterLoad()' members 
 
 any isEasy class that needs to combine info from its fields must either always do that dynamically, or have another class that uses an easy class to do such work.
 
-TODO: replace with annotations
-
 */

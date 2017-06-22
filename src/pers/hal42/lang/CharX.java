@@ -1,11 +1,11 @@
 package pers.hal42.lang;
 
 /**
- * todo: rest of Char.cpp
+ * todo:2 rest of Char.cpp
  */
 
 public class CharX {
-  public static final char INVALIDCHAR = '\uFFFF';//todo:2 unicode can be more than 16 bits
+  public static final char INVALIDCHAR = '\uFFFF';//todo:2 unicode can be more than 16 bits, java is behind the times on this.
   /**
    * left - right pairs.
    * the &; pair is for html escapes.

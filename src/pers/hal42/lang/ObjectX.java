@@ -26,7 +26,7 @@ public class ObjectX {
    */
   public static <T extends Comparable<T>> int linearSearch(T[] a, T key) {
     for (int i = a.length; i-- > 0; ) {
-      int cmp = a[i].compareTo(key);//todo: apply random object compare funciton.
+      int cmp = a[i].compareTo(key);
       if (cmp < 0) {
         //noinspection UnnecessaryContinue
         continue;

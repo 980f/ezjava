@@ -26,7 +26,11 @@ public class Blobber implements java.sql.Blob {
 
   @Override
   public byte[] getBytes(long pos, int length) throws SQLException {
-    //todo: guard args and if not equal to this then create new byte[]
+    if (pos != 0 || length < content.length) {
+      byte[] noob = new byte[length];
+      System.arraycopy(content, (int) pos, noob, 0, length);
+      return noob;
+    }
     return content;
   }
 
@@ -37,16 +41,24 @@ public class Blobber implements java.sql.Blob {
 
   @Override
   public long position(byte[] pattern, long start) throws SQLException {
+    //todo:1 implement this 'indexOf'
     return -1;
   }
 
   @Override
   public long position(Blob pattern, long start) throws SQLException {
+    //todo:1 implement this 'indexOf'
     return -1;
   }
 
   @Override
   public int setBytes(long pos, byte[] bytes) throws SQLException {
+    if (content != null) {
+      if (pos < content.length) {
+        long overlap = Math.min(bytes.length, content.length - pos);
+        System.arraycopy(bytes, 0, content, (int) pos, (int) overlap);
+      }
+    }
     return 0;
   }
 

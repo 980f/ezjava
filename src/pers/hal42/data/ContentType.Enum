@@ -1,4 +1,4 @@
-/* $Id: ContentType.Enum,v 1.1 2000/11/21 03:03:06 andyh Exp $ */
+
 arbitrary
 purealpha
 alphanum
@@ -15,4 +15,4 @@ time    //
 zulutime //
 select  //for menu picks
 unknown //--- to get a compile while I get around to fixing table
-//$Id: ContentType.Enum,v 1.1 2000/11/21 03:03:06 andyh Exp $
+

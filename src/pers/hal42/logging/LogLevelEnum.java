@@ -18,6 +18,16 @@ public enum LogLevelEnum {
     this.level = level;
   }
 
+  /** all lle's have a level, but not all levels have an lle */
+  public static String asString(int level) {
+    for (LogLevelEnum lle : values()) {
+      if (lle.level == level) {
+        return lle.toString();
+      }
+    }
+    return Integer.toString(level);
+  }
+
   /**
    * @ return integer value of @param image, if it isn't a known enum value then see if it is the image of a number
    */

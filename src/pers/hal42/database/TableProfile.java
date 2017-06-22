@@ -50,7 +50,7 @@ public class TableProfile implements Comparable<TableProfile> {
   }
 
   public String fullname() {
-    //todo: make it a child of a database object to pick up the schema name
+    //todo:1 make it a child of a database object to pick up the schema name
     return name();
   }
 

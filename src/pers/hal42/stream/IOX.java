@@ -34,7 +34,7 @@ public class IOX {
   }
 
   private static boolean createDir(Path parent) {
-    return createDir(parent.toString());//todo: find Path implementation for this.
+    return createDir(parent.toString());//todo:1 find Path implementation for this.
   }
 
   public static File[] listFiles(File dir) {
@@ -194,7 +194,7 @@ public class IOX {
    *                     eg: createUniqueFilename("c:\temp", "myfile", ".txt") = c:\temp\myfile987654321.txt"
    */
   public static String createUniqueFilename(String pathedPrefix, String suffix) {
-    //todo: needs mutex, also java.nio has this functionality so proxy to that.
+    //todo:0 needs mutex, also java.nio has this functionality so proxy to that.
     for (int attempts = 20; attempts-- > 0; ) {
       String filename = pathedPrefix + DateX.timeStampNow() + suffix;
       File file = new File(filename);
@@ -271,7 +271,6 @@ public class IOX {
 
   /**
    * @return reader that can read whole lines from a file
-   * todo: return a reader that passes back error messages instead of returning null.
    */
   public static BufferedReader FileLineReader(File file) {
     try {

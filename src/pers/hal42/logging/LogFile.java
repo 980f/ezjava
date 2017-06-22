@@ -12,7 +12,6 @@ import pers.hal42.util.PrintFork;
 
 import java.io.*;
 import java.util.Calendar;
-import java.util.ConcurrentModificationException;
 import java.util.Vector;
 
 import static java.util.Collections.sort;
@@ -363,12 +362,10 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
       sort(v);
       sortedList = new LogFile[v.size()];
       v.toArray(sortedList);
-    } catch (ConcurrentModificationException cme) {
-      ErrorLogStream.Global().Caught(cme);
+      return sortedList;
     } catch (Exception e) {
       ErrorLogStream.Global().Caught(e);
-    } finally {
-      return sortedList;   //todo:0 multireturn
+      return sortedList;
     }
   }
 

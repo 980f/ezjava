@@ -4,7 +4,7 @@ import pers.hal42.lang.StringX;
 
 /**
  * Value class to hold a password.
- * todo:0 replace String with byte[] and write over it as part of Clear. Also a finalizer should erase the data although with java that delay/uncertainty keeps us from doing as good a job of that as we'd like
+ * todo:1 replace String with byte[] and write over it as part of Clear. Also a finalizer should erase the data although with java that delay/uncertainty keeps us from doing as good a job of that as we'd like
  */
 
 public class PasscodeValue extends Value {

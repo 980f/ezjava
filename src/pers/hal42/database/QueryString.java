@@ -746,7 +746,7 @@ public class QueryString {
 
   /** bridge for using old stuff wiht new builder technique */
   public static QueryString Wrap(String fullquery){
-    return new QueryString(fullquery);//todo: additional method to idiot check like for terminating semi
+    return new QueryString(fullquery);//todo:2 additional method to idiot check like for terminating semi
   }
   public static QueryString Select(QueryString first) {
     return Select().cat(first);
