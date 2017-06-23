@@ -772,13 +772,22 @@ public class Storable {
     }
   }
 
-  public static class Node {
-    protected Storable node;
+  /** bind a node to an object */
+  public static class Nodal<T> {
+    public Storable node;
+    public T item;
+    public Rules r;
 
-    /** usage: super(node);  field.setDefault(value); */
-    protected Node(Storable node) {
+    /**  */
+    public Nodal(Storable node, T obj) {
       this.node = node;
-      node.applyTo(this, Storable.Rules.Fast);
+      this.item = obj;
+      r = Rules.Master;
+      node.applyTo(item, r);
+    }
+
+    public void update() {
+      node.apply(item, r);
     }
   }
 }

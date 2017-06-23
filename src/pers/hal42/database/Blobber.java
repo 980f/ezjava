@@ -25,10 +25,10 @@ public class Blobber implements java.sql.Blob {
   }
 
   @Override
-  public byte[] getBytes(long pos, int length) throws SQLException {
-    if (pos != 0 || length < content.length) {
+  public byte[] getBytes(long onebased, int length) throws SQLException {
+    if (onebased != 1 || length < content.length) {
       byte[] noob = new byte[length];
-      System.arraycopy(content, (int) pos, noob, 0, length);
+      System.arraycopy(content, (int) (onebased - 1), noob, 0, length);
       return noob;
     }
     return content;

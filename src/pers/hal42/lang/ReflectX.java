@@ -31,11 +31,20 @@ public class ReflectX {
   }
 
   /** @returns whether @param claz implements @param probate */
-  public static boolean isImplementorOf(Class claz, Class probate) {
+  public static boolean isImplementorOf(Class probate, Class claz) {
     if (claz != null && probate != null) {
-      Class supported[] = claz.getInterfaces();
-      for (int i = supported.length; i-- > 0; ) {
-        if (supported[i] == probate) {
+      if (claz.equals(probate)) {
+        return true; //frequent case
+      }
+      //if probate is an extension of claz
+      for (Class it : probate.getDeclaredClasses()) {
+        if (it.equals(claz)) {
+          return true;
+        }
+      }
+      //if probate implements an interface
+      for (Class it : probate.getInterfaces()) {
+        if (it.equals(claz)) {
           return true;
         }
       }
