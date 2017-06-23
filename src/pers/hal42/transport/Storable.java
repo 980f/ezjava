@@ -50,6 +50,7 @@ public class Storable {
     Textual,
     Wad
   }
+
   Origin origin = Ether;
   String image = "";
   double value;
@@ -768,6 +769,16 @@ public class Storable {
       this.narrow = narrow;
       this.aggressive = aggressive;
       this.create = create;
+    }
+  }
+
+  public static class Node {
+    protected Storable node;
+
+    /** usage: super(node);  field.setDefault(value); */
+    protected Node(Storable node) {
+      this.node = node;
+      node.applyTo(this, Storable.Rules.Fast);
     }
   }
 }

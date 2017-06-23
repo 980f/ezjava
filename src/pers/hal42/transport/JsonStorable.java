@@ -59,13 +59,13 @@ public class JsonStorable extends PushedJSONParser {
 
   /** alter one member of the file */
   public static IOException patchFile(Path optsFile, String path, String image) {
-    Storable workspace=FromFile(optsFile);
-    if(workspace!=null){
-      Storable child=workspace.findChild(path,true);
+    Storable workspace = FromFile(optsFile);
+    if (workspace != null) {
+      Storable child = workspace.findChild(path, true);
       child.setValue(image);
       try {
         PrintStream ps = new PrintStream(new File(optsFile.toString()));
-        SaveOptions(workspace,ps,0);
+        SaveOptions(workspace, ps, 0);
         return null;
       } catch (FileNotFoundException e) {
         return e;
@@ -226,15 +226,23 @@ public class JsonStorable extends PushedJSONParser {
     return cache();
   }
 
+  /** if filename is reasonable return it */
   public static String Filenamer(Storable root, String filename) {
     if (root == null) {
       return null;
+    }
+    if (StringX.NonTrivial(filename)) {
+      if (filename.endsWith(".json")) {
+        return filename;
+      } else {
+        return filename + ".json";//because we run on windows and filetype must be encoded in the name.
+      }
     }
     Storable tagged = root.existingChild(filenameTag);
     if (tagged != null) {
       return tagged.getImage();
     }
-    return StringX.NonTrivial(root.name) ? root.name : filename;
+    return root.name;
   }
 
   /**
@@ -309,7 +317,7 @@ public class JsonStorable extends PushedJSONParser {
         break;
       case Boolean:
         printName(node);
-        ps.print(java.lang.Boolean.toString(node.getTruth()));//  node.getImage());
+        ps.print(java.lang.Boolean.toString(node.getTruth()));//todo:0 these are getting quoted, perhaps not recognized in a timely fashion as booleans.
         break;
       default:
       case Unclassified:
@@ -336,8 +344,8 @@ public class JsonStorable extends PushedJSONParser {
         printWad(node.wad);
         break;
       } /* switch */
-      int which=node.ordinal();
-      if (which>=0 && node.parent!=null && node.parent.numChildren()>which+1) {//not the last child of a wad, not the top level node.
+      int which = node.ordinal();
+      if (which >= 0 && node.parent != null && node.parent.numChildren() > which + 1) {//not the last child of a wad, not the top level node.
         ps.println(',');
       }
       return true;
@@ -352,8 +360,6 @@ public class JsonStorable extends PushedJSONParser {
       indent();
       ps.print('}');
     } /* printWad */
-
   }
-
 }
 
