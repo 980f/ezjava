@@ -593,13 +593,16 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   public static PrintFork stdLogging(String logName, boolean background, boolean overwrite) {
     PrintFork pf = null;
     PrintFork.SetAll(LogLevelEnum.VERBOSE);
+    pf = PrintFork.New("System.out", System.out, LogLevelEnum.WARNING.level, true);//always have a console logger.
     if (StringX.NonTrivial(logName)) {
       if (background) {
-        pf = PrintFork.New("System.out", System.out, LogLevelEnum.WARNING.level, true);
         fpf = new LogFile(logName, overwrite);
         pf = fpf.getPrintFork(logName, LogLevelEnum.VERBOSE, true);  //ancient lore had these not register themselves.
       } else {
         try {
+          if (!logName.endsWith(LogFile.DotLog)) {
+            logName = logName + LogFile.DotLog;
+          }
           pf = PrintFork.New("System.out", System.out, LogLevelEnum.VERBOSE.level, true);
           pf = PrintFork.New(logName, new PrintStream(new FileOutputStream(logName)));//simple logging, no roller etc.:
         } catch (Exception filennotfound) {

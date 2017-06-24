@@ -28,7 +28,7 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   private StringFIFO bafifo = new StringFIFO(); // for buffering output
   private String name = "";
   private PrintStream ps = null;
-  private String filename = null;
+  private String filebase = null;
   private String longFilename = null;
   private File file = null;
   private FileOutputStream fos = null;
@@ -45,15 +45,15 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   private static String defaultPath = DEFAULTPATH;
   public static final Accumulator writes = new Accumulator();
   public static final Accumulator writeTimes = new Accumulator();
+  public final static String DotLog = ".log";
   protected static final Monitor logFileMon = new Monitor(LogFile.class.getName() + "_PrintForkCreator");
-  private final static String DotLog = ".log";
   private static final Counter counter = new Counter();
   // static list stuff
   private static final WeakSet<LogFile> lflist = new WeakSet<>();
   private static final Monitor listMonitor = new Monitor(LogFile.class.getName() + "List");
 
   /**
-   * Note that the filename should be a prefix only (no path, no extension; eg: "sinet").
+   * Note that the filebase should be a prefix only (no path, no extension; eg: "sinet").
    * Any path, 'uniquifier' and the ".log" will be applied automatically
    * eg: passing it "myprogram" results in:
    * "/tmp/"+"myprogram" + (new Date()) + ".log"
@@ -66,7 +66,7 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
       filename = filename.substring(0, filename.length() - DotLog.length());
     }
 
-    this.filename = new File(defaultPath, filename).getAbsolutePath();
+    this.filebase = new File(defaultPath, filename).getAbsolutePath();
     this.overwrite = overwrite;
     this.maxFileLength = maxFileLength;
     this.perDay = perDay;
@@ -133,11 +133,11 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   }
 
   public PrintFork getPrintFork(LogLevelEnum defaultLevel) {
-    return getPrintFork(filename, defaultLevel);
+    return getPrintFork(filebase, defaultLevel);
   }
 
   public PrintFork getPrintFork(int defaultLevel) {
-    return getPrintFork(filename, defaultLevel);
+    return getPrintFork(filebase, defaultLevel);
   }
 
   public PrintFork getPrintFork(String name) {
@@ -168,11 +168,11 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   }
 
   public PrintFork getPrintFork(int defaultLevel, boolean register) {
-    return getPrintFork(filename, defaultLevel, register);
+    return getPrintFork(filebase, defaultLevel, register);
   }
 
   public PrintFork getPrintFork(LogLevelEnum defaultLevel, boolean register) {
-    return getPrintFork(filename, defaultLevel.level, register);
+    return getPrintFork(filebase, defaultLevel.level, register);
   }
 
   public void flush() {
@@ -275,17 +275,17 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
         Thread.interrupted(); // clears interrupted bits
       }
     }
-    backupStream.println("LogFile:" + filename + " leaving run loop (keepRunning=" + keepRunning + ").");
+    backupStream.println("LogFile:" + filebase + " leaving run loop (keepRunning=" + keepRunning + ").");
   }
 
   protected void beOpen() throws FileNotFoundException {
     if (file == null) {
       day = Calendar.getInstance().get(Calendar.DAY_OF_YEAR);
-      longFilename = filename + DotLog;
+      longFilename = filebase + DotLog;
       if (!overwrite) {
         file = new File(longFilename);
         if (file.exists()) {
-          String newFilename = filename + DateX.timeStampNow() + DotLog;
+          String newFilename = filebase + DateX.timeStampNow() + DotLog;
           if (file.renameTo(new File(newFilename))) {
             list.add(FileZipper.backgroundZipFile(newFilename));
           }
@@ -343,7 +343,7 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
       pw.flush();
       fos.flush();
     } catch (Exception e) {
-      backupStream.println("Exception flushing/flushing (pw" + (pw == null ? "=" : "!") + "=null) for '" + filename + "': " + e);
+      backupStream.println("Exception flushing/flushing (pw" + (pw == null ? "=" : "!") + "=null) for '" + filebase + "': " + e);
       e.printStackTrace(backupStream);
     } finally {
       writeTimes.add(sw.Stop());  // counts how long each flush takes
