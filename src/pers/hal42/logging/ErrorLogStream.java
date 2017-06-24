@@ -22,12 +22,12 @@ import java.util.Vector;
 
 import static pers.hal42.logging.LogLevelEnum.*;
 
-/** conditional printing of messages.
+/**
+ * conditional printing of messages.
  * See PrintFork for where the messages are sent.
- *
+ * <p>
  * WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
  * this was done to improve efficiency the rest of the time.
- *
  */
 public class ErrorLogStream implements AtExit, AutoCloseable {
 
@@ -46,6 +46,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
       return "User requested stack trace, not a real exception";
     }
   }
+
   public boolean bare = false; //+_+ made a state to expedite big change.
   //public
   protected LogSwitch myLevel = null;
@@ -59,7 +60,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   protected String ActiveMethod = "?"; //cached top of context stack
   public static LogFile fpf = null; //just  so that we can close the file explicitly on program exit.
   private static LogSwitch DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
-// for the embedded exceptions
+  // for the embedded exceptions
   private static Tracer Debug; // use Global() to get it!
   private static NullBugger bitbucket;
 
@@ -594,12 +595,13 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     PrintFork.SetAll(LogLevelEnum.VERBOSE);
     if (StringX.NonTrivial(logName)) {
       if (background) {
+        pf = PrintFork.New("System.out", System.out, LogLevelEnum.WARNING.level, true);
         fpf = new LogFile(logName, overwrite);
         pf = fpf.getPrintFork(logName, LogLevelEnum.VERBOSE, true);  //ancient lore had these not register themselves.
       } else {
         try {
           pf = PrintFork.New("System.out", System.out, LogLevelEnum.VERBOSE.level, true);
-          pf = PrintFork.New(logName, new PrintStream(new FileOutputStream(logName)));
+          pf = PrintFork.New(logName, new PrintStream(new FileOutputStream(logName)));//simple logging, no roller etc.:
         } catch (Exception filennotfound) {
           //??? who cares
         }

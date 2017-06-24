@@ -24,6 +24,7 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   public long queueMaxageMS = DEFAULTMAXQUEUELENGTH;
   public boolean flushHint = false;
   protected PrintFork pf = null;
+  private int day = -1;
   private StringFIFO bafifo = new StringFIFO(); // for buffering output
   private String name = "";
   private PrintStream ps = null;
@@ -41,14 +42,15 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   public static final long DEFAULTMAXFILELENGTH = 1048576L * 10L; /* 10 MB */
   public static final long DEFAULTMAXQUEUELENGTH = 5000; /* 5 secs */
   public static final String DEFAULTPATH = OS.TempRoot();
+  private static String defaultPath = DEFAULTPATH;
   public static final Accumulator writes = new Accumulator();
   public static final Accumulator writeTimes = new Accumulator();
   protected static final Monitor logFileMon = new Monitor(LogFile.class.getName() + "_PrintForkCreator");
+  private final static String DotLog = ".log";
   private static final Counter counter = new Counter();
   // static list stuff
   private static final WeakSet<LogFile> lflist = new WeakSet<>();
   private static final Monitor listMonitor = new Monitor(LogFile.class.getName() + "List");
-  private static String defaultPath = DEFAULTPATH;
 
   /**
    * Note that the filename should be a prefix only (no path, no extension; eg: "sinet").
@@ -60,8 +62,8 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
     super(LogFile.class.getName() + "_" + counter.incr());
     ps = bafifo.getPrintStream();
 
-    if (filename.endsWith(".log")) {//check for debug
-      filename = filename.substring(0, filename.lastIndexOf(".log"));
+    if (filename.endsWith(DotLog)) {
+      filename = filename.substring(0, filename.length() - DotLog.length());
     }
 
     this.filename = new File(defaultPath, filename).getAbsolutePath();
@@ -73,6 +75,11 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
       this.backupStream = backupPrintStream;
     }
     reader = bafifo.getBufferedReader();
+    try {
+      beOpen();//close timing hole between invoking start() and first lines logged.
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();//can't use ErrorLogStream, too semi-circular (it is not fully initialized when we get here)
+    }
     register(this);
     setDaemon(true);
     //todo:00 Main.OnExit(this);
@@ -150,9 +157,8 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
       if (pf == null) {
         pf = new LogFilePrintFork(name, getPrintStream(), defaultLevel, register);
       }
+      return pf;
     } catch (Exception e) {
-      // ??? +++
-    } finally {
       return pf;
     }
   }
@@ -211,35 +217,20 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
 
   public void run() {
     keepRunning = true;
-    int day = -1;
     setPriority(Thread.MIN_PRIORITY);
     while (keepRunning) {
       try {
-        // these next few lines were at the bottom, but need to be here
         Thread.yield();
         ThreadX.sleepFor(10);  // --- testing to be sure that we give the OS time to do its stuff
         // check to see if the hour just rolled over or if the file length is too long
         compCal.setTime(DateX.Now());
+        //noinspection MagicConstant   //intellij bug, DayOfYear is not a day of the week.
         if ((file != null) && ((file.length() > maxFileLength) || (perDay && (compCal.get(Calendar.DAY_OF_YEAR) != day)))) {
           close();
         }
         try {
           // if the file isn't opened, open it
-          if (file == null) {
-            day = Calendar.getInstance().get(Calendar.DAY_OF_YEAR);
-            longFilename = filename + ".log"; // +++ put ".log" somewhere where we can set it per-log
-            if (!overwrite) {
-              file = new File(longFilename);
-              if (file.exists()) {
-                String newFilename = filename + DateX.timeStampNow() + ".log"; // +++ put ".log" somewhere where we can set it per-log
-                if (file.renameTo(new File(newFilename))) {
-                  list.add(FileZipper.backgroundZipFile(newFilename));
-                }
-              }
-            }
-            fos = new FileOutputStream(longFilename, !overwrite);
-            pw = new PrintWriter(fos);
-          }
+          beOpen();
         } catch (Exception e) {
           backupStream.println("Exception opening log file: " + e);
         }
@@ -285,6 +276,24 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
       }
     }
     backupStream.println("LogFile:" + filename + " leaving run loop (keepRunning=" + keepRunning + ").");
+  }
+
+  protected void beOpen() throws FileNotFoundException {
+    if (file == null) {
+      day = Calendar.getInstance().get(Calendar.DAY_OF_YEAR);
+      longFilename = filename + DotLog;
+      if (!overwrite) {
+        file = new File(longFilename);
+        if (file.exists()) {
+          String newFilename = filename + DateX.timeStampNow() + DotLog;
+          if (file.renameTo(new File(newFilename))) {
+            list.add(FileZipper.backgroundZipFile(newFilename));
+          }
+        }
+      }
+      fos = new FileOutputStream(longFilename, !overwrite);
+      pw = new PrintWriter(fos);
+    }
   }
 
   private void close() {
@@ -432,16 +441,21 @@ class FileZipperList extends Vector<FileZipper> {
 class LogFilePrintFork extends PrintFork {
   public LogFilePrintFork(String name, PrintStream primary, int startLevel, boolean register) {
     super(name, primary, startLevel, register);
+    onStart();
   }
-
   public LogFilePrintFork(String name, PrintStream primary, int startLevel) {
     super(name, primary, startLevel);
+    onStart();
   }
 
   public LogFilePrintFork(String name, PrintStream primary) {
     super(name, primary);
+    onStart();
   }
 
+  void onStart() {
+
+  }
 
   public void println(String s, int printLevel) {
     if (!registered) { //  if it is registered, it will be getting the header already.
