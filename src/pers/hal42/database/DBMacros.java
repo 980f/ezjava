@@ -105,23 +105,23 @@ public class DBMacros extends GenericDB {
     return ezc;
   }
 
-//  public TextList getTextListColumnFromRS(ResultSet rs) {
-//    return getTextListColumnFromRS(rs, ONLYCOLUMN);
-//  }
-//
-//  public TextList getTextListColumnFromRS(ResultSet rs, int col) {
-//    TextList tl = new TextList(50, 50);
-//    if(col < 1) {
-//      col = 1;
-//    }
-//    while(next(rs)) {
-//      String tmp = getStringFromRS(col, rs);
+  public TextList getTextListColumnFromRS(ResultSet rs) {
+    return getTextListColumnFromRS(rs, ONLYCOLUMN);
+  }
+
+  public TextList getTextListColumnFromRS(ResultSet rs, int col) {
+    TextList tl = new TextList(50, 50);
+    if (col < 1) {
+      col = 1;
+    }
+    while (next(rs)) {
+      String tmp = getStringFromRS(col, rs);
 //      dbg.WARNING("adding "+tmp);
-//      tl.add(tmp);
-//    }
+      tl.add(tmp);
+    }
 //    dbg.WARNING("returning: " + tl);
-//    return tl;
-//  }
+    return tl;
+  }
 
   public final EasyProperties rowsToProperties(QueryString qs, String nameColName, String valueColName) {
     EasyProperties ezc = new EasyProperties();
@@ -1126,18 +1126,17 @@ public class DBMacros extends GenericDB {
 
   protected final int validateAddField(ColumnProfile column) {
     String functionName = "validateAddField(fromProfile)";
-    int success = FAILED;
     try (AutoCloseable pop = dbv.Push(functionName)) {
       dbv.mark("Add field " + column.fullName());
       if (!fieldExists(column.tq(), column.name())) {
         boolean did = addField(column);
-        success = (did ? DONE : FAILED);
+        int success = (did ? DONE : FAILED);
         dbv.ERROR((did ? "Added" : "!! COULD NOT ADD") + " field " + column.fullName());
+        return success;
       } else {
-        success = ALREADY;
         dbv.ERROR("Field " + column.fullName() + " already added.");
+        return ALREADY;
       }
-      return success;
     } catch (Exception e) {
       dbv.Caught(e);
       return FAILED;

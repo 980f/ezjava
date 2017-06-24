@@ -649,6 +649,32 @@ public class TextList {
     }
   }
 
+  public StringIterator iterator() {
+
+    return new StringIterator() {
+      int pointer = 0;
+
+      @Override
+      public boolean hasNext() {
+        return pointer < storage.size();
+      }
+
+      /**
+       * @returns null if hasNext() returned false;
+       */
+      @Override
+      public String next() {
+        return storage.get(pointer++);
+      }
+
+      /** makes hasNext() return false, frees and resources */
+      @Override
+      public void discard() {
+        pointer = storage.size();
+      }
+    };
+  }
+
   public static String safe(String o) {
     return StringX.TrivialDefault(o, ""); //# DO NOT USE StringX.OnTrivial: It turns "" into " ", which is NOT what we need here.
   }
