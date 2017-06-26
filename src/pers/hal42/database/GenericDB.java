@@ -10,9 +10,6 @@ import java.sql.*;
 
 public class GenericDB {
 
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(GenericDB.class);
-  private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
-  private static final Counter metaDataCounter = new Counter();
   private final Monitor connMonitor;
   /**
    * whether conn is not null and is likely usable. clear this if the non-null connection gave you trouble.
@@ -22,7 +19,6 @@ public class GenericDB {
    * replaced pool with a regenerator
    */
   protected DBConn dbConnector;
-
   //  protected boolean validated() {
 //    return (cpool != null) && cpool.validated;
 //  }
@@ -63,6 +59,9 @@ public class GenericDB {
    * last fetched metadata
    */
   private DatabaseMetaData dbmd; // saved for debug
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(GenericDB.class);
+  private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
+  private static final Counter metaDataCounter = new Counter();
 
   public GenericDB(DBConnInfo connInfo, String threadname) {
     connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
@@ -107,7 +106,7 @@ public class GenericDB {
     try (AutoCloseable pop = dbg.Push("getDatabaseMetadata")) {
       Connection mycon = getConnection();
       if (mycon != null) {
-        try (AutoCloseable monitor = connMonitor.getMonitor()) {
+        try (AutoCloseable freer = connMonitor.getMonitor()) {
           dbg.VERBOSE("Calling Connection.getMetaData() ...");
           dbmd = mycon.getMetaData();
           return dbmd;
@@ -129,7 +128,7 @@ public class GenericDB {
 
   public final Connection getConnection() {
 
-    try (AutoCloseable monitor = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
+    try (AutoCloseable freer = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
       if (!connectOk && conn != null) {
         releaseConn();
       }
