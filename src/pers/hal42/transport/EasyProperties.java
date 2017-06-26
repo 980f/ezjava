@@ -516,7 +516,6 @@ public class EasyProperties extends Properties {
   }
 
   public void storeSorted(OutputStream out, String header) throws IOException {
-    // +++ convert this into a line sorter that happens on closing the stream
     StringBuilder buffer = new StringBuilder();
     StringWriter writer = new StringWriter();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
