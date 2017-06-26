@@ -429,11 +429,7 @@ class FileZipperList extends Vector<FileZipper> {
   }
 
   public int cleanup() {
-    forEach((fz) -> {
-      if (fz.IsDown()) {
-        remove(fz);
-      }
-    });
+    removeIf(FileZipper::IsDown);
     return size();
   }
 }

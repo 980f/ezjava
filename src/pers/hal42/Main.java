@@ -31,14 +31,14 @@ public class Main {
   //add a Properties from command line args. execute inside stdStart
   protected EasyCursor stdProperties;
   protected TextList freeArgs = new TextList(); //args that are not in property syntax
-  public static final String logcontrolName = "logcontrol.properties";
-  public static final String buflogkey = "paymate.bufLog";
-  public static final String overlogkey = "paymate.overLog";
-  static final Vector<AtExit> exiters = new Vector<>();
   public static Main Application = null;
   private static ErrorLogStream dbg;
   private static boolean keepAlive = true;
   private static Thread toKeepAlive = null;
+  public static final String logcontrolName = "logcontrol.properties";
+  public static final String buflogkey = "paymate.bufLog";
+  public static final String overlogkey = "paymate.overLog";
+  static final Vector<AtExit> exiters = new Vector<>();
 
   public Main(Class mained) {
     if (dbg == null) {

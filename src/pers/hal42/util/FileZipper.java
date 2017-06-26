@@ -49,10 +49,9 @@ public class FileZipper extends Thread implements AtExit {
   }
 
   public void run() {
-    try {
+    try {//todo:1 try-with-resources
       // calculate the output filename
       outFilename = inFilename + ".gz";
-      // open the input file
       File inputFile = new File(inFilename);
       FileInputStream fis = new FileInputStream(inputFile);
       // open the output file
@@ -70,14 +69,15 @@ public class FileZipper extends Thread implements AtExit {
       fis = null;
       // now cleanup can handle those streams
       // delete the original file
-      inputFile.delete(); // +++ check return value
+      if (!inputFile.delete()) {
+        dbg.WARNING("FileZipper didn't actually delete {0}", inputFile);
+      }
       // so mark it waiter
       done = true;
     } catch (Exception e) {
-      String err = "Exception zipping a file: " + e;
+      String err = "Zipping a file caused: " + e;
       errors.add(err);
-      dbg.ERROR(err);
-      dbg.Caught(e);
+      dbg.Caught(e, err);
     } finally {
       done = true;
     }
