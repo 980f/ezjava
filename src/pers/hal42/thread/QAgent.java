@@ -4,13 +4,18 @@ package pers.hal42.thread;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.timer.Ticks;
 
+import java.text.MessageFormat;
 import java.util.Comparator;
+
+import static java.text.MessageFormat.format;
 
 /**
  * Message Queue processor component
  */
 public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   protected final PrioritizedQueue<Qtype> fifo;//accessible for input filtering based upon present content
+  private final String myname;
+  private final Waiter waitingForInput;
   protected Thread thread;
   /** this entity receives things that are put into the queue, one at a time.*/
   private QActor<Qtype> actor;
@@ -19,12 +24,10 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   private boolean amStopped = true;
   private boolean killed = false; //need class cleanThread
   private boolean paused = false;
-  private final String myname;
-  private final Waiter waitingForInput;
   /** if the queue is empty then this object (if not null) is passed to the actor */
   private Qtype idleObject = null;
-  private static final long failsafeKeepAlive = Ticks.forSeconds(0.01);// a zero keepalive is heinous
   private static ErrorLogStream classdbg;
+  private static final long failsafeKeepAlive = Ticks.forSeconds(0.01);// a zero keepalive is heinous
 
   /**
    * @param threadname     used solely for debugging
@@ -106,12 +109,12 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
           } else {
             Qtype todo = fifo.next();
             if (todo != null) {
-              dbg.VERBOSE(myname + " about to runone");
+              dbg.VERBOSE(format("{0} about to runone", myname));
               actor.runone(todo);
             } else { //wait awhile to keep from sucking up processor cycles
               if (waitingForInput.run() == Waiter.State.Timedout) {//if we wait for a full idle period then
                 if (idleObject != null) {//indicate we have been idle
-                  dbg.VERBOSE(myname + " about to run idle object");
+                  dbg.VERBOSE(format("{0} about to run idle object", myname));
                   todo = idleObject;//record idleObject as active element for debug
                   actor.runone(todo);
                 }
@@ -142,6 +145,11 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
     waitingForInput.Stop();
   }
 
+  @Override
+  public String toString() {
+    return myname;
+  }
+
   public synchronized void Start() {
     if (amStopped) {
       fifo.Clear();
@@ -149,7 +157,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
         dbg.ERROR("start thread:" + thread.getName());
         thread.start(); // !!! --- can't start this thread if it was ever run before !!!
       } catch (IllegalThreadStateException ignore) {
-        dbg.WARNING("QAgent.Start():" + String.valueOf(ignore));
+        dbg.WARNING(MessageFormat.format("QAgent.Start():{0}", ignore));
       }
     } else {
       dbg.VERBOSE("gratuitous attempt to start a running agent");
