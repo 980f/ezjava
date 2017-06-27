@@ -25,7 +25,7 @@ public class DBConn {
       }
       dbConnection = null;
     }
-    try (AutoCloseable pop=dbg.Push("Connect to Database")){
+    try (ErrorLogStream pop = dbg.Push("Connect to Database")) {
 
       Properties loginProperties = new java.util.Properties();
       loginProperties.put("user", connInfo.username);
@@ -34,10 +34,9 @@ public class DBConn {
       dbg.VERBOSE("Attempting connection to: {0}", url );
       dbConnection = DriverManager.getConnection(url, loginProperties);
       dbConnection.setAutoCommit(connInfo.autoCommit);
-    } catch (Exception e) {
+    } catch (SQLException e) {
       dbConnection = null;
       dbg.ERROR("Couldn''t connect to datasource {0}  via user: {1} reason: {2}",  url,connInfo.username,e.getMessage() );
-//      dbg.Caught(e);
     }
     return dbConnection;
   }

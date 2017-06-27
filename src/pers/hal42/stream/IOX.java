@@ -114,6 +114,22 @@ public class IOX {
     }
   }
 
+  /**
+   * close, stifle all errors. Flush first if object supports flushing
+   *
+   * @returns whether there were no errors, usually ignored.
+   */
+  public static <T extends AutoCloseable> boolean Close(T closeable) {
+    try {
+      if (closeable instanceof Flushable) {
+        ((Flushable) closeable).flush();
+      }
+      closeable.close();
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
 
   /**
    * returns true if dir now exists

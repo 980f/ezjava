@@ -184,24 +184,73 @@ class AlarmList {
 // the following is a singleton ONLY
 
 public class Alarmer implements Runnable {
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Alarmer.class, LogLevelEnum.OFF);
-  static Alarmer my;//the default Alarm manager
-
-  static {
-    setMy();
-  }
-
   public boolean kill = false;
   Thread thread;
   int priority;
   AlarmList active;
   boolean paused = false; //for clock update
+  static Alarmer my;//the default Alarm manager
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Alarmer.class, LogLevelEnum.OFF);
+
+  static {
+    setMy();
+  }
 
   private Alarmer() {//only one instance allowed at present.
     thread = new Thread(this, "PM.Alarmer");
     thread.setDaemon(true);
     priority = Thread.NORM_PRIORITY;//-1;
     active = new AlarmList(dbg);
+  }
+
+  /**
+   * seems to startup already interrupted. I.e. first sleep doesn't sleep. Ok but curious.
+   */
+  public void run() {
+    dbg.WARNING("RUNNING");
+    kill = false;
+    while (!kill) {
+      try {
+        long nexttime = active.soonest();
+        if (paused || nexttime == 0) {
+          dbg.WARNING("no alarms, sleeping for along time");
+          ThreadX.sleepFor(100000);//just a little safer than 'forever'
+        } else {
+          long interval = nexttime - DateX.utcNow();//convert to timedifference
+          if (interval > 0) {
+            dbg.WARNING("next check at " + DateX.timeStamp(nexttime) + " Sleeping for " + interval);
+            ThreadX.sleepFor(interval);
+          }
+        }
+        if (!paused) {
+          dbg.WARNING("check alarms");
+          //ignore why we quit sleeping, try to do some alarms NOW
+          doRingers(active.ringers(DateX.utcNow()));
+        }
+      } catch (Throwable ex) {
+        dbg.Caught(ex, "Unexpected exception:");
+//        continue;
+      }
+    }
+  }
+
+  private void check() {
+    thread.interrupt();
+  }
+
+  private Alarmum getState(Alarmum alarm) {
+    return active.info(alarm);
+  }
+
+  private TextList dump(TextList spam) {
+    if (spam == null) {
+      spam = new TextList();
+    }
+    return my.active.toSpam(spam);
+  }
+
+  private EasyProperties ezpDump() {
+    return my.active.toEzpSpam();
   }
 
   private static void setMy() {
@@ -272,14 +321,12 @@ public class Alarmer implements Runnable {
   public static Alarmum reset(int fuse, Alarmum alarm) {
     Defuse(alarm);
 
-    try (AutoCloseable pop=dbg.Push("NewAlarm")){
+    try (ErrorLogStream pop = dbg.Push("NewAlarm")) {
       if (alarm != null) {
         return Set(alarm.refuse(fuse)); //to provide access so that it can be defused.
       } else {
         return null;
       }
-    } catch (Exception e) {//won't happen
-      return null;
     }
   }
 
@@ -293,56 +340,6 @@ public class Alarmer implements Runnable {
 
   public static void dump(ErrorLogStream els, int importance) {
 //debugger construction loop    els.rawMessage(importance,dump().asParagraph());
-  }
-
-  /**
-   * seems to startup already interrupted. I.e. first sleep doesn't sleep. Ok but curious.
-   */
-  public void run() {
-    dbg.WARNING("RUNNING");
-    kill = false;
-    while (!kill) {
-      try {
-        long nexttime = active.soonest();
-        if (paused || nexttime == 0) {
-          dbg.WARNING("no alarms, sleeping for along time");
-          ThreadX.sleepFor(100000);//just a little safer than 'forever'
-        } else {
-          long interval = nexttime - DateX.utcNow();//convert to timedifference
-          if (interval > 0) {
-            dbg.WARNING("next check at " + DateX.timeStamp(nexttime) + " Sleeping for " + interval);
-            ThreadX.sleepFor(interval);
-          }
-        }
-        if (!paused) {
-          dbg.WARNING("check alarms");
-          //ignore why we quit sleeping, try to do some alarms NOW
-          doRingers(active.ringers(DateX.utcNow()));
-        }
-      } catch (Throwable ex) {
-        dbg.Caught(ex, "Unexpected exception:");
-//        continue;
-      }
-    }
-  }
-
-  private void check() {
-    thread.interrupt();
-  }
-
-  private Alarmum getState(Alarmum alarm) {
-    return active.info(alarm);
-  }
-
-  private TextList dump(TextList spam) {
-    if (spam == null) {
-      spam = new TextList();
-    }
-    return my.active.toSpam(spam);
-  }
-
-  private EasyProperties ezpDump() {
-    return my.active.toEzpSpam();
   }
 
 }

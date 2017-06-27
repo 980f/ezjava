@@ -22,13 +22,17 @@ import pers.hal42.timer.StopWatch;
 import static pers.hal42.thread.Waiter.State.*;
 
 public class Waiter {
+  ////////////////////
+  public enum State {
+    Ready, Notified, Timedout, Interrupted, Excepted, Extending
+  }
   /**
    * waitOnMe, safe object to do actual thread wait's on.
    */
   private final Object waitOnMe = new Object();
+  public ErrorLogStream dbg;
   private long millisecs;
   private boolean allowInterrupt;
-  public ErrorLogStream dbg;
   private State state = Ready;
   /**
    * originally made a member instead of a local to reduce startup overhead in
@@ -36,17 +40,6 @@ public class Waiter {
    * after ignoring an interrupt conveniently also provides a response time
    */
   private StopWatch resleeper = new StopWatch();
-
-  /** time spent sleeping. */
-  public double seconds(){
-    return resleeper.seconds();
-  }
-  ////////////////////
-  public enum State {
-    Ready, Notified, Timedout, Interrupted, Excepted, Extending
-  }
-  ///////////////////
-
   /**
    * create a Waiter, with legal but useless configuration.
    *
@@ -57,6 +50,14 @@ public class Waiter {
       dbg = ErrorLogStream.Null();
     }
     prepare();
+  }
+  ///////////////////
+
+  /**
+   * time spent sleeping.
+   */
+  public double seconds() {
+    return resleeper.seconds();
   }
 
   /**
@@ -165,7 +166,7 @@ public class Waiter {
     synchronized (waitOnMe) {
 
       dbg.VERBOSE("waiter state is:" + this + " toat:" + millisecs);
-      try (AutoCloseable pop=dbg.Push("Wait")){
+      try (ErrorLogStream pop = dbg.Push("Wait")) {
         resleeper.Start(); //always a fresh start, no "lap time" on our stopwatches.
         if (state == Extending) {//allow for extending before starting.
           state = Ready;

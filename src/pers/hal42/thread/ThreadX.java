@@ -31,7 +31,7 @@ public class ThreadX {
     dbg = ErrorLogStream.NonNull(dbg);//avert NPE
     synchronized (obj) { // +++ in order to make code run faster, this synchronized *might* ought to be placed just around the obj.wait() line.
 
-      try (AutoCloseable pop = dbg.Push("waitOn")) {
+      try (ErrorLogStream pop = dbg.Push("waitOn")) {
         StopWatch resleeper = new StopWatch();//to shorten successive timeouts when we sleep again after an interrupt
         while (true) {
           try {
@@ -58,8 +58,6 @@ public class ThreadX {
             return true;
           }
         }
-      } catch (Exception ignored) {
-        return false;
       }
     }
   }
