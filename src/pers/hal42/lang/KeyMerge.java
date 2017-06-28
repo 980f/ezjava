@@ -10,7 +10,7 @@ import java.util.Map;
  */
 public class KeyMerge<T> {
   //since hashset uses a hashmap we might as well use one directly and gather width info.
-  Map<String, T> keys = new HashMap<>(2000);
+  public Map<String, T> keys = new HashMap<>(2000);
 
   public void merge(Map<String, T> more) {
     more.forEach((k, v) -> {
