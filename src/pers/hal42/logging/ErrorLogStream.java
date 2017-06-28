@@ -145,17 +145,17 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   }
 
   public void Message(int msgLevel, String message, Object... args) {
-    // strange errors in here need to be debugged with System.out
     //noinspection TryWithIdenticalCatches
     try {
       // broke this down to find the exact line that causes the error ...
       StringBuilder builder = new StringBuilder(200);
       if (!bare) {
         builder.append(DateX.timeStampNowYearless());
-        builder.append(LogSwitch.letter(msgLevel));
-        builder.append(Thread.currentThread());
-        builder.append("@").append(myLevel.Name());
-        builder.append("::").append(ActiveMethod).append(":");
+        builder.append(':').append(msgLevel);
+        builder.append(':').append(Thread.currentThread());
+        builder.append(':').append(myLevel.Name());
+        builder.append(":").append(ActiveMethod);
+        builder.append(":");
       }
       builder.append(MessageFormat.format(message, args));
       rawMessage(msgLevel, builder.toString());
@@ -175,16 +175,14 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     t.printStackTrace(System.out);
   }
 
-  /**
-   * three message levels are supported.
-   */
-  public void VERBOSE(String message) {
-    Message(VERBOSE, message);
-  }
 
-  public void ERROR(String message) {
-    Message(ERROR, message);
-  }
+//  public void VERBOSE(String message) {
+//    Message(VERBOSE, message);
+//  }
+//
+//  public void ERROR(String message) {
+//    Message(ERROR, message);
+//  }
 
   public void VERBOSE(String message, Object... clump) {
     Message(VERBOSE, message, clump);
@@ -193,10 +191,13 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   public void WARNING(String message, Object... clump) {
     Message(WARNING, message, clump);
   }
-//bareness should be stacked in parallel with name
 
   public void ERROR(String message, Object... clump) {
     Message(ERROR, message, clump);
+  }
+
+  public void FATAL(String message, Object... clump) {
+    Message(FATAL, message, clump);
   }
 
   /**
@@ -591,9 +592,8 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
    * @param background if true pushes out log information on a background thread, good for debug but bad for performance.
    */
   public static PrintFork stdLogging(String logName, boolean background, boolean overwrite) {
-    PrintFork pf = null;
     PrintFork.SetAll(LogLevelEnum.VERBOSE);
-    pf = PrintFork.New("System.out", System.out, LogLevelEnum.WARNING.level, true);//always have a console logger.
+    PrintFork pf = PrintFork.New("System.out", System.out, LogLevelEnum.WARNING.level, true);//always have a console logger.
     if (StringX.NonTrivial(logName)) {
       if (background) {
         fpf = new LogFile(logName, overwrite);
