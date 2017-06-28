@@ -1,17 +1,13 @@
 package pers.hal42.lang;
 
 import org.jetbrains.annotations.NotNull;
+import pers.hal42.stream.IOX;
 import pers.hal42.text.TextList;
 import pers.hal42.util.Executor;
 
 import java.io.File;
 
 public class OS {
-  public static final String EOL = System.getProperty("line.separator");
-  public static final String LOGPATHKEY = "logpath";
-  private static final String DATALOGS = "/data/logs"; /// constant for servers
-  private static final String SLASHTMP = "/tmp"; /// constant for appliances
-  public static String signature[];
   /**
    * this singlet  was public because we are too lazy to wrap the TrueEnum features such as Value().
    */
@@ -19,14 +15,13 @@ public class OS {
   ////////////////////////////////
   // smart questions
   private static String TEMPROOT = null;
+  public static final String EOL = System.getProperty("line.separator");
+  public static final String LOGPATHKEY = "logpath";
+  // can't create this dir, and logic fails to fall back on tmp private static final String DATALOGS = "/data/logs"; /// constant for servers
+  private static final String DATALOGS = "/tmp";
+  private static final String SLASHTMP = "/tmp"; /// constant for appliances
 
-  static {//with each OS we manipulate this list of names to recognize it
-    signature = new String[OsEnum.numValues()];
-    signature[OsEnum.Linux.ordinal()] = "Linux";//'none of the others' gets this
-    signature[OsEnum.NT.ordinal()] = "NT"; //bogus, haven't ever tried this on a true NT system
-    signature[OsEnum.Windows.ordinal()] = "Windows";
-    signature[OsEnum.SunOS.ordinal()] = "SunOS";
-  }
+
 
   // restore as needed:
 //  public static boolean isNT() {
@@ -44,7 +39,7 @@ public class OS {
     if (os == null) {
       String oser = System.getProperty("os.name", "");
       for (OsEnum guess : OsEnum.values()) {
-        if (signature[guess.ordinal()].startsWith(oser)) {
+        if (oser.startsWith(guess.toString())) {
           os = guess;
           return os;
         }
@@ -89,7 +84,7 @@ public class OS {
   // extra crap
 
   public static String OsName() {
-    return signature[os().ordinal()];
+    return os().toString();
   }
 
   public static boolean isLinux() {
@@ -97,7 +92,7 @@ public class OS {
   }
 
   public static boolean isWindows() {
-    return os() == OsEnum.Windows; // really just 9X
+    return os() == OsEnum.Windows;
   }
 
   //  public static boolean isSolaris() {
@@ -134,6 +129,7 @@ public class OS {
         }
       }
     }
+    IOX.createDir(TEMPROOT);//ensure it exists.
     return TEMPROOT;
   }
 
