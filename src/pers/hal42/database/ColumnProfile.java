@@ -61,7 +61,7 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
     return type.name();
   }
 
-  public ColumnType numericType() {
+  public ColumnType getType() {
     return type;
   }
 
@@ -145,16 +145,16 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
 
   private static int sizeForType(ColumnType type) {//todo:1 push into the enum.
     switch (type) {
-      case BOOL:
-        return BOOLLEN;
-      case TEXT:
-        return TEXTLEN;
+    case BOOL:
+      return BOOLLEN;
+//      case TEXT:
+//        return TEXTLEN;
     case INTEGER:
-        return INT4LEN;
-      case CHAR:
-        return CHARLEN;
-      default:
-        return 0;
+      return INT4LEN;
+    case CHAR:
+      return CHARLEN;
+    default:
+      return 0;
     }
   }
 

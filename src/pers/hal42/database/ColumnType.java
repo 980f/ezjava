@@ -1,28 +1,34 @@
 package pers.hal42.database;
 
+import java.sql.Types;
 import java.text.MessageFormat;
 
 public enum ColumnType {
-  DECIMAL(false),   //money
-  BIGINT(false), INTEGER(false),  //int4 seems to have been postgres specific.
-  SMALLINT(false), TINYINT(false), NUMERIC(false), BOOL(false), TIME(false),       //externally supplied time
-  TIMESTAMP(false),  //database generated time value
-  DATE(false), DATETIME(false), //  BYTE(false),
-  CHAR(false), SERIAL(false),     //mysql: "SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
-  TEXT(true),       //human readable tag, use varchar for content
-  VARCHAR(true), LONGVARCHAR(true),
+  DECIMAL(Types.DECIMAL, false),   //good for money
+  BIGINT(Types.BIGINT, false), INTEGER(Types.INTEGER, false),  //int4 seems to have been postgres specific.
+  SMALLINT(Types.SMALLINT, false), TINYINT(Types.TINYINT, false), NUMERIC(Types.NUMERIC, false), BOOL(Types.BOOLEAN, false), TIME(Types.TIME, false),       //externally supplied time
+  TIMESTAMP(Types.TIMESTAMP, false),  //database generated time value
+  DATE(Types.DATE, false), //  BYTE(Types.,false),
+  CHAR(Types.CHAR, false), //
+  SERIAL(Types.OTHER, false),     //mysql: "SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
+  //  TEXT(Types.VARCHAR,true),       //human readable tag, use varchar for content
+  VARCHAR(Types.VARCHAR, true), LONGVARCHAR(Types.LONGVARCHAR, true),
 
-  BIT(false), BLOB(false), CLOB(false),
+  BIT(Types.BIT, false), BLOB(Types.BLOB, false), CLOB(Types.CLOB, false),
 
-  BINARY(false), VARBINARY(true), LONGVARBINARY(true),
+  BINARY(Types.BINARY, false), VARBINARY(Types.VARBINARY, true), LONGVARBINARY(Types.LONGVARBINARY, true),
 
-  NULL(false), OTHER(false), REF(false),;//end of list.
+  NULL(Types.NULL, false), REF(Types.REF, false),
+  //end of list
+  ;
   /**
    * whether the column specification requires a size value
    */
   boolean requiresLength;
+  int jsqltype;
 
-  ColumnType(boolean requiresLength) {
+  ColumnType(int jsqltype, boolean requiresLength) {
+    this.jsqltype = jsqltype;
     this.requiresLength = requiresLength;
   }
 
@@ -41,7 +47,18 @@ public enum ColumnType {
    * @returns whether the associated datum is naturally human readable stuff
    */
   public boolean isTextlike() {
-    return this == CHAR || this == TEXT;
+    return this == CHAR || this == VARCHAR || this == LONGVARCHAR;
+  }
+
+  public boolean isLike(ColumnType other) {
+    if (this == other) {
+      return true;
+    }
+    switch (this) {
+    case INTEGER:
+      return other == DECIMAL;
+    }
+    return false;
   }
 
   /**
@@ -53,5 +70,18 @@ public enum ColumnType {
     } catch (IllegalArgumentException e) {
       return null;
     }
+  }
+
+  /**
+   * metadata to our enum
+   */
+  public static ColumnType map(int javasqlTypeCode) {
+    //you thinked they'd spec an enum  by now.
+    for (ColumnType ct : values()) {
+      if (ct.jsqltype == javasqlTypeCode) {
+        return ct;
+      }
+    }
+    return null;
   }
 }

@@ -76,4 +76,9 @@ public class ListWrapper implements AutoCloseable {
   public void addComma() {
     s.append(comma);
   }
+
+  @Override
+  public String toString() {
+    return s.toString();
+  }
 }

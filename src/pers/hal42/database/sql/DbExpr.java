@@ -248,7 +248,7 @@ public abstract class DbExpr {
   static int setSqlValue(PreparedStatement stmt, int i, Object col, ColumnProfile intocol) throws SQLException {
     ColumnType type = ColumnType.VARCHAR;
     if (intocol != null) {
-      type = intocol.numericType();
+      type = intocol.getType();
     }
     if (col instanceof DbExpr) {
       i = ((DbExpr) col).setSqlValues(stmt, i);

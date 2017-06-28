@@ -524,7 +524,7 @@ public class QueryString {
   // means is null or == ''
   public QueryString isEmpty(ColumnProfile field) {
     Open().isNull(field.fullName());
-    if (field.numericType() == ColumnType.CHAR || field.numericType() == ColumnType.TEXT) {
+    if (field.getType().isTextlike()) {
       or().nvPair(field.fullName(), "");
     }
     return Close();
@@ -662,9 +662,9 @@ public class QueryString {
       } // else  do like all the rest
     }
     case BOOL:
-    case DATETIME:
+//    case DATETIME:
     case SERIAL:
-    case TEXT:
+//    case TEXT:
       // +++ DO MORE OF THESE!!!
     case INTEGER: {
       qs.cat(dbt.name());
@@ -868,7 +868,7 @@ public class QueryString {
     if (prevalue == null) { // do NOT use !NonTrivial() here!  NULL is the check we are doing.
       return NULL; // do not quote a null, but instead use the word null
     } else {
-      ColumnType type = column.numericType();
+      ColumnType type = column.getType();
       dbg.VERBOSE("ColumnTypes for " + column.name() + " is " + type);
       switch (type) {
       case SERIAL:
@@ -904,7 +904,7 @@ public class QueryString {
         return Bool.toString(Bool.For(prevalue)); // convert a short or long text to a long text; also converts "" to false
       }
       default: // using a quoted string for an unknown type is usually converted fine by the DBMS
-      case TEXT:
+//      case TEXT:
       case CHAR: { // but we shouldn't have any CHARs, except for "char", single char values
         if ("null".equalsIgnoreCase(prevalue.trim())) {
           // +++ what if null isn't allowed?  Let's have it put "" in that case
