@@ -1334,8 +1334,8 @@ public class DBMacros extends GenericDB {
           if (ObjectX.NonTrivial(ignoreColumn) && StringX.equalStrings(ignoreColumn.displayName(), name)) {
             dbg.WARNING("colsToProperties: Ignoring field " + ignoreColumn.fullName());
           } else {
-            ColumnTypes dbt = ColumnTypes.valueOf(rsmd.getColumnTypeName(col));
-            if (dbt == ColumnTypes.BOOL) {
+            ColumnType dbt = ColumnType.valueOf(rsmd.getColumnTypeName(col));
+            if (dbt == ColumnType.BOOL) {
               ezc.setBoolean(name, getBooleanFromRS(col, rs));
             } else {
               ezc.setString(name, getStringFromRS(col, rs));

@@ -1,7 +1,7 @@
 package pers.hal42.database.sql;
 
 import pers.hal42.database.ColumnProfile;
-import pers.hal42.database.ColumnTypes;
+import pers.hal42.database.ColumnType;
 import pers.hal42.logging.ErrorLogStream;
 
 import java.sql.PreparedStatement;
@@ -12,7 +12,7 @@ import java.util.Set;
  * An sql expression class. This is the abstract base class for any type of SQL  expression.
  *
  * @author Chris Bitmead
- * @created 29 August 2001
+ * created 29 August 2001
  */
 
 public abstract class DbExpr {
@@ -246,7 +246,7 @@ public abstract class DbExpr {
    * @throws Exception    Description of Exception
    */
   static int setSqlValue(PreparedStatement stmt, int i, Object col, ColumnProfile intocol) throws SQLException {
-    ColumnTypes type = ColumnTypes.VARCHAR;
+    ColumnType type = ColumnType.VARCHAR;
     if (intocol != null) {
       type = intocol.numericType();
     }
@@ -256,7 +256,7 @@ public abstract class DbExpr {
       dbg.VERBOSE("setSqlValue: val = '" + col + "'");
       if (col == null) {
         stmt.setNull(i++, type.ordinal()); //todo:0 suspicious,
-      } else if ((col instanceof String) && (type == ColumnTypes.BLOB || type == ColumnTypes.BINARY || type == ColumnTypes.VARBINARY || type == ColumnTypes.LONGVARBINARY)) {
+      } else if ((col instanceof String) && (type == ColumnType.BLOB || type == ColumnType.BINARY || type == ColumnType.VARBINARY || type == ColumnType.LONGVARBINARY)) {
         stmt.setBytes(i++, ((String) col).getBytes());
       } else {
         stmt.setObject(i++, col);

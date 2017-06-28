@@ -20,11 +20,14 @@ public class FieldIterator<Type> implements Iterator<Type> {
     fields = parent.getClass().getFields();
   }
 
+  private boolean belongs(Field f) {
+    return ReflectX.isImplementorOf(f.getType(), type);
+  }
   @Override
   public boolean hasNext() {
     while (pointer < fields.length) {
       Field f = fields[pointer];
-      if (ReflectX.isImplementorOf(f.getType(), type)) {
+      if (belongs(f)) {
         return true;
       }
       ++pointer;
@@ -41,6 +44,25 @@ public class FieldIterator<Type> implements Iterator<Type> {
     } catch (Exception e) {//guard against user failing to call hasNext.
       return null;
     }
+  }
+
+  /**
+   * random access by name, even works if hasNext() returns false.
+   */
+  public Type find(String named) {
+    for (Field f : fields) {
+      if (f.getName().equals(named)) {
+        if (belongs(f)) {
+          try {
+            //noinspection unchecked
+            return (Type) f.get(parent);
+          } catch (IllegalAccessException e) {
+            return null;
+          }
+        }
+      }
+    }
+    return null;
   }
 
 }

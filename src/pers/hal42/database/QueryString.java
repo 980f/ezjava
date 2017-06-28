@@ -249,13 +249,13 @@ public class QueryString {
   public QueryString AndInList(ColumnProfile field, TextList options) {
     if ((options != null) && (field != null)) {
       switch (options.size()) {
-        case 0://make no changes whatsoever
-          break;
-        case 1://a simple compare
-          return nvPair(field, options.itemAt(0));
-        default://2 or more must be or'd together or use "IN" syntax %%%
+      case 0://make no changes whatsoever
+        break;
+      case 1://a simple compare
+        return nvPair(field, options.itemAt(0));
+      default://2 or more must be or'd together or use "IN" syntax %%%
 
-          break;
+        break;
       }
     }
     return this;
@@ -524,7 +524,7 @@ public class QueryString {
   // means is null or == ''
   public QueryString isEmpty(ColumnProfile field) {
     Open().isNull(field.fullName());
-    if (field.numericType() == ColumnTypes.CHAR || field.numericType() == ColumnTypes.TEXT) {
+    if (field.numericType() == ColumnType.CHAR || field.numericType() == ColumnType.TEXT) {
       or().nvPair(field.fullName(), "");
     }
     return Close();
@@ -540,8 +540,7 @@ public class QueryString {
    * this presumes that the data being search is already within the modular range.
    */
   private QueryString rangy(boolean wrapper, ColumnProfile field, String start, String end, boolean closeEnd) {
-    return Open(field).cat(GTEQ).value(start).cat(wrapper ? OR : AND)
-      .word(field.fullName()).cat(closeEnd ? LTEQ : LT).value(end).Close();
+    return Open(field).cat(GTEQ).value(start).cat(wrapper ? OR : AND).word(field.fullName()).cat(closeEnd ? LTEQ : LT).value(end).Close();
   }
 
   public QueryString andRange(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
@@ -639,38 +638,38 @@ public class QueryString {
   public QueryString createFieldClause(ColumnProfile cp, boolean existingTable) {
     QueryString qs = this;
     qs.word(cp.name());
-    ColumnTypes dbt = ColumnTypes.valueOf(cp.type().toUpperCase());
+    ColumnType dbt = ColumnType.valueOf(cp.type().toUpperCase());
     if (cp.autoIncrement()) {
       //noinspection StatementWithEmptyBody
-      if (dbt == ColumnTypes.SERIAL) {
+      if (dbt == ColumnType.SERIAL) {
         // this is fine!
       } else {
-        if (dbt == ColumnTypes.INT4 || dbt == ColumnTypes.SMALLINT || dbt == ColumnTypes.TINYINT) {
-          dbt = ColumnTypes.SERIAL;
+        if (dbt == ColumnType.INTEGER || dbt == ColumnType.SMALLINT || dbt == ColumnType.TINYINT) {
+          dbt = ColumnType.SERIAL;
         } else {
           dbg.ERROR("Don't know how to autoincrement the datatype " + dbt + "!");
         }
       }
     }
     switch (dbt) {
-      default: {
-        dbg.ERROR("Data type not considered in createFieldClause(): " + dbt.toString() + "!");
-      }
-      case CHAR: {
-        if (cp.size() < 2) {
-          qs.cat("\"char\""); // the PG "char" type, which implements char(1) in the main table (faster, smaller)
-          break;
-        } // else  do like all the rest
-      }
-      case BOOL:
-      case DATETIME:
-      case SERIAL:
-      case TEXT:
-        // +++ DO MORE OF THESE!!!
-      case INT4: {
-        qs.cat(dbt.name());
-      }
-      break;
+    default: {
+      dbg.ERROR("Data type not considered in createFieldClause(): " + dbt.toString() + "!");
+    }
+    case CHAR: {
+      if (cp.size() < 2) {
+        qs.cat("\"char\""); // the PG "char" type, which implements char(1) in the main table (faster, smaller)
+        break;
+      } // else  do like all the rest
+    }
+    case BOOL:
+    case DATETIME:
+    case SERIAL:
+    case TEXT:
+      // +++ DO MORE OF THESE!!!
+    case INTEGER: {
+      qs.cat(dbt.name());
+    }
+    break;
     }
     // default goes here
     //noinspection StatementWithEmptyBody
@@ -744,10 +743,13 @@ public class QueryString {
     return new QueryString(SELECT);
   }
 
-  /** bridge for using old stuff wiht new builder technique */
-  public static QueryString Wrap(String fullquery){
+  /**
+   * bridge for using old stuff wiht new builder technique
+   */
+  public static QueryString Wrap(String fullquery) {
     return new QueryString(fullquery);//todo:2 additional method to idiot check like for terminating semi
   }
+
   public static QueryString Select(QueryString first) {
     return Select().cat(first);
   }
@@ -839,8 +841,7 @@ public class QueryString {
       String name = (String) ennum.nextElement();
       ColumnProfile column = table.column(name);
       if (column == null) {
-        dbg.ERROR("Update(): field " + name + " not found in table " +
-          table.name() + "!");
+        dbg.ERROR("Update(): field " + name + " not found in table " + table.name() + "!");
       } else {
         // prefix with commas if needed
         if (first) {
@@ -867,60 +868,58 @@ public class QueryString {
     if (prevalue == null) { // do NOT use !NonTrivial() here!  NULL is the check we are doing.
       return NULL; // do not quote a null, but instead use the word null
     } else {
-      ColumnTypes type = column.numericType();
+      ColumnType type = column.numericType();
       dbg.VERBOSE("ColumnTypes for " + column.name() + " is " + type);
       switch (type) {
-        case SERIAL:
-        case INT4: { // do not quote integer or serial !
-          String postvalue = "";
-          if (!StringX.NonTrivial(prevalue)) {
-            // then we WANT null!
+      case SERIAL:
+      case INTEGER: { // do not quote integer or serial !
+        String postvalue = "";
+        if (!StringX.NonTrivial(prevalue)) {
+          // then we WANT null!
+          if (!column.nullable()) {
+            dbg.ERROR("PANIC! valueByColumnType(INT4) passed empty string, but NULL not allowed for column " + column.fullName() + "!");
+            // then go ahead and use the value passed to us!
+          }
+          return NULL; // and pray that the field can handle a null!
+        } else {
+          int integer = StringX.parseInt(prevalue);
+          if ((integer == ObjectX.INVALIDINDEX) && column.isProbablyId()) { // but can't really check integrity any better than this
+            // --- if this column doesn't allow null, this will except, HOWEVER, we can't *guess* at a value!
+            // so, in that case, we should send a panic!
             if (!column.nullable()) {
-              dbg.ERROR("PANIC! valueByColumnType(INT4) passed empty string, but NULL not allowed for column " +
-                column.fullName() + "!");
+              dbg.ERROR("PANIC! valueByColumnType(INT4) passed '" + prevalue + "', but NULL not allowed for column " + column.fullName() + ", so using value verbatim");
               // then go ahead and use the value passed to us!
-            }
-            return NULL; // and pray that the field can handle a null!
-          } else {
-            int integer = StringX.parseInt(prevalue);
-            if ((integer == ObjectX.INVALIDINDEX) && column.isProbablyId()) { // but can't really check integrity any better than this
-              // --- if this column doesn't allow null, this will except, HOWEVER, we can't *guess* at a value!
-              // so, in that case, we should send a panic!
-              if (!column.nullable()) {
-                dbg.ERROR("PANIC! valueByColumnType(INT4) passed '" + prevalue + "', but NULL not allowed for column " +
-                  column.fullName() + ", so using value verbatim");
-                // then go ahead and use the value passed to us!
-                return String.valueOf(integer);
-              } else {
-                return NULL; // and pray that the field can handle a null!
-              }
-            } else {
-              // DO NOT let the database engine parse it.  It may not be as forgiving as our parser!
               return String.valueOf(integer);
-            }
-          }
-        }
-        // +++ put serial8 and int8 in here !!!!
-        case BOOL: {
-          return Bool.toString(Bool.For(prevalue)); // convert a short or long text to a long text; also converts "" to false
-        }
-        default: // using a quoted string for an unknown type is usually converted fine by the DBMS
-        case TEXT:
-        case CHAR: { // but we shouldn't have any CHARs, except for "char", single char values
-          if ("null".equalsIgnoreCase(prevalue.trim())) {
-            // +++ what if null isn't allowed?  Let's have it put "" in that case
-            if (column.nullable()) {
-              return NULL;
             } else {
-              return Quoted(""); // for cases where null is not valid
+              return NULL; // and pray that the field can handle a null!
             }
           } else {
-            if (!forceQuotes && prevalue.startsWith("'") && prevalue.endsWith("'")) { // don't add extra quotes if not needed
-              return prevalue;
-            }
-            return Quoted(prevalue); // quote char or unknown type fields
+            // DO NOT let the database engine parse it.  It may not be as forgiving as our parser!
+            return String.valueOf(integer);
           }
         }
+      }
+      // +++ put serial8 and int8 in here !!!!
+      case BOOL: {
+        return Bool.toString(Bool.For(prevalue)); // convert a short or long text to a long text; also converts "" to false
+      }
+      default: // using a quoted string for an unknown type is usually converted fine by the DBMS
+      case TEXT:
+      case CHAR: { // but we shouldn't have any CHARs, except for "char", single char values
+        if ("null".equalsIgnoreCase(prevalue.trim())) {
+          // +++ what if null isn't allowed?  Let's have it put "" in that case
+          if (column.nullable()) {
+            return NULL;
+          } else {
+            return Quoted(""); // for cases where null is not valid
+          }
+        } else {
+          if (!forceQuotes && prevalue.startsWith("'") && prevalue.endsWith("'")) { // don't add extra quotes if not needed
+            return prevalue;
+          }
+          return Quoted(prevalue); // quote char or unknown type fields
+        }
+      }
       }
     }
   }
@@ -1033,22 +1032,15 @@ public class QueryString {
   }
 
   public static QueryString TableStats(TableProfile table) {
-    return QueryString.Clause().cat(
-      "select a.relpages,a.reltuples," +
-        "b.n_tup_ins,b.n_tup_upd,b.n_tup_del " +
-        "from pg_class a, pg_stat_user_tables b where a.relfilenode=b.relid " +
-        "and a.relname='" + table.name() + "'");
+    return QueryString.Clause().cat("select a.relpages,a.reltuples," + "b.n_tup_ins,b.n_tup_upd,b.n_tup_del " + "from pg_class a, pg_stat_user_tables b where a.relfilenode=b.relid " + "and a.relname='" + table.name() + "'");
   }
 
   public static QueryString TablePages(TableProfile table) {
-    return QueryString.Select().cat(
-      "reltuples,relpages " +
-        "from pg_class where relname='" + table.name() + "'");
+    return QueryString.Select().cat("reltuples,relpages " + "from pg_class where relname='" + table.name() + "'");
   }
 
   public static QueryString DatabaseAge(String databasename) {
-    return QueryString.Select().cat(
-      "age(datfrozenxid) from pg_database where datname='" + databasename + "'");
+    return QueryString.Select().cat("age(datfrozenxid) from pg_database where datname='" + databasename + "'");
   }
 
   public static boolean isReadOnly(QueryString qs) {

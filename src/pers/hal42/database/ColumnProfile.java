@@ -22,7 +22,7 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
   public String ordinalPosition = "";
   private TableProfile table = null;
   private String columnName = "";
-  private ColumnTypes type;
+  private ColumnType type;
   private String columnSize = "";
   private int size = -1; //todo:1 enforce restrictions?
   private String isNullable = "";
@@ -37,13 +37,13 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
   public static final boolean NOAUTO = false;
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(ColumnProfile.class);
 
-  public TableInfo tq(){
-    return table.tq();
-  }
-
   //////////////////////////
   private ColumnProfile() {
     //use create
+  }
+
+  public TableInfo tq() {
+    return table.tq();
   }
 
   /**
@@ -61,7 +61,7 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
     return type.name();
   }
 
-  public ColumnTypes numericType() {
+  public ColumnType numericType() {
     return type;
   }
 
@@ -143,13 +143,13 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
     return StringX.equalStrings(StringX.right(name(), 2), "ID", /* ignore case */ true);
   }
 
-  private static int sizeForType(ColumnTypes type) {
+  private static int sizeForType(ColumnType type) {//todo:1 push into the enum.
     switch (type) {
       case BOOL:
         return BOOLLEN;
       case TEXT:
         return TEXTLEN;
-      case INT4:
+    case INTEGER:
         return INT4LEN;
       case CHAR:
         return CHARLEN;
@@ -159,7 +159,7 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
   }
 
   // creator for code-based profiles
-  public static ColumnProfile create(TableProfile table, String name, ColumnTypes dbtype, int size, boolean nullable, String displayName, boolean autoIncrement, String columnDef) {
+  public static ColumnProfile create(TableProfile table, String name, ColumnType dbtype, int size, boolean nullable, String displayName, boolean autoIncrement, String columnDef) {
     name = StringX.TrivialDefault(name, "").toLowerCase();
     ColumnProfile cp = new ColumnProfile();
     cp.table = table;
@@ -182,15 +182,15 @@ public class ColumnProfile implements Comparable<ColumnProfile> {
 
   // creator for existing tables
   public static ColumnProfile create(TableProfile table, String name, String type, String size, String nullable) {
-    return create(table, name, (ColumnTypes.valueOf(type)), StringX.parseInt(size), nullable.equalsIgnoreCase("YES"), null, false, "");
+    return create(table, name, (ColumnType.valueOf(type)), StringX.parseInt(size), nullable.equalsIgnoreCase("YES"), null, false, "");
   }
 
-  public static String dbReadyColumnDef(ColumnTypes type, String rawDefault) {
+  public static String dbReadyColumnDef(ColumnType type, String rawDefault) {
     rawDefault = StringX.TrivialDefault(rawDefault);
     return type.isTextlike() ? StringX.singleQuoteEscape(rawDefault) : rawDefault;
   }
 
-  public static String dbUnReadyColumnDef(ColumnTypes type, String defaultFromDB) {
+  public static String dbUnReadyColumnDef(ColumnType type, String defaultFromDB) {
     if (StringX.NonTrivial(defaultFromDB)) {
       if (type.isTextlike()) {
         return StringX.unSingleQuoteEscape(defaultFromDB);

@@ -42,7 +42,7 @@ public class ListWrapper implements AutoCloseable {
   }
 
   public ListWrapper append(String field) {
-    s.append(comma);
+    addComma();
     s.append(field);
     return this;
   }
@@ -66,10 +66,14 @@ public class ListWrapper implements AutoCloseable {
   @Override
   public void close() {
     if (excessCommaAt >= 0) {
-      s.append(closer != null ? null : ")");
+      s.append(closer != null ? closer : ")");
       s.deleteCharAt(excessCommaAt);
       excessCommaAt = -1;
       closer = null;
     }
+  }
+
+  public void addComma() {
+    s.append(comma);
   }
 }
