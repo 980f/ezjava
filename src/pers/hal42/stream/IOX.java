@@ -115,6 +115,16 @@ public class IOX {
   }
 
   /**
+   * @returns a PrintStream for @param filename or null, doesn't throw exceptions.
+   */
+  public static PrintStream makePrintStream(String filename) {
+    try {
+      return new PrintStream(filename);
+    } catch (FileNotFoundException | NullPointerException e) {
+      return null;
+    }
+  }
+  /**
    * close, stifle all errors. Flush first if object supports flushing
    *
    * @returns whether there were no errors, usually ignored.
