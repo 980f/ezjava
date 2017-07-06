@@ -1,6 +1,7 @@
 package pers.hal42.database;
 
 
+import com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
@@ -128,7 +129,7 @@ public class GenericDB {
 
   public final Connection getConnection() {
 
-    try (AutoCloseable freer = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
+    try (Monitor freer = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
       if (!connectOk && conn != null) {
         releaseConn();
       }
@@ -140,8 +141,6 @@ public class GenericDB {
 //        conn = cpool.checkOut();
         conn = dbConnector.makeConnection(connInfo);
       }
-    } catch (Exception e) {
-      dbg.Caught(e,"getConnection");
     }
     connectOk=conn!=null;
     return conn;
@@ -149,7 +148,15 @@ public class GenericDB {
 
   public Statement makeStatement() throws SQLException {
     if (haveConnection()) {
-      return conn.createStatement();
+      try {
+        return conn.createStatement();
+      } catch (SQLException e1) {
+        if (e1 instanceof MySQLNonTransientConnectionException) {
+          MySQLNonTransientConnectionException throwables = (MySQLNonTransientConnectionException) e1;
+          connectOk = false;
+        }
+        throw e1;
+      }
     } else {
       return null;
     }

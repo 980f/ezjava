@@ -23,10 +23,10 @@ public class IncludeFileIterator extends FancyArgIterator {
     while (StringX.firstCharIs(arg, '@')) {//then read some args from a file
       try {
         push(new FileListIterator(arg.substring(1)));
-        arg = super.next();
       } catch (FileNotFoundException e) {
         ErrorLogStream.Global().Caught(e, "Trying to include a file in IncludeFileIterator");
       }
+      arg = super.next();
     }
     if (filterPounds && StringX.firstCharIs(arg, '#')) {
       if (hasNext()) {

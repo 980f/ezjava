@@ -15,6 +15,21 @@ import java.util.Collections;
 import java.util.Vector;
 
 public final class Monitor implements Comparable<Monitor>, AutoCloseable {
+  private class FancyUnlocker implements AutoCloseable {
+    String message;
+
+    public FancyUnlocker(String message) {
+      this.message = message;
+    }
+
+    @Override
+    public void close() throws Exception {
+      synchronized (name) {
+        dbg().VERBOSE("Freed by: " + message + " " + Thread.currentThread());
+        freeMonitor();
+      }
+    }
+  }
   /**
    * for debug, but also is internally used for locking.
    */
@@ -29,11 +44,10 @@ public final class Monitor implements Comparable<Monitor>, AutoCloseable {
    */
   protected int monitorCount = 0;
   private ErrorLogStream d1b2g3 = null; // don't use me directly; use dbg() instead !
-
-  // static list stuff, for debug of deadlocks and kin:
-  private static final WeakSet<Monitor> list = new WeakSet<>();
   /** shareable lazy initialized debugger */
   private static ErrorLogStream D1B2G3 = null; // don't use me directly; use dbg() instead !
+  // static list stuff, for debug of deadlocks and kin:
+  private static final WeakSet<Monitor> list = new WeakSet<>();
 
   //each monitor is linkable to some other module's debugger, typically the owner's.
   public Monitor(String name, ErrorLogStream dbg) {
@@ -74,7 +88,7 @@ public final class Monitor implements Comparable<Monitor>, AutoCloseable {
   }
 
   //getMonitor is called by debug code and infinite loops if you attempt dbg within it.
-  public AutoCloseable getMonitor() {
+  public Monitor getMonitor() {
     synchronized (name) {
       try {
         while (!tryMonitor()) {
@@ -111,21 +125,6 @@ public final class Monitor implements Comparable<Monitor>, AutoCloseable {
     }
   }
 
-  private class FancyUnlocker implements AutoCloseable{
-    String message;
-
-    public FancyUnlocker(String message) {
-      this.message = message;
-    }
-
-    @Override
-    public void close() throws Exception {
-       synchronized (name) {
-          dbg().VERBOSE("Freed by: " + message + " " + Thread.currentThread());
-          freeMonitor();
-        }
-      }
-  }
   //noisy versions of the above:
   public AutoCloseable LOCK(String moreinfo) {
     dbg().VERBOSE(moreinfo + " trying to Lock:" + ownerInfo());
@@ -224,7 +223,7 @@ public final class Monitor implements Comparable<Monitor>, AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     freeMonitor();
   }
 
