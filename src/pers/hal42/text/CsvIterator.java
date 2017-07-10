@@ -1,46 +1,73 @@
 package pers.hal42.text;
 
 import pers.hal42.ext.Span;
+import pers.hal42.lang.StringX;
 
 /**
  * Created by Andy on 6/7/2017.
- *
+ * <p>
  * cute incremental csv parser
  */
 public class CsvIterator implements StringIterator {
-
+  private final boolean inReverse;
+  private final char comma;
   protected String line;
-  Span span=new Span();
+  Span span = new Span();
+
+  public CsvIterator(boolean inReverse, char comma, String line) {
+    this.inReverse = inReverse;
+    this.comma = comma;
+    this.line = StringX.TrivialDefault(line, "");
+    span.highest = line.length();
+    span.lowest = 0;
+    bump();
+  }
 
   public CsvIterator(String line) {
-    this.line = line;
-    if (line.length() > 0) {
-      span.lowest = 0;
-      bump();
-    }
+    this(false, ',', line);
   }
 
   @Override
   public boolean hasNext() {
-    return line != null && span.isStarted();
+    return line != null && span.nonTrivial();
   }
 
   @Override
   public String next() {
     try {
-      return span.subString(line, 1).trim();
+      return span.subString(line, inReverse ? ~1 : 1).trim();
     } finally {
       bump();
     }
   }
 
-  private void bump() {
-    span.highest = line.indexOf(',', span.lowest);
+  public String peek() {
+    return span.getString(line);
   }
 
-  /** makes hasNext() return false, frees and resources */
+  private void bump() {
+    if (inReverse) {
+      span.lowest = 1 + line.lastIndexOf(comma, span.highest - 1);
+    } else {
+      span.highest = line.indexOf(comma, span.lowest);
+    }
+  }
+
+  /**
+   * makes hasNext() return false, frees and resources
+   */
   @Override
   public void discard() {
     span.clear();
+  }
+
+  //pending item through end of string
+  public String tail() {
+    return line.substring(span.lowest);
+  }
+
+  //start of string to pending item - separator
+  public String head() {
+    return StringX.subString(line, 0, span.lowest);
   }
 }
