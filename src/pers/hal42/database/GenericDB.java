@@ -170,5 +170,14 @@ public class GenericDB {
     }
   }
 
+  public void keepAlive(double seconds) {
+    if (connInfo.intervalsecs > 0 && seconds >= connInfo.intervalsecs) {
+      try (Statement st = makeStatement()) {
+        st.execute(connInfo.keepaliveSQL);
+      } catch (SQLException e) {
+        dbg.Caught(e);//may spew exceptions if configuration is bad.
+      }
+    }
+  }
 }
 

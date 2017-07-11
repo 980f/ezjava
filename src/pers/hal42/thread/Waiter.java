@@ -145,14 +145,14 @@ public class Waiter {
   }
 
   /**
-   * note: the synch in prepare is required. Clears any old notification or problem so that we can see a new one.
+   * Clears any old notification or problem so that we can see a new one.
    *
    * @return this
    */
   public Waiter prepare() {
-    synchronized (waitOnMe) {
+    synchronized (waitOnMe) {//# this synch is required.
       state = Ready;
-      resleeper.Reset();//lets us discover that we notified before waiting.
+      resleeper.Kill();//lets us discover that we notified before waiting.
       return this;
     }
   }
