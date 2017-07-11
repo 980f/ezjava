@@ -30,17 +30,6 @@ import static pers.hal42.transport.Storable.Type.*;
  * This can be viewed as a DOM good for JSON data. It is intended to replace usage of java properties, despite us having nice classes to make properties look like a tree.
  */
 public class Storable {
-  /** immutable key to the value, never abuse for a secondary value */
-  public final String name;
-
-  /**
-   * sometimes a wad is just an array (all children are nameless)
-   */
-  protected int index = -1;
-  @Nullable
-  Storable parent; //can be null.
-  Type type = Unclassified;
-
   public enum Type {
     Unclassified,
     Null,
@@ -51,38 +40,24 @@ public class Storable {
     Wad
   }
 
-  Origin origin = Ether;
-  String image = "";
-  double value;
-  boolean bit;
-  /**
-   * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
-   * for really big nodes create a nodeIndexer outside of this class and access members herein by index.
-   */
-  Vector<Storable> wad = new Vector<>();
-
   public enum Origin {
     Ether,
     Defawlted,
     Parsed,
     Assigned
   }
-
-  /** if not null then value and image are related by this class's enum[] */
-  public Class<? extends Enum> enumerizer;
-
   /**
    * marker annotation for use by applyTo and apply()
    * if class is annotated with @Stored then process all fields, not just those annotated with Stored.
    */
   @Documented
+  @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.TYPE})
   public @interface Stored {
     /** if nontrivial AND child is not found by the field name then it is sought by this name. */
     String legacy() default "";
   }
-
   /**
    * marker annotation for use by applyTo and apply()
    * if class is annotated with @Stored then process all fields except those marked with this.
@@ -104,6 +79,151 @@ public class Storable {
   public @interface Generatable {
     /** if nontrivial then it is the classname for creating objects from a node. */
     String fqcn() default "";
+  }
+
+  /**
+   * used to create objects from Storable's
+   */
+  @SuppressWarnings("unchecked")
+  private static class Generator {
+    final Class glass;// = ReflectX.classForName(gen.fcqn());
+    Constructor storied = null;//
+    Constructor nullary = null;  // ctor= glass.getConstructor()
+    boolean viable = false;
+
+    public Generator(Class glass) {
+      this.glass = glass;
+      try {
+        storied = glass.getConstructor(Storable.class);
+        viable = true;
+      } catch (NoSuchMethodException e) {
+        try {
+          nullary = glass.getConstructor();
+          viable = true;
+        } catch (NoSuchMethodException e1) {
+          dbg.ERROR("Constructing Storable.Generator for {0} ignoring {1}", glass.getName(), e1);
+        }
+      }
+    }
+
+    /**
+     * can't try/catch inside a delegating constructor :(
+     */
+    private Generator(Field field) {
+      this(ReflectX.classForName(field.getAnnotation(Generatable.class).fqcn()));
+    }
+
+    Object newInstance(Storable child, Rules r) {
+      if (!viable) {
+        return null;
+      }
+      try {
+        if (storied != null) {
+          return storied.newInstance(child);
+        } else {
+          Object noob = nullary.newInstance();
+          child.applyTo(noob, r);
+          return noob;
+        }
+      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        dbg.Caught(e);
+        viable = false;
+        return null;
+      }
+    }
+
+    /**
+     * to create normal fields (not collection-like)
+     */
+    static Generator forField(Field field) {
+      try {
+        return new Generator(field);
+      } catch (NullPointerException e) {
+        //either field isn't annotated, or the annotation is not a known class name.
+        dbg.Caught(e);
+        return null;
+      }
+    }
+  }
+
+  public static class Rules {
+    public final boolean narrow;
+    public final boolean aggressive;
+    public final boolean create;
+    /**
+     * find all the fields even if they aren't public
+     */
+    public static final Rules Deep = new Rules(false, true, false);
+    /**
+     * for most cases this is adequate and fast, usual case means all fields are public and created by constructors (or native)
+     */
+    public static final Rules Fast = new Rules(true, false, false);
+    /**
+     * the Storable is the prime source of initialization, rather than a tweaker
+     */
+    public static final Rules Master = new Rules(false, true, true);
+
+    public Rules(boolean narrow, boolean aggressive, boolean create) {
+      this.narrow = narrow;
+      this.aggressive = aggressive;
+      this.create = create;
+    }
+  }
+
+  /**
+   * bind a node to an object
+   */
+  public static class Nodal<T> {
+    public Storable node;
+    public T item;
+    public Rules r;
+
+    /**  */
+    public Nodal(Storable node, T obj) {
+      this.node = node;
+      this.item = obj;
+      r = Rules.Master;
+      node.applyTo(item, r);
+    }
+
+    public void update() {
+      node.apply(item, r);
+    }
+  }
+
+  /**
+   * immutable key to the value, never abuse for a secondary value
+   */
+  public final String name;
+  /**
+   * if not null then value and image are related by this class's enum[]
+   */
+  public Class<? extends Enum> enumerizer;
+  /**
+   * sometimes a wad is just an array (all children are nameless)
+   */
+  protected int index = -1;
+  @Nullable Storable parent; //can be null.
+  Type type = Unclassified;
+  Origin origin = Ether;
+  String image = "";
+  double value;
+  boolean bit;
+  /**
+   * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
+   * for really big nodes create a nodeIndexer outside of this class and access members herein by index.
+   */
+  Vector<Storable> wad = new Vector<>();
+
+  /**
+   * only use this for root nodes.
+   */
+  public Storable(String name) {
+    if (name == null) {
+      dbg.VERBOSE("null name");
+    }
+    this.name = StringX.TrivialDefault(name, "");//normalize all trivialities, we don't want one space to be different name than two spaces ...
+    this.parent = null;//in yur face.
   }
 
   /** do NOT genericize this class just for this guy, who probably shouldn't be public. */
@@ -170,6 +290,8 @@ public class Storable {
               if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
                 field.set(obj, childEnum);
               }
+            } else if (fclaz == Storable.class) {//member is a reference to a child herein
+              field.set(obj, child);
             }
             //todo:1 add clauses for the remaining field.setXXX methods.
             else {
@@ -266,17 +388,6 @@ public class Storable {
   }
 
   /**
-   * only use this for root nodes.
-   */
-  public Storable(String name) {
-    if (name == null) {
-      dbg.VERBOSE("null name");
-    }
-    this.name = StringX.TrivialDefault(name, "");//normalize all trivialities, we don't want one space to be different name than two spaces ...
-    this.parent = null;//in yur face.
-  }
-
-  /**
    * non mutating and non null apparent image of value, for under-the-hood peeks
    */
   public String asText() {
@@ -299,18 +410,6 @@ public class Storable {
     bit = truly;
     value = truly ? 1.0 : 0.0;
     image = java.lang.Boolean.toString(bit);
-  }
-
-  public void setValue(double dee) {
-    if (type == Type.Unclassified) {
-      setType(Numeric);
-    }
-    value = dee;
-    bit = !Double.isNaN(value);
-    if (enumerizer != null) {
-      enumOnSetNumber();
-    }
-//    image= unchanged, can't afford to render to text on every change
   }
 
   protected boolean parseBool(String image) {
@@ -369,6 +468,18 @@ public class Storable {
       setType(Numeric);
     }
     return value;
+  }
+
+  public void setValue(double dee) {
+    if (type == Type.Unclassified) {
+      setType(Numeric);
+    }
+    value = dee;
+    bit = !Double.isNaN(value);
+    if (enumerizer != null) {
+      enumOnSetNumber();
+    }
+//    image= unchanged, can't afford to render to text on every change
   }
 
   public void setEnumerizer(Class<? extends Enum> enumer) {
@@ -515,14 +626,6 @@ public class Storable {
       }
     }
     return changes;
-  }
-
-  public static boolean usuallySkip(Field field) {
-    boolean skipper = field.isAnnotationPresent(Ignore.class);
-    int modifiers = field.getModifiers();
-    skipper |= Modifier.isFinal(modifiers);
-    skipper |= Modifier.isTransient(modifiers);
-    return skipper;
   }
 
   /**
@@ -695,99 +798,11 @@ public class Storable {
     return changes;
   }
 
-  /** used to create objects from Storable's */
-  @SuppressWarnings("unchecked")
-  private static class Generator {
-    final Class glass;// = ReflectX.classForName(gen.fcqn());
-    Constructor storied = null;//
-    Constructor nullary = null;  // ctor= glass.getConstructor()
-    boolean viable = false;
-
-    public Generator(Class glass) {
-      this.glass = glass;
-      try {
-        storied = glass.getConstructor(Storable.class);
-        viable = true;
-      } catch (NoSuchMethodException e) {
-        try {
-          nullary = glass.getConstructor();
-          viable = true;
-        } catch (NoSuchMethodException e1) {
-          dbg.ERROR("Constructing Storable.Generator for {0} ignoring {1}", glass.getName(), e1);
-        }
-      }
-    }
-
-    /** can't try/catch inside a delegating constructor :( */
-    private Generator(Field field) {
-      this(ReflectX.classForName(field.getAnnotation(Generatable.class).fqcn()));
-    }
-
-    Object newInstance(Storable child, Rules r) {
-      if (!viable) {
-        return null;
-      }
-      try {
-        if (storied != null) {
-          return storied.newInstance(child);
-        } else {
-          Object noob = nullary.newInstance();
-          child.applyTo(noob, r);
-          return noob;
-        }
-      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-        dbg.Caught(e);
-        viable = false;
-        return null;
-      }
-    }
-
-    /** to create normal fields (not collection-like) */
-    static Generator forField(Field field) {
-      try {
-        return new Generator(field);
-      } catch (NullPointerException e) {
-        //either field isn't annotated, or the annotation is not a known class name.
-        dbg.Caught(e);
-        return null;
-      }
-    }
-  }
-
-  public static class Rules {
-    /** find all the fields even if they aren't public */
-    public static final Rules Deep = new Rules(false, true, false);
-    /** for most cases this is adequate and fast, usual case means all fields are public and created by constructors (or native) */
-    public static final Rules Fast = new Rules(true, false, false);
-    /** the Storable is the prime source of initialization, rather than a tweaker */
-    public static final Rules Master = new Rules(false, true, true);
-    public final boolean narrow;
-    public final boolean aggressive;
-    public final boolean create;
-
-    public Rules(boolean narrow, boolean aggressive, boolean create) {
-      this.narrow = narrow;
-      this.aggressive = aggressive;
-      this.create = create;
-    }
-  }
-
-  /** bind a node to an object */
-  public static class Nodal<T> {
-    public Storable node;
-    public T item;
-    public Rules r;
-
-    /**  */
-    public Nodal(Storable node, T obj) {
-      this.node = node;
-      this.item = obj;
-      r = Rules.Master;
-      node.applyTo(item, r);
-    }
-
-    public void update() {
-      node.apply(item, r);
-    }
+  public static boolean usuallySkip(Field field) {
+    boolean skipper = field.isAnnotationPresent(Ignore.class);
+    int modifiers = field.getModifiers();
+    skipper |= Modifier.isFinal(modifiers);
+    skipper |= Modifier.isTransient(modifiers);
+    return skipper;
   }
 }

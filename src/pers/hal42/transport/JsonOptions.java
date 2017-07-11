@@ -7,15 +7,19 @@ import java.io.PrintStream;
 
 import static pers.hal42.transport.JsonStorable.filenameTag;
 
+/**
+ * a storable node which is associated with a file.
+ * Extend from this as the concrete class name is used to find the file.
+ * It is intended for you to have your stored members in your extension of this class.
+ */
 public class JsonOptions {
-  protected static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonOptions.class);//use base here, not the extension
-
   /** root of the options DOM, typically named for the file it is loaded from */
-  @Storable.Ignore
+  @Storable.Ignore  //don't want unexpected recursions
   public Storable node;
   /** how forcefully to map the DOM to the object */
-  @Storable.Ignore
+  @Storable.Ignore  //don't save, and especially don't load, the rules.
   public Storable.Rules rules;
+  protected static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonOptions.class);//use base here, not the extension
 
   protected JsonOptions() {
     node = JsonStorable.StandardRoot(getClass());
