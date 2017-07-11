@@ -17,6 +17,8 @@ import pers.hal42.util.PrintFork;
 import java.sql.*;
 import java.text.MessageFormat;
 import java.util.Vector;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /*
  * functions for performing database queries and updates
@@ -39,6 +41,50 @@ enum DBFunctionType {
 }
 
 public class DBMacros extends GenericDB {
+  class NamedStatementList extends Vector<NamedStatement> {
+    private ErrorLogStream dbg = null;
+
+    public NamedStatementList(ErrorLogStream dbg) {
+      this.dbg = dbg;
+    }
+
+    public NamedStatement itemAt(int index) {
+      NamedStatement retval = null;
+      if ((index < size()) && (index >= 0)) {
+        retval = elementAt(index);
+      }
+      return retval;
+    }
+
+    public void Remove(Statement stmt) {
+      boolean removed = false;
+      //todo: Vector should now have a remove item if present
+      for (NamedStatement ns : this) {
+        if ((ns != null) && ns.equals(stmt)) {
+          removed = remove(ns);
+          break;
+        }
+      }
+      if (dbg != null) {
+        if (removed) {
+          dbg.VERBOSE("Statement FOUND for removal: " + stmt);
+        } else {
+          dbg.WARNING("Statement NOT found for removal: " + stmt);
+        }
+      }
+    }
+  }
+
+  class NamedStatement {
+    public Statement stmt = null;
+    public String name = "uninited"; // name is really the full query
+
+    public NamedStatement(Statement stmt, String name) {
+      this.stmt = stmt;
+      this.name = Thread.currentThread().getName() + ";" + name;
+    }
+  }
+
   Counter queryCounter = new Counter(); // used to number queries for loggin purposes
   public static DBMacrosService service = null; // set elsewhere, once
   public static Accumulator queryStats = new Accumulator();
@@ -373,14 +419,6 @@ public class DBMacros extends GenericDB {
     return StringX.parseInt(StringX.TrivialDefault(getStringFromQuery(queryStr, fieldname), "-1"));
   }
 
-  public int getIntFromQuery(QueryString queryStr, ColumnProfile field) {
-    return getIntFromQuery(queryStr, field.name());
-  }
-
-  public int getIntFromQuery(QueryString queryStr, int field) {
-    return StringX.parseInt(StringX.TrivialDefault(getStringFromQuery(queryStr, field), "-1"));
-  }
-
 //  private void checkDBthreadSelect() {
 //    DBMacros should = PayMateDBDispenser.getPayMateDB();
 //    DBMacros is = this;
@@ -393,6 +431,14 @@ public class DBMacros extends GenericDB {
 //      dbg.ERROR(msg + "\n" + tl);
 //    }
 //  }
+
+  public int getIntFromQuery(QueryString queryStr, ColumnProfile field) {
+    return getIntFromQuery(queryStr, field.name());
+  }
+
+  public int getIntFromQuery(QueryString queryStr, int field) {
+    return StringX.parseInt(StringX.TrivialDefault(getStringFromQuery(queryStr, field), "-1"));
+  }
 
   public double getDoubleFromQuery(QueryString queryStr, int field) {
     return StringX.parseDouble(getStringFromQuery(queryStr, field));
@@ -854,70 +900,6 @@ public class DBMacros extends GenericDB {
     return indexExists(index.name, index.table.name());
   }
 
-  public boolean indexExists(String indexName, String tablename) {
-    // +++ put this into the table profiler
-    if (indexName != null) {
-      indexName = indexName.trim();
-      ResultSet rs = null;
-      try {
-        tablename = tablename.toLowerCase(); // MUST BE LOWER CASE for PG !
-        dbg.VERBOSE("Running DatabaseMetadata.getIndexInfo() ...");
-        rs = getDatabaseMetadata().getIndexInfo(null, null, tablename, false, true);
-      } catch (Exception e) {
-        dbg.Caught(e);
-      } finally {
-        dbg.VERBOSE("Done running DatabaseMetadata.getIndexInfo().");
-      }
-      if (rs != null) {
-        try {
-          while (next(rs)) {
-            String cname = getStringFromRS("INDEX_NAME", rs).trim();
-            if (indexName.equalsIgnoreCase(cname)) {
-              dbg.VERBOSE("indexName=" + indexName + ", cname=" + cname + ", equal!");
-              return true;
-            }
-            dbg.VERBOSE("indexName=" + indexName + ", cname=" + cname + ", NOT equal!");
-          }
-        } catch (Exception e) {
-          dbg.Caught(e);
-        } finally {
-          closeRS(rs);
-        }
-      } else {
-        dbg.ERROR("ResultSet = NULL !!!");
-      }
-      dbg.VERBOSE("Index " + indexName + " does NOT  exist.");
-    } else {
-      dbg.ERROR("IndexName = NULL !!!");
-    }
-    return false;
-  }
-
-  /**
-   * Returns true if the field was properly dropped
-   */
-  protected final boolean dropField(ColumnProfile column) {
-
-    try (AutoCloseable pop = dbg.Push("dropField")) {
-      if (fieldExists(column.tq(), column.name())) {
-
-        if (!getDatabaseMetadata().supportsAlterTableWithDropColumn()) {//todo:1 cache all such attributes
-          dbg.ERROR("dropField " + column.fullName() + ": was not able to run since the DBMS does not support it!");
-          return true;
-        } else {
-          dbg.ERROR("dropField " + column.fullName() + ": returned " + update(QueryString.genDropField(column)));
-          return !fieldExists(column.tq(), column.name());
-        }
-      } else {
-        dbg.ERROR("dropField " + column.fullName() + ": already dropped.");
-        return true;
-      }
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
-    }
-  }
-
 //  public static final int getColumnCount(ResultSetMetaData rsmd) {
 //    int ret = 0;
 //    try {
@@ -987,6 +969,70 @@ public class DBMacros extends GenericDB {
 //    return ret;
 //  }
 
+  public boolean indexExists(String indexName, String tablename) {
+    // +++ put this into the table profiler
+    if (indexName != null) {
+      indexName = indexName.trim();
+      ResultSet rs = null;
+      try {
+        tablename = tablename.toLowerCase(); // MUST BE LOWER CASE for PG !
+        dbg.VERBOSE("Running DatabaseMetadata.getIndexInfo() ...");
+        rs = getDatabaseMetadata().getIndexInfo(null, null, tablename, false, true);
+      } catch (Exception e) {
+        dbg.Caught(e);
+      } finally {
+        dbg.VERBOSE("Done running DatabaseMetadata.getIndexInfo().");
+      }
+      if (rs != null) {
+        try {
+          while (next(rs)) {
+            String cname = getStringFromRS("INDEX_NAME", rs).trim();
+            if (indexName.equalsIgnoreCase(cname)) {
+              dbg.VERBOSE("indexName=" + indexName + ", cname=" + cname + ", equal!");
+              return true;
+            }
+            dbg.VERBOSE("indexName=" + indexName + ", cname=" + cname + ", NOT equal!");
+          }
+        } catch (Exception e) {
+          dbg.Caught(e);
+        } finally {
+          closeRS(rs);
+        }
+      } else {
+        dbg.ERROR("ResultSet = NULL !!!");
+      }
+      dbg.VERBOSE("Index " + indexName + " does NOT  exist.");
+    } else {
+      dbg.ERROR("IndexName = NULL !!!");
+    }
+    return false;
+  }
+
+  /**
+   * Returns true if the field was properly dropped
+   */
+  protected final boolean dropField(ColumnProfile column) {
+
+    try (AutoCloseable pop = dbg.Push("dropField")) {
+      if (fieldExists(column.tq(), column.name())) {
+
+        if (!getDatabaseMetadata().supportsAlterTableWithDropColumn()) {//todo:1 cache all such attributes
+          dbg.ERROR("dropField " + column.fullName() + ": was not able to run since the DBMS does not support it!");
+          return true;
+        } else {
+          dbg.ERROR("dropField " + column.fullName() + ": returned " + update(QueryString.genDropField(column)));
+          return !fieldExists(column.tq(), column.name());
+        }
+      } else {
+        dbg.ERROR("dropField " + column.fullName() + ": already dropped.");
+        return true;
+      }
+    } catch (Exception e) {
+      dbg.Caught(e);
+      return false;
+    }
+  }
+
   /**
    * @returns true if the index no logner exists
    */
@@ -1053,6 +1099,19 @@ public class DBMacros extends GenericDB {
     }
   }
 
+//  // for this version of postgresql jdbc, the fetch size is the WHOLE thing!
+//  public static final int getResultSetFetchSize(ResultSet rs) {
+//    try {
+//      return rs.getFetchSize();
+//    } catch (Exception ex) {
+//      dbg.Caught(ex);
+//      return -1;
+//    }
+//  }
+
+  ////////////////////////////////////
+  // database profiling
+
   protected final boolean changeFieldNullable(ColumnProfile to) {
     try (AutoCloseable pop = dbg.Push("changeFieldNullable")) {
       dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
@@ -1078,18 +1137,54 @@ public class DBMacros extends GenericDB {
     }
   }
 
-//  // for this version of postgresql jdbc, the fetch size is the WHOLE thing!
-//  public static final int getResultSetFetchSize(ResultSet rs) {
-//    try {
-//      return rs.getFetchSize();
-//    } catch (Exception ex) {
-//      dbg.Caught(ex);
-//      return -1;
+//  public int getColumnSize(String tablename, String fieldname) {
+//    int ret = 0;
+//    TableProfile dbp = profileTable(tablename);
+//    if(dbp != null) {
+//      ColumnProfile cp = dbp.column(fieldname);
+//      if(cp != null) {
+//        ret = cp.size();
+//      } else {
+//        dbg.ERROR("getColumnSize is returning " + ret + " since the cp is null!");
+//      }
+//    } else {
+//      dbg.ERROR("getColumnSize is returning " + ret + " since the dbp is null!");
 //    }
+//    return ret;
 //  }
 
-  ////////////////////////////////////
-  // database profiling
+//  private static final EasyProperties ezp = new EasyProperties();
+//  private static boolean ezpset = false;
+//  private static final Monitor javaSqlTypesMonitor = new Monitor(DBMacros.class.getName()+".javaSqlTypes");
+//  public static final String javaSqlType(String typeNum) {
+//    String ret = "";
+//    int type = StringX.parseInt(typeNum);
+//    // lock
+//    try {
+//      javaSqlTypesMonitor.getMonitor();
+//      // only have to do this once per run
+//      if(!ezpset) {
+//        // use reflection to find every 'public final static int' in the class java.sql.Types, and add the item to ezp
+//        try {
+//          Class c = java.sql.Types.class;
+//          Field[] fields = c.getFields();
+//          for(int i = fields.length; i-->0;) {
+//            Field field = fields[i];
+//            int ivalue = field.getInt(c); // probably doesn't work
+//            String value = String.valueOf(ivalue);
+//            ezp.setString(value, field.getName());
+//          }
+//        } catch (Exception e) {
+//          /* abandon all hope ye who enter here */
+//        }
+//        ezpset = true;
+//      }
+//    } finally {
+//      javaSqlTypesMonitor.freeMonitor();
+//    }
+//    ret = ezp.getString(typeNum, "");
+//    return ret;
+//  }
 
   protected final int validateAddIndex(IndexProfile index) {
     String functionName = "validateAddIndex";
@@ -1143,55 +1238,6 @@ public class DBMacros extends GenericDB {
     }
   }
 
-//  public int getColumnSize(String tablename, String fieldname) {
-//    int ret = 0;
-//    TableProfile dbp = profileTable(tablename);
-//    if(dbp != null) {
-//      ColumnProfile cp = dbp.column(fieldname);
-//      if(cp != null) {
-//        ret = cp.size();
-//      } else {
-//        dbg.ERROR("getColumnSize is returning " + ret + " since the cp is null!");
-//      }
-//    } else {
-//      dbg.ERROR("getColumnSize is returning " + ret + " since the dbp is null!");
-//    }
-//    return ret;
-//  }
-
-//  private static final EasyProperties ezp = new EasyProperties();
-//  private static boolean ezpset = false;
-//  private static final Monitor javaSqlTypesMonitor = new Monitor(DBMacros.class.getName()+".javaSqlTypes");
-//  public static final String javaSqlType(String typeNum) {
-//    String ret = "";
-//    int type = StringX.parseInt(typeNum);
-//    // lock
-//    try {
-//      javaSqlTypesMonitor.getMonitor();
-//      // only have to do this once per run
-//      if(!ezpset) {
-//        // use reflection to find every 'public final static int' in the class java.sql.Types, and add the item to ezp
-//        try {
-//          Class c = java.sql.Types.class;
-//          Field[] fields = c.getFields();
-//          for(int i = fields.length; i-->0;) {
-//            Field field = fields[i];
-//            int ivalue = field.getInt(c); // probably doesn't work
-//            String value = String.valueOf(ivalue);
-//            ezp.setString(value, field.getName());
-//          }
-//        } catch (Exception e) {
-//          /* abandon all hope ye who enter here */
-//        }
-//        ezpset = true;
-//      }
-//    } finally {
-//      javaSqlTypesMonitor.freeMonitor();
-//    }
-//    ret = ezp.getString(typeNum, "");
-//    return ret;
-//  }
-
   // +++ generalize internal parts between validate functions!
   protected final int validateAddPrimaryKey(PrimaryKeyProfile primaryKey) {
     String functionName = "validateAddPrimaryKey";
@@ -1215,6 +1261,8 @@ public class DBMacros extends GenericDB {
       return FAILED;
     }
   }
+
+  //todo:2 use dbmd's getMaxColumnNameLength to see if the name is too long
 
   // +++ generalize internal parts and move to DBMacros!
   protected final int validateAddForeignKey(ForeignKeyProfile foreignKey) {
@@ -1261,8 +1309,6 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  //todo:2 use dbmd's getMaxColumnNameLength to see if the name is too long
-
   protected final boolean dropTableConstraint(String tablename, String constraintname) {
     String functionName = "dropTableConstraint";
 
@@ -1308,6 +1354,82 @@ public class DBMacros extends GenericDB {
     return new Blobber(content);
   }
 
+  /**
+   * make and execute a statement, call the actor if the resultset has something in it.
+   *
+   * @returns whether a non-empty results set was actually acquired, and if so actor has been invoked. (it won't be if there is an sql exception)
+   */
+  public boolean doSimpleQuery(String query, Consumer<ResultSet> actor) {
+    try (Statement stmt = makeStatement()) {
+      ResultSet rs = stmt.executeQuery(query);//allow null strings to throw an exception, so that the log tells the user how they screwed up
+      if (rs.next()) {
+        if (actor != null) {
+          actor.accept(rs);
+        }
+        return true;
+      } else {
+        return false;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e, query);
+      return false;
+    }
+  }
+
+  /**
+   * @returns an object created by @param generator which is given a resultset from executing @param query
+   */
+  public <T> T getObject(String query, Function<ResultSet, T> generator) {
+    try (Statement stmt = makeStatement()) {
+      ResultSet rs = stmt.executeQuery(query);//allow null strings to throw an exception, so that the log tells the user how they screwed up
+      if (rs.next() && (generator != null)) {
+        return generator.apply(rs);
+      } else {
+        return null;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e, query);
+      return null;
+    }
+  }
+
+  /**
+   * make and execute a statement, call the actor passing whether there is a result set.
+   *
+   * @returns whether  actor has been invoked. (it won't be if there is an sql exception)
+   */
+  public boolean doSimpleAction(String query, Consumer<Boolean> actor) {
+    try (Statement stmt = makeStatement()) {
+      boolean b = stmt.execute(query);
+      if (actor != null) {
+        actor.accept(b);
+      }
+      return true;
+    } catch (SQLException e) {
+      dbg.Caught(e, query);
+      return false;
+    }
+  }
+
+  public boolean doPreparedStatement(String query, Consumer<PreparedStatement> preparer, Consumer<ResultSet> actor) {
+    try (PreparedStatement pst = makePreparedStatement(query)) {
+      if (preparer != null) {
+        preparer.accept(pst);
+      }
+      ResultSet rs = pst.executeQuery();
+      if (rs.next() && actor != null) {
+        actor.accept(rs);
+        return true;
+      } else {
+        return false;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e, query);
+      return false;
+    }
+  }
+  // VALIDATOR STUFF
+
   public static ResultSetMetaData getRSMD(ResultSet rs) {
     ResultSetMetaData rsmd = null;
     if (rs != null) {
@@ -1323,6 +1445,8 @@ public class DBMacros extends GenericDB {
     }
     return rsmd;
   }
+
+  // VALIDATOR STUFF
 
   public static EasyProperties colsToProperties(ResultSet rs, ColumnProfile ignoreColumn) {
     EasyProperties ezc = new EasyProperties();
@@ -1373,8 +1497,6 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  // VALIDATOR STUFF
-
   private static void preLogQuery(int qt, QueryString query, boolean regularLog, long qn) {
     try {
       DBFunctionType qtype = DBFunctionType.class.getEnumConstants()[qt];
@@ -1387,8 +1509,6 @@ public class DBMacros extends GenericDB {
       dbg.Caught(e);
     }
   }
-
-  // VALIDATOR STUFF
 
   public static String getStringFromRS(String fieldName, ResultSet myrs) {
     return getStringFromRS(NOT_A_COLUMN, fieldName, myrs);
@@ -1531,15 +1651,12 @@ public class DBMacros extends GenericDB {
 
   public static ResultSet getResultSet(Statement stmt) {
     if (stmt != null) {
-      try {
-        dbg.VERBOSE("Calling Statement.getResultSet() ...");
+      try (ErrorLogStream pop = dbg.Push("getResultSet()")) {
         return stmt.getResultSet();
       } catch (Exception e) {
-        dbg.ERROR("getRS excepted attempting to get the ResultSet from the executed statement");
+        dbg.ERROR("attempting to get the ResultSet from the executed statement {1} got {0}", e, stmt.toString());
         dbg.Caught(e);
         return null;
-      } finally {
-        dbg.VERBOSE("Done calling Statement.getResultSet().");
       }
     } else {
       return null;
@@ -1548,13 +1665,10 @@ public class DBMacros extends GenericDB {
 
   public static void closeCon(Connection con) {
     if (con != null) {
-      try {
-        dbg.VERBOSE("Calling Connection.close() ...");
+      try (ErrorLogStream pop = dbg.Push("closeCon()")) {
         con.close();
       } catch (Exception t) {
         dbg.WARNING("Exception closing connection.");
-      } finally {
-        dbg.VERBOSE("Done calling Connection.close().");
       }
     }
   }
@@ -1612,50 +1726,6 @@ public class DBMacros extends GenericDB {
     } catch (Exception any) {
       return true;
     }
-  }
-}
-
-class NamedStatementList extends Vector<NamedStatement> {
-  private ErrorLogStream dbg = null;
-
-  public NamedStatementList(ErrorLogStream dbg) {
-    this.dbg = dbg;
-  }
-
-  public NamedStatement itemAt(int index) {
-    NamedStatement retval = null;
-    if ((index < size()) && (index >= 0)) {
-      retval = elementAt(index);
-    }
-    return retval;
-  }
-
-  public void Remove(Statement stmt) {
-    boolean removed = false;
-    //todo: Vector should now have a remove item if present
-    for (NamedStatement ns : this) {
-      if ((ns != null) && ns.equals(stmt)) {
-        removed = remove(ns);
-        break;
-      }
-    }
-    if (dbg != null) {
-      if (removed) {
-        dbg.VERBOSE("Statement FOUND for removal: " + stmt);
-      } else {
-        dbg.WARNING("Statement NOT found for removal: " + stmt);
-      }
-    }
-  }
-}
-
-class NamedStatement {
-  public Statement stmt = null;
-  public String name = "uninited"; // name is really the full query
-
-  public NamedStatement(Statement stmt, String name) {
-    this.stmt = stmt;
-    this.name = Thread.currentThread().getName() + ";" + name;
   }
 }
 

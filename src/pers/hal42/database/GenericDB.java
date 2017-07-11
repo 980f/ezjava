@@ -87,14 +87,14 @@ public class GenericDB {
   public void releaseConn() {
     try {
       if (conn != null) {
-        dbg.VERBOSE("releasing connection for thread {0}",myThreadName);
+        dbg.VERBOSE("releasing connection for thread {0}", myThreadName);
 //        list.get(connInfo).checkIn(conn);
         try {
           conn.close();
         } catch (SQLException e) {
           dbg.VERBOSE("Closing discarded connection");
         } finally {
-          connectOk=false;//forget we ahve one
+          connectOk = false;//forget we ahve one
           conn = null;
         }
       }
@@ -123,6 +123,16 @@ public class GenericDB {
   public boolean haveConnection() {
     if (conn == null) {
       getConnection();
+    } else {
+      try {
+        if (conn.isClosed()) {//getting 'connection is closed' apparently due to autoclose on timeout.
+          connectOk = false;
+          getConnection();
+        }
+      } catch (SQLException e) {
+        releaseConn();//on any error kick back hard
+        getConnection();
+      }
     }
     return connectOk;
   }
@@ -131,7 +141,7 @@ public class GenericDB {
 
     try (Monitor freer = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
       if (!connectOk && conn != null) {
-        releaseConn();
+        releaseConn();//nulls conn.
       }
       if (dbConnector == null) {
         dbConnector = new DBConn();
@@ -142,7 +152,7 @@ public class GenericDB {
         conn = dbConnector.makeConnection(connInfo);
       }
     }
-    connectOk=conn!=null;
+    connectOk = conn != null;
     return conn;
   }
 
@@ -163,7 +173,7 @@ public class GenericDB {
   }
 
   public PreparedStatement makePreparedStatement(String sql) throws SQLException {
-    if(haveConnection()){
+    if (haveConnection()) {
       return conn.prepareStatement(sql);
     } else {
       return null;
