@@ -14,10 +14,10 @@ import static pers.hal42.transport.JsonStorable.filenameTag;
  */
 public class JsonOptions {
   /** root of the options DOM, typically named for the file it is loaded from */
-  @Storable.Ignore  //don't want unexpected recursions
+  transient  //don't want unexpected recursions
   public Storable node;
   /** how forcefully to map the DOM to the object */
-  @Storable.Ignore  //don't save, and especially don't load, the rules.
+  transient  //don't save, and especially don't load, the rules.
   public Storable.Rules rules;
   protected static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonOptions.class);//use base here, not the extension
 

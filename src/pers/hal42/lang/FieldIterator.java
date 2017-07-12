@@ -21,7 +21,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
   }
 
   private boolean belongs(Field f) {
-    return ReflectX.isImplementorOf(f.getType(), type);
+    return type == null || ReflectX.isImplementorOf(f.getType(), type);
   }
   @Override
   public boolean hasNext() {

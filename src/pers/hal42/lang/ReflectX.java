@@ -4,33 +4,192 @@ import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
 import pers.hal42.transport.EasyCursor;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.lang.annotation.*;
+import java.lang.reflect.*;
+import java.util.Iterator;
 
-
-/** Utilities to ease use of reflection.
- *
+/**
+ * Utilities to ease use of reflection.
+ * <p>
  * todo:2 get rid of debug class use by create an exception object with all of the messages that are currently debug messages placed inside of it.
  */
 
 public class ReflectX {
 
-  private static final String packageRoot = "pers.hal42.";//todo:1 better means of default package root.
   /**
-   * debug was removed from the following function as it is called during the initialization
-   * of the classes need by the debug stuff. Any debug will have to be raw stdout debugging.
-   * <p>
-   * Try getting them from the textlist below, instead.
+   * marker annotation for use by applyTo and apply()
+   * if class is annotated with @Stored then process all fields except those marked with this.
    */
+  @Documented
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.FIELD, ElementType.TYPE})
+  public @interface Ignore {
+    /**
+     * if nontrivial AND child is not found by the field name then it is sought by this name.
+     */
+    String legacy() default "";
+  }
+
+  /**
+   * iterate deeply through a class hierarchy.
+   * Annoyingly java makes us choose between getting public hierarchy or only local for all member classes.
+   * One could mix those up and get all members of self and public hierarchy
+   */
+  public static class ClassWalker implements Iterator<Class> {
+    final Class node;//the starting point, retained for debug
+    final boolean local;
+    protected Class[] parts;//
+    protected int ci; //class index
+
+    //todo:1 double link list for efficiency, or otherwise maintain pointer to most deeply nested instance. Present implementation chases the list with every iteration step.
+    protected ClassWalker nested;
+
+    public ClassWalker(Class node, boolean local) {
+      this.node = node;
+      this.local = local;
+      parts = local ? node.getDeclaredClasses() : node.getClasses();
+      ci = parts.length;
+      nest();
+    }
+
+    public void nest() {
+      nested = ci > 0 ? new ClassWalker(parts[--ci], local) : null;//recurses
+    }
+
+    @Override
+    public boolean hasNext() {
+      if (nested != null) {
+        if (nested.hasNext()) {
+          return true;
+        } else {
+          nest();//has a --ci or nested <- null;
+          return hasNext();
+        }
+      } else {
+        return ci >= 0;
+      }
+    }
+
+    @Override
+    public Class next() {
+      if (nested != null) {
+        return nested.next();
+      } else {
+        --ci;
+        return node;
+      }
+    }
+  }
+
+  public static class FieldWalker implements Iterator<Field> {
+    final Class ref;//the starting point, retained for debug
+    final boolean local;
+    ClassWalker cw;
+    Class current;
+    Field[] fields;
+    int fi;
+
+    public FieldWalker(Class ref, boolean local) {
+      this.ref = ref;
+      this.local = local;
+      cw = new ClassWalker(ref, local);
+      nextClass();
+    }
+
+    public void nextClass() {
+      if (cw.hasNext()) {
+        current = cw.next();
+        fields = local ? current.getDeclaredFields() : current.getFields();
+        fi = fields.length;
+      } else {
+        fields = null;
+        fi = 0;
+      }
+    }
+
+    public boolean hasNext() {
+      if (fi > 0) {
+        return true;
+      } else {
+        nextClass();
+        return fi > 0;
+      }
+    }
+
+    /**
+     * @returns either a field if there is still one or null.
+     */
+    public Field next() {
+      if (fi > 0) {
+        return fields[--fi];
+      } else {
+        return null;//should not have been called.
+      }
+    }
+  }
+
+
   public static TextList preloadClassErrors;
+  private static final String packageRoot = "pers.hal42.";//todo:1 better means of default package root.
 
   // not a good idea to have a dbg in here --- see preLoadClass
   private ReflectX() {
     // I exist for static reasons only.
   }
 
-  /** @returns whether @param claz implements @param probate */
+  /**
+   * @returns @param ordinal th enum constant, or null if ordinal out of range or there are no such constants
+   */
+  public static Object enumByOrdinal(Class fclaz, int ordinal) {
+    Object[] set = fclaz.getEnumConstants();
+    if (ordinal < 0 || ordinal >= set.length) {
+      return null;
+    } else {
+      return set[ordinal];
+    }
+  }
+
+  /**
+   * @return constructor for class @param claz with single argument @param argclaz
+   */
+  public static Method factoryFor(Class claz, Class argclaz) {
+    try {
+      Method[] candidates = claz.getMethods();
+      for (Method m : candidates) {
+        int mods = m.getModifiers();
+        if (Modifier.isStatic(mods)) {
+          Class[] plist = m.getParameterTypes();
+          if (plist.length == 1 && plist[0] == argclaz) {
+            return m;
+          }
+        }
+      }
+      return null;
+    } catch (Exception ex) {
+      return null;
+    }
+  }
+
+  public static Object enumObject(Class fclaz, String string) {
+    if (string == null) {
+      return null;
+    }
+    Method factory = factoryFor(fclaz, String.class);
+    if (factory != null) {
+      try {
+        return factory.invoke(string);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        ErrorLogStream.Global().Caught(e, "ReflectX.enumObject");
+        return null;
+      }
+    }
+    //look for constructor, not quite limiting ourselves to enums if we do.
+    return null;
+  }
+
+  /**
+   * @returns whether @param claz implements @param probate
+   */
   public static boolean isImplementorOf(Class probate, Class claz) {
     if (claz != null && probate != null) {
       if (claz.equals(probate)) {
@@ -50,6 +209,19 @@ public class ReflectX {
       }
     }
     return false;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T> T getAnnotation(Class ref, Class annotation) {
+    return (T) ref.getAnnotation(annotation);
+  }
+
+  public static boolean ignorable(Field field) {
+    boolean skipper = field.isAnnotationPresent(Ignore.class);
+    int modifiers = field.getModifiers();
+    skipper |= Modifier.isFinal(modifiers);
+    skipper |= Modifier.isTransient(modifiers);
+    return skipper;
   }
 
   /**
@@ -171,12 +343,14 @@ public class ReflectX {
     }
   }
 
- /** @returns name of @param child within object @param parent, null if not an accessible child*/
-  public static String fieldName(Object parent,Object child){
-    for(Field field:parent.getClass().getDeclaredFields()){
+  /**
+   * @returns name of @param child within object @param parent, null if not an accessible child
+   */
+  public static String fieldName(Object parent, Object child) {
+    for (Field field : parent.getClass().getDeclaredFields()) {
       try {
         Object probate = field.get(parent);
-        if(probate==child){
+        if (probate == child) {
           return field.getName();
         }
       } catch (IllegalAccessException ignored) {
@@ -218,9 +392,7 @@ public class ReflectX {
     return obj == null ? " null!" : " type: " + shortClassName(obj);
   }
 
-
   public static Object loadClass(String className) {
-
     try {
       Class c = Class.forName(className);
       return c.newInstance(); // some drivers don't load completely until you do this
@@ -229,14 +401,19 @@ public class ReflectX {
     }
   }
 
-
+  /**
+   * debug was removed from the following function as it is called during the initialization
+   * of the classes need by the debug stuff. Any debug will have to be raw stdout debugging.
+   * <p>
+   * Try getting them from the preloadClassErrors ..
+   */
   public static boolean preloadClass(String className, boolean loadObject) {
     try {
       Class c = classForName(className);
-      if (loadObject && c!=null) {
-        return  c.newInstance()!=null; // some drivers don't load completely until you do this
+      if (loadObject && c != null) {
+        return c.newInstance() != null; // some drivers don't load completely until you do this
       }
-      return c!=null;
+      return c != null;
     } catch (Exception e) {
       if (preloadClassErrors == null) {
         preloadClassErrors = new TextList();
@@ -249,5 +426,4 @@ public class ReflectX {
   public static boolean preloadClass(String className) {
     return preloadClass(className, false);
   }
-
 }

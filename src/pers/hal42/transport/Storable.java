@@ -10,7 +10,6 @@ import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Iterator;
@@ -55,17 +54,6 @@ public class Storable {
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.FIELD, ElementType.TYPE})
   public @interface Stored {
-    /** if nontrivial AND child is not found by the field name then it is sought by this name. */
-    String legacy() default "";
-  }
-  /**
-   * marker annotation for use by applyTo and apply()
-   * if class is annotated with @Stored then process all fields except those marked with this.
-   */
-  @Documented
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target({ElementType.FIELD, ElementType.TYPE})
-  public @interface Ignore {
     /** if nontrivial AND child is not found by the field name then it is sought by this name. */
     String legacy() default "";
   }
@@ -244,6 +232,8 @@ public class Storable {
    * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
    * if @param aggressive then private fields are modified. (untested)
    *
+   * Note: java makes you choose between all fields at one level of the hierarchy or only public fields throughout the hierarchy. You can iterate through base classes to get all fields.
+   *
    * @returns the number of assignments made (a diagnostic)
    */
   public int applyTo(Object obj, Rules r) {
@@ -253,7 +243,7 @@ public class Storable {
     int changes = 0;
 
     Class claz = obj.getClass();
-    Stored all = (Stored) claz.getAnnotation(Stored.class);
+    Stored all = ReflectX.getAnnotation(claz, Stored.class);
     final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
     for (Field field : fields) {
       Stored stored = field.getAnnotation(Stored.class);
@@ -799,10 +789,6 @@ public class Storable {
   }
 
   public static boolean usuallySkip(Field field) {
-    boolean skipper = field.isAnnotationPresent(Ignore.class);
-    int modifiers = field.getModifiers();
-    skipper |= Modifier.isFinal(modifiers);
-    skipper |= Modifier.isTransient(modifiers);
-    return skipper;
+    return ReflectX.ignorable(field);
   }
 }
