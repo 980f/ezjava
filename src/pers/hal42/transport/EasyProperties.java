@@ -85,13 +85,14 @@ public class EasyProperties extends Properties {
   public <T> T extractObject(String objimage, Class<? extends T> act) {
     try {
       try {
-        Constructor[] ctors = act.getConstructors();
-        Constructor nullCtor = null;
+        @SuppressWarnings("unchecked")
+        Constructor<T>[] ctors = (Constructor<T>[]) act.getConstructors();
+        Constructor<T> nullCtor = null;
         Object[] arglist = new Object[1];
         arglist[0] = objimage;
 
         for (int i = ctors.length; i-- > 0; ) {
-          Constructor ctor = ctors[i];
+          Constructor<T> ctor = ctors[i];
           Class[] plist = ctor.getParameterTypes();
           if (plist.length == 0) {
             nullCtor = ctor;
@@ -304,10 +305,10 @@ public class EasyProperties extends Properties {
       if (isLegit(prop)) {
         retval = prop;
       } else {
-        dbg.VERBOSE("getString: Did not find key '" + key + "'!");
+        dbg.VERBOSE("getString: Did not find key {0}!", key);
       }
     } catch (Exception caught) {
-      dbg.Caught(caught, "getString keyed '" + key + "'!");
+      dbg.Caught(caught, "getString keyed {0}!", key);
     }
     return retval;
   }
@@ -341,11 +342,12 @@ public class EasyProperties extends Properties {
   }
 
   //java Enums are not mutable
-  public void loadEnum(String key, Enum target) {
+  public <E extends Enum> E loadEnum(String key, E target) {
     String prop = getString(key);
     if (prop != null) {
-      target = Enum.valueOf(target.getClass(), prop);
+//todo:0 java is being a pain about type checking here, bound is tigher than needed yet it bitches:      return Enum.valueOf(target.getClass(), prop);
     }
+    return target;
   }
 
   /**

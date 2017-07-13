@@ -28,10 +28,10 @@ public class DBConnInfo {
 
   @Storable.Stored
   public boolean autoCommit = false;
+  //  @Storable.Stored
+//  public int oversize = 0;
   @Storable.Stored
-  public int oversize = 0;
-  @Storable.Stored
-  public int intervalsecs = 100;
+  public int intervalsecs = 0;
   @Storable.Stored
   public String keepaliveSQL = "";
 

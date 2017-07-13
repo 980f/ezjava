@@ -179,7 +179,7 @@ public class ReflectX {
       try {
         return factory.invoke(string);
       } catch (IllegalAccessException | InvocationTargetException e) {
-        ErrorLogStream.Global().Caught(e, "ReflectX.enumObject");
+        ErrorLogStream.Global().Caught(e, "ReflectX.enumObject on {0}", fclaz);
         return null;
       }
     }
@@ -371,14 +371,18 @@ public class ReflectX {
       String classname = ezc.getString("class");
       dbg.VERBOSE(StringX.bracketed("Create:classname(", classname));
       Class claz = classForName(classname);
-      dbg.VERBOSE("Create:class:" + claz);
-      @SuppressWarnings("unchecked") Method meth = claz.getMethod("Create", creatorArgs);
-      dbg.VERBOSE("Create:Method:" + meth);
-      Object obj = meth.invoke(null, arglist);
-      dbg.VERBOSE("Create:Object:" + obj);
-      return obj;
+      if (claz != null) {
+        dbg.VERBOSE("Create:class:" + claz);
+        //noinspection unchecked
+        Method meth = claz.getMethod("Create", creatorArgs);
+        dbg.VERBOSE("Create:Method:" + meth);
+        Object obj = meth.invoke(null, arglist);
+        dbg.VERBOSE("Create:Object:" + obj);
+        return obj;
+      }
+      return null;
     } catch (Exception any) {
-      dbg.WARNING(any.getMessage() + " In Create(ezc), " + "properties:" + ezc.asParagraph());
+      dbg.WARNING(" Ezc.Create() got {0}, properties: {1}", any.getMessage(), ezc.asParagraph());
       return null;
     }
   }

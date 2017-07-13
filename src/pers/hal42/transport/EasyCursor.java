@@ -8,7 +8,6 @@ import pers.hal42.util.StringStack;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Map;
@@ -18,7 +17,7 @@ import java.util.Vector;
 /**
  * hierarchy traverser, over property set that it is derived from
  */
-public class EasyCursor extends EasyProperties {
+public class EasyCursor extends EasyProperties implements AutoCloseable {
   protected String context = "";
   protected StringStack tree = new StringStack(ReflectX.shortClassName(this));
   public final static char SEP = '.';
@@ -118,18 +117,14 @@ public class EasyCursor extends EasyProperties {
   public <T> EasyProperties setObject(String key, T obj, EasyHelper<T> helper) {
     if (obj != null) {
       if (obj instanceof isEasy) {
-        push(key);
-        try {
+        try (EasyCursor popper = push(key)) {
           ((isEasy) obj).save(this);
-        } finally {
-          return pop();
+          return this;
         }
       } else if (helper != null) {
-        push(key);
-        try {
+        try (EasyCursor popper = push(key)) {
           helper.helpsave(this, obj);
-        } finally {
-          return pop();
+          return this;
         }
       } else {//it better have a useful string representation:
         return super.setObject(key, obj);
@@ -152,26 +147,20 @@ public class EasyCursor extends EasyProperties {
       T newone;
       if (ReflectX.isImplementorOf(act, isEasy.class)) {
         newone = act.newInstance();//+_+ just because a class is easy doesn't mean that its empty constructor is accessible
-        push(key);
-        try {
+        try (EasyCursor popper = push(key)) {
           ((isEasy) newone).load(this);
           return newone;
-        } finally {
-          pop();
         }
       } else if (helper != null) {
         newone = act.newInstance();
-        push(key);
-        try {
+        try (EasyCursor popper = push(key)) {
           return helper.helpload(this, newone);
-        } finally {
-          pop();
         }
       } else {
         return super.getObject(key, act);
       }
     } catch (Exception ex) {
-      dbg.Caught(ex, "EasyCursor.getObject:" + act.getName());
+      dbg.Caught(ex, "EasyCursor.getObject: {0}", act.getName());
       return null;
     }
   }
@@ -229,7 +218,6 @@ public class EasyCursor extends EasyProperties {
     }
     return branch.uniqueify();
   }
-
 //  public <T> T getObject(String key, Class<? extends T> act) {
 //    return getObject(key, act, null);
 //  }
@@ -250,11 +238,11 @@ public class EasyCursor extends EasyProperties {
         String subkey = branch.itemAt(i);
         subset.setString(subkey, getProperty(subkey));
       }
+      return subset;
     } finally {
       if (branchcontext != null) {
         pop();
       }
-      return subset;
     }
   }
 
@@ -273,11 +261,11 @@ public class EasyCursor extends EasyProperties {
         String subkey = branch.itemAt(i);
         setString(subkey, getProperty(subkey));
       }
+      return this;
     } finally {
       if (branchcontext != null) {
         pop();
       }
-      return this;
     }
   }
 
@@ -303,7 +291,7 @@ public class EasyCursor extends EasyProperties {
     }
   }
 
-  public void setVector(Vector v) {
+  public <T> void setVector(Vector<T> v) {
     setVector(v, null);
   }
 
@@ -311,11 +299,9 @@ public class EasyCursor extends EasyProperties {
    * save @param v vector content under branch @param key, using @param helper to convert objects to text.
    */
   public <T> EasyCursor saveVector(String key, Vector<T> v, EasyHelper<T> helper) {
-    push(key);
-    try {
+    try (EasyCursor popper = push(key)) {
       setVector(v, helper);
-    } finally {
-      return pop();
+      return this;
     }
   }
   /////////////////////////////////////
@@ -350,11 +336,8 @@ public class EasyCursor extends EasyProperties {
   }
 
   public <T> Vector<T> loadVector(String key, Class<? extends T> act, EasyHelper<T> helper) {
-    push(key);
-    try {
+    try (EasyCursor popper = push(key)) {
       return getVector(act, helper);
-    } finally {
-      pop();
     }
   }
 
@@ -375,13 +358,11 @@ public class EasyCursor extends EasyProperties {
   public EasyCursor saveArray(String key, String[] labeltmp, Object[] v) {
     int i = v.length;
     TextList label = labeltmp == null ? new TextList() : TextList.CreateFrom(labeltmp);
-    push(key);
-    try {
+    try (EasyCursor popper = push(key)) {
       while (i-- > 0) {
         setObject(StringX.OnTrivial(label.itemAt(i), Integer.toString(i)), v[i]);
       }
-    } finally {
-      return pop();
+      return this;
     }
   }
 
@@ -402,8 +383,7 @@ public class EasyCursor extends EasyProperties {
    */
   public EasyCursor saveMap(String tablename, Map table) {
     if (!table.isEmpty()) {
-      push(tablename);
-      try {
+      try (EasyCursor popper = push(tablename)) {
         for (Object key : table.keySet()) {
           try {
             setObject(String.valueOf(key), table.get(key));
@@ -411,8 +391,6 @@ public class EasyCursor extends EasyProperties {
             //silently omit defectively keyed or non-savable entries.
           }
         }
-      } finally {
-        return pop();
       }
     }
     return this;
@@ -424,8 +402,7 @@ public class EasyCursor extends EasyProperties {
    */
   public <T> Map<String, T> getMap(String mapname, Class<? extends T> act) {
     Map<String, T> table = new LinearMap<>();
-    push(mapname);
-    try {
+    try (EasyCursor popper = push(mapname)) {
       //for each item on branch its key becomes the hashtable key, we make an object out of its value.
       TextList keys = topKeys();
       for (String key : keys.Vector()) {
@@ -436,8 +413,6 @@ public class EasyCursor extends EasyProperties {
         }
       }
       return table;
-    } finally {
-      pop();
     }
   }
 
@@ -453,14 +428,12 @@ public class EasyCursor extends EasyProperties {
     }
     return tl;
   }
-
 //  /**
 //   * save an array, using a trueEnum to label the entries
 //   */
 //  public EasyCursor saveEnumeratedArray(String key, Object v[], TrueEnum indexer) {
 //    return saveArray(key, indexer.getText(), v);
 //  }
-
 //  /**
 //   * make a vector (yes, I know the name says array)
 //   * of @param key name of vector
@@ -471,8 +444,7 @@ public class EasyCursor extends EasyProperties {
 //  public Vector loadEasyEnumeratedVector(String key, Class act, TrueEnum indexer) {
 //    Vector v = null;
 //    int size = indexer.numValues();
-//    push(key);
-//    try {
+//        try (EasyCursor popper=push(key)){
 //      v = new Vector(size);
 //      v.setSize(size);
 //      for (int i = size; i-- > 0; ) {
@@ -484,12 +456,9 @@ public class EasyCursor extends EasyProperties {
 //          continue; //try to finish iteration.
 //        }
 //      }
-//    } finally {
-//      pop();
-//      return v;
+//  return v;
 //    }
 //  }
-
 //  public EasyCursor saveEasyEnumeratedArray(String key, Object v[], TrueEnum indexer) {
 //    int i = v.length;
 //    if (i > indexer.numValues()) {//invalid vector
@@ -518,15 +487,11 @@ public class EasyCursor extends EasyProperties {
 
   public EasyCursor getBlock(isEasy ezo, String key) {
     if (ezo != null) {
-      push(key);
-      try {
+      try (EasyCursor popper = push(key)) {
         ezo.load(this);
-      } finally {
-        return pop();
       }
-    } else {
-      return this;
     }
+    return this;
   }
 
   /**
@@ -536,15 +501,11 @@ public class EasyCursor extends EasyProperties {
    */
   public EasyCursor setBlock(isEasy ezo, String key) {
     if (ezo != null) {
-      push(key);
-      try {
+      try (EasyCursor popper = push(key)) {
         ezo.save(this);
-      } finally {
-        return pop();
       }
-    } else {
-      return this;
     }
+    return this;
   }
 
   /**
@@ -552,6 +513,11 @@ public class EasyCursor extends EasyProperties {
    */
   public Enumeration propertyNames() {
     return TextListIterator.New(branchKeys());
+  }
+
+  @Override
+  public void close() {
+    pop();
   }
 
   public static String makeKey(String morekey) {
@@ -589,28 +555,17 @@ public class EasyCursor extends EasyProperties {
 
   public static EasyCursor FromDisk(File f) {
     EasyCursor fromdisk = new EasyCursor();
-    FileInputStream is = null;
-    try {
-      is = new FileInputStream(f);
+    try (FileInputStream is = new FileInputStream(f)) {
       fromdisk.Load(is);
     } catch (Exception ignored) {
       //will return an empty EasyCursor
-    } finally {
-      if (is != null) {
-        try {
-          is.close();
-        } catch (IOException e) {
-
-        }
-      }
-      return fromdisk;
     }
+    return fromdisk;
   }
 
   public static String dump(isEasy ez) {
     return makeFrom(ez).asParagraph(OS.EOL);
   }
-
 }
 
 

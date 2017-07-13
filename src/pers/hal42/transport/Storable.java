@@ -10,7 +10,6 @@ import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -313,7 +312,7 @@ public class Storable {
                   if (subchanges >= 0) {
                     changes += subchanges;
                   } else {
-                    dbg.ERROR(MessageFormat.format("Not yet setting fields of type {0}", fclaz.getCanonicalName()));
+                    dbg.ERROR("Not yet setting fields of type {0}", fclaz.getCanonicalName());
                   }
                 }
               }
@@ -321,7 +320,7 @@ public class Storable {
             }
             ++changes;
           } catch (IllegalAccessException e) {
-            dbg.Caught(e, MessageFormat.format("applying Storable to {0}", claz.getCanonicalName()));
+            dbg.Caught(e, "applying Storable to {0}", claz.getCanonicalName());
           }
         }
       }
@@ -603,14 +602,14 @@ public class Storable {
                 if (subchanges >= 0) {
                   changes += subchanges;
                 } else {
-                  dbg.ERROR(MessageFormat.format("Not yet recording fields of type {0}", fclaz.getCanonicalName()));
+                  dbg.ERROR("Not yet recording fields of type {0}", fclaz.getCanonicalName());
                 }
               }
               continue;//in order to not increment 'changes'
             }
             ++changes;
           } catch (IllegalAccessException e) {
-            dbg.Caught(e, MessageFormat.format("applying {0} to Storable", claz.getCanonicalName()));
+            dbg.Caught(e, "applying {0} to Storable", claz.getCanonicalName());
           }
         }
       }

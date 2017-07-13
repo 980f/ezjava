@@ -175,15 +175,6 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     t.printStackTrace(System.out);
   }
 
-
-//  public void VERBOSE(String message) {
-//    Message(VERBOSE, message);
-//  }
-//
-//  public void ERROR(String message) {
-//    Message(ERROR, message);
-//  }
-
   public void VERBOSE(String message, Object... clump) {
     Message(VERBOSE, message, clump);
   }
@@ -252,11 +243,11 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     Caught(caught, "");
   }
 
-  public void Caught(Throwable caught, String title) {
-    int localLevel = ERROR.level; //FUE
-    TextList tl = Caught(title, caught, new TextList());
+  public void Caught(Throwable caught, String title, Object... clump) {
+    FATAL(title, clump);
+    TextList tl = listNesteds(caught, new TextList());
     for (int i = 0; i < tl.size(); i++) {//#in order
-      Message(localLevel, tl.itemAt(i));
+      Message(ERROR.level, tl.itemAt(i));
     }
   }
 
@@ -510,8 +501,8 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     return Debug;
   }
 
-  public static TextList Caught(String title, Throwable caught, TextList tl) {
-    tl.add("<Caught> " + StringX.TrivialDefault(title, ""));
+  public static TextList listNesteds(Throwable caught, TextList tl) {
+    tl.add("<Caught> ");
     resolveExceptions(caught, tl);
     tl.add("</Caught>");
     return tl;
@@ -572,7 +563,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     // here, see if the exception CONTAINS an exception, and if so, do it too
     Throwable t2 = NextException(t);
     if (t2 != null) {
-      Caught("", t2, tl);
+      listNesteds(t2, tl);
     }
     return tl;
   }
