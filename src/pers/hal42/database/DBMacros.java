@@ -37,7 +37,6 @@ enum DBFunctionType {
   protected final String[] getMyText() {
     return myTexts;
   }
-
 }
 
 public class DBMacros extends GenericDB {
@@ -418,7 +417,6 @@ public class DBMacros extends GenericDB {
   public int getIntFromQuery(QueryString queryStr, String fieldname) {
     return StringX.parseInt(StringX.TrivialDefault(getStringFromQuery(queryStr, fieldname), "-1"));
   }
-
 //  private void checkDBthreadSelect() {
 //    DBMacros should = PayMateDBDispenser.getPayMateDB();
 //    DBMacros is = this;
@@ -497,7 +495,6 @@ public class DBMacros extends GenericDB {
     queryStats.add(swatch.millis());
     logQuery(DBFunctionType.QUERY, swatch.millis(), -1, true, qn);
     printWarnings(mycon);
-
     if (canReattempt && needsReattempt) { // +++ check the time it took last time?
       return query(queryStr, throwException, false /*canReattempt*/);
     } else {
@@ -586,7 +583,6 @@ public class DBMacros extends GenericDB {
         throw e;
       }
       dbg.Caught(e, "Exception performing update: " + queryStr);
-
       recycleConnection(e, mycon, queryStr); // +++ testing this !!!
       return FAILED;
     } catch (Exception e1) {
@@ -707,7 +703,6 @@ public class DBMacros extends GenericDB {
   public DatabaseProfile profileDatabase(String databaseName, String tablename, boolean sort) {
     dbg.VERBOSE("Profiling database: {0} ...", databaseName);
     TableInfo tq = new TableInfo(null, databaseName, tablename, null, null);
-
     DatabaseProfile tables = new DatabaseProfile(databaseName);
     //noinspection StringEquality
     if (tablename != ALLTABLES) {
@@ -717,7 +712,6 @@ public class DBMacros extends GenericDB {
       }
       tables.add(tp);
     } else { // Profile ALLTABLES
-
       TableInfoList tablelist = getTableList(tq);
       for (int i = 0; i < tablelist.size(); i++) {
         tq.setName(tablelist.itemAt(i).name());
@@ -746,7 +740,6 @@ public class DBMacros extends GenericDB {
   private TableProfile profileTable(TableInfo tq) {
     Vector<ColumnProfile> cols = new Vector<>(100);
     TableProfile tp = TableProfile.create(tq, null, new ColumnProfile[0]);
-
     dbg.VERBOSE("profiling table '{0}'", tq.name());
     try (ResultSet cpmd = getDatabaseMetadata().getColumns(tq.catalog(), tq.schema(), tq.name(), null)) {
       if (cpmd != null) {
@@ -814,49 +807,29 @@ public class DBMacros extends GenericDB {
   }
 
   public boolean primaryKeyExists(PrimaryKeyProfile primaryKey) {
-    boolean ret = false;
-    // +++ put this into the table profiler ???
-    ResultSet rs = null;
-    try {
-      dbg.VERBOSE("Calling DatabaseMetadata.getPrimaryKeys() ...");
+    try (ErrorLogStream pop = dbg.Push("Calling DatabaseMetadata.getPrimaryKeys()")) {
       String tablename = primaryKey.table.name().toLowerCase(); // MUST BE LOWER for PG
-      rs = getDatabaseMetadata().getPrimaryKeys(null/*catalog*/, null/*schema*/, tablename);
-    } catch (Exception e) {
-      dbg.Caught(e);
-    } finally {
-      dbg.VERBOSE("Done calling DatabaseMetadata.getPrimaryKeys().");
-    }
-    if (rs != null) {
-      try {
-        boolean emptyresultset = true;
-        while (next(rs)) {
-          emptyresultset = false;
-          String cname = getStringFromRS("PK_NAME", rs);
-          if (primaryKey.name.equalsIgnoreCase(cname)) {
-            ret = true;
-            break;
-          } else {
-            dbg.ERROR("Primary key test: '" + cname + "' is not the same as '" + primaryKey.name + "'.");
+      try (ResultSet rs = getDatabaseMetadata().getPrimaryKeys(null/*catalog*/, null/*schema*/, tablename)) {
+        if (rs != null) {
+          while (next(rs)) {
+            String cname = getStringFromRS("PK_NAME", rs);
+            if (primaryKey.name.equalsIgnoreCase(cname)) {
+              return true;
+//              break;
+            } else {
+              dbg.ERROR("Primary key test: '" + cname + "' is not the same as '" + primaryKey.name + "'.");
+            }
           }
+        } else {
+          dbg.ERROR("ResultSet = NULL !!!");
         }
-        if (emptyresultset) {
-          dbg.WARNING("Primary key test: resultset is empty!");
-        }
-      } catch (Exception e) {
+        String disp = primaryKey.table.name() + " primary key constraint " + primaryKey.name + " does NOT exist.";
+        return false;
+      } catch (SQLException e) {
         dbg.Caught(e);
-      } finally {
-        closeRS(rs);
+        return false;
       }
-    } else {
-      dbg.ERROR("ResultSet = NULL !!!");
     }
-    String disp = primaryKey.table.name() + " primary key constraint " + primaryKey.name + " does " + (ret ? "" : "NOT ") + "exist.";
-    if (ret) {
-      dbg.VERBOSE(disp);
-    } else {
-      dbg.WARNING(disp);
-    }
-    return ret;
   }
 
   // due to a bug in the PG driver ...
@@ -899,7 +872,6 @@ public class DBMacros extends GenericDB {
   public boolean indexExists(IndexProfile index) {
     return indexExists(index.name, index.table.name());
   }
-
 //  public static final int getColumnCount(ResultSetMetaData rsmd) {
 //    int ret = 0;
 //    try {
@@ -916,7 +888,6 @@ public class DBMacros extends GenericDB {
 //  public int getColumnCount(ResultSet rs) {
 //    return getColumnCount(getRSMD(rs));
 //  }
-
 //  public static final int NAME    = 0;
 //  public static final int TYPE    = 1;
 //  public static final int SIZE    = 2;
@@ -1012,10 +983,8 @@ public class DBMacros extends GenericDB {
    * Returns true if the field was properly dropped
    */
   protected final boolean dropField(ColumnProfile column) {
-
-    try (AutoCloseable pop = dbg.Push("dropField")) {
+    try (ErrorLogStream pop = dbg.Push("dropField")) {
       if (fieldExists(column.tq(), column.name())) {
-
         if (!getDatabaseMetadata().supportsAlterTableWithDropColumn()) {//todo:1 cache all such attributes
           dbg.ERROR("dropField " + column.fullName() + ": was not able to run since the DBMS does not support it!");
           return true;
@@ -1027,8 +996,8 @@ public class DBMacros extends GenericDB {
         dbg.ERROR("dropField " + column.fullName() + ": already dropped.");
         return true;
       }
-    } catch (Exception e) {
-      dbg.Caught(e);
+    } catch (SQLException e) {
+      dbg.Caught(e, "Dropping column {0}", column);
       return false;
     }
   }
@@ -1038,19 +1007,13 @@ public class DBMacros extends GenericDB {
    */
   protected final boolean dropIndex(String indexname, String tablename) {
     int i = -1;
-    try (AutoCloseable pop = dbg.Push("dropIndex")) {
+    try (ErrorLogStream pop = dbg.Push("dropIndex")) {
       if (indexExists(indexname, tablename)) {
         return update(QueryString.genDropIndex(indexname)) >= 0;
       } else {
-        dbg.ERROR("dropIndex " + indexname + ": index doesn't exist; can't drop.");
+        dbg.ERROR("dropIndex {0}: index doesn't exist; can't drop.", indexname);
         return true;
       }
-    } catch (SQLException e) {
-      dbg.Caught(e);
-      return false;//it existed or we wouldn't have called a function that threw an exception.
-    } catch (Exception e) {
-      //ignore closing errors.
-      return true;//won't get here.
     }
   }
 
@@ -1058,23 +1021,19 @@ public class DBMacros extends GenericDB {
    * @returns true if the table is gone
    */
   protected final boolean dropTable(String tablename) {
-    try (AutoCloseable pop = dbg.Push("dropTable")) {
+    try (ErrorLogStream pop = dbg.Push("dropTable")) {
       if (tableExists(tablename)) {
         dbg.ERROR("dropTable" + tablename + " returned " + update(QueryString.genDropTable(tablename)));
         return !tableExists(tablename);
       } else {
         return true;
       }
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
 
   // +++ use dbmd's getMaxColumnNameLength to see if the name is too long
   protected final boolean addField(ColumnProfile column) {
-
-    try (AutoCloseable pop = dbg.Push("addField")) {
+    try (ErrorLogStream pop = dbg.Push("addField")) {
       if (!fieldExists(column.tq(), column.name())) {
         dbg.ERROR("addField {0} returned {1}", column.fullName(), update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
           QueryString.genAddField(column)));
@@ -1082,23 +1041,16 @@ public class DBMacros extends GenericDB {
       } else {
         return true;
       }
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
 
   protected final boolean changeFieldType(ColumnProfile from, ColumnProfile to) {
-    try (AutoCloseable pop = dbg.Push("changeFieldType")) {
+    try (ErrorLogStream pop = dbg.Push("changeFieldType")) {
 //      dbg.ERROR("changeFieldType " + to.fullName() + " returned " + update(QueryString.genChangeFieldType(to)));
       dbg.ERROR("changeFieldType is not yet supported.  Write code in the content validator to handle this!");
       return false;//fieldExists(to.table().name(), to.name()); // +++ instead, need to do the things you do to check that a column is correct, not just check to see if it is added!
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
-
 //  // for this version of postgresql jdbc, the fetch size is the WHOLE thing!
 //  public static final int getResultSetFetchSize(ResultSet rs) {
 //    try {
@@ -1108,35 +1060,26 @@ public class DBMacros extends GenericDB {
 //      return -1;
 //    }
 //  }
-
   ////////////////////////////////////
   // database profiling
 
   protected final boolean changeFieldNullable(ColumnProfile to) {
-    try (AutoCloseable pop = dbg.Push("changeFieldNullable")) {
+    try (ErrorLogStream pop = dbg.Push("changeFieldNullable")) {
       dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
       return to.sameNullableAs(aftercolumn);
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
 
   protected final boolean changeFieldDefault(ColumnProfile to) {
-
-    try (AutoCloseable pop = dbg.Push("changeFieldDefault")) {
+    try (ErrorLogStream pop = dbg.Push("changeFieldDefault")) {
       dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(QueryString.genChangeFieldDefault(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
       return to.sameDefaultAs(aftercolumn);
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
-
 //  public int getColumnSize(String tablename, String fieldname) {
 //    int ret = 0;
 //    TableProfile dbp = profileTable(tablename);
@@ -1152,7 +1095,6 @@ public class DBMacros extends GenericDB {
 //    }
 //    return ret;
 //  }
-
 //  private static final EasyProperties ezp = new EasyProperties();
 //  private static boolean ezpset = false;
 //  private static final Monitor javaSqlTypesMonitor = new Monitor(DBMacros.class.getName()+".javaSqlTypes");
@@ -1189,11 +1131,9 @@ public class DBMacros extends GenericDB {
   protected final int validateAddIndex(IndexProfile index) {
     String functionName = "validateAddIndex";
     int success = FAILED;
-
     String indexName = index.name;
     String tableName = index.table.name();
     String fieldExpression = index.columnNamesCommad();
-
     try (AutoCloseable pop = dbv.Push(functionName)) {
       dbv.mark("Add Index " + indexName + " for " + tableName + ":" + fieldExpression);
       if (!indexExists(index)) {
@@ -1261,13 +1201,11 @@ public class DBMacros extends GenericDB {
       return FAILED;
     }
   }
-
   //todo:2 use dbmd's getMaxColumnNameLength to see if the name is too long
 
   // +++ generalize internal parts and move to DBMacros!
   protected final int validateAddForeignKey(ForeignKeyProfile foreignKey) {
     String functionName = "validateAddForeignKey";
-
     try (AutoCloseable pop = dbv.Push(functionName)) {
       String blurb = "Foreign Key " + foreignKey.name + " for " + foreignKey.table.name() + "." + foreignKey.field.name() + " against " + foreignKey.referenceTable.name();
       dbv.mark("Add " + blurb);
@@ -1291,7 +1229,6 @@ public class DBMacros extends GenericDB {
 
   protected final int validateAddTable(TableProfile table) {
     String functionName = "validateAddTable";
-
     try (AutoCloseable pop = dbv.Push(functionName)) {
       dbv.mark("Add table " + table.name());
       if (!tableExists(table.name())) {
@@ -1301,7 +1238,6 @@ public class DBMacros extends GenericDB {
       } else {
         dbv.VERBOSE("Table " + table.name() + " already added.");
         return ALREADY;
-
       }
     } catch (Exception e) {
       dbv.Caught(e);
@@ -1311,7 +1247,6 @@ public class DBMacros extends GenericDB {
 
   protected final boolean dropTableConstraint(String tablename, String constraintname) {
     String functionName = "dropTableConstraint";
-
     String toDrop = "drop constraint " + tablename + "." + constraintname;
     try (AutoCloseable pop = dbv.Push(functionName)) {
 //      dbv.mark(toDrop);
@@ -1328,7 +1263,6 @@ public class DBMacros extends GenericDB {
   protected final boolean renameField(String table, String oldname, String newname) {
     int count = 0;
     TableInfo tq = new TableInfo(table);
-
     if (fieldExists(tq, oldname)) {
       count = update(QueryString.genRenameColumn(table, oldname, newname));
     }
@@ -1428,7 +1362,11 @@ public class DBMacros extends GenericDB {
       return false;
     }
   }
-  // VALIDATOR STUFF
+
+  public ResultSet getColumns(TableInfo ti) throws SQLException {
+    //noinspection ConstantConditions
+    return getDatabaseMetadata().getColumns(null, ti.schema(), ti.name(), null);
+  }
 
   public static ResultSetMetaData getRSMD(ResultSet rs) {
     ResultSetMetaData rsmd = null;
@@ -1445,8 +1383,6 @@ public class DBMacros extends GenericDB {
     }
     return rsmd;
   }
-
-  // VALIDATOR STUFF
 
   public static EasyProperties colsToProperties(ResultSet rs, ColumnProfile ignoreColumn) {
     EasyProperties ezc = new EasyProperties();
@@ -1476,7 +1412,6 @@ public class DBMacros extends GenericDB {
   }
 
   private static void logQuery(DBFunctionType qt, long millis, int retval, boolean regularLog, long qn) {
-
     try (AutoCloseable free = timerStrMon.getMonitor()) {
       StringBuilder toLog = new StringBuilder();//"exception attempting to log the query";
       // create a pool of DBFunctionTypes and Fstrings that you can reuse [no mutexing == faster].
@@ -1548,35 +1483,24 @@ public class DBMacros extends GenericDB {
     try {
       if (myrs != null) {//valid non empty resultset
         if (column < 1) {//code that tells us to use the name field
-          try {
-            dbg.VERBOSE("Calling ResultSet.findColumn() ...");
+          try (ErrorLogStream pop = dbg.Push("ResultSet.findColumn()")) {
             column = myrs.findColumn(fieldName);//excepts if results set is empty!
           } catch (SQLException ex) {
             dbg.VERBOSE("Coding error: \n" + ErrorLogStream.whereAmI());
             dbg.VERBOSE(ex.getMessage() + " - see next line for args...");
-          } finally {
-            dbg.VERBOSE("Done calling ResultSet.findColumn().");
           }
         }
         if (column < 1) {//happens when field is present but result set is empty.
-          dbg.ERROR("getStringFromRS: column [" + fieldName + "] (not included in query?): ");
+          dbg.ERROR("getStringFromRS: column [{0}] (not included in query?): ", fieldName);
         } else {
-          try {
-            dbg.VERBOSE("Calling ResultSet.getString() ...");
+          try (ErrorLogStream pop = dbg.Push("ResultSet.getString()")) {
             ret = myrs.getString(column);
-            //} catch (Exception ex) {
-          } finally {
-            dbg.VERBOSE("Done calling ResultSet.getString().");
           }
         }
       }
     } catch (Exception t) {
-      dbg.ERROR("getStringFromRS: Exception getting column [" + column + "/" + fieldName + "] (not included in query?): ");
-      dbg.Caught(t);
+      dbg.Caught(t, "getStringFromRS: Exception getting column [{0}/{1}] (not included in query?)", column, fieldName);
     }
-    // --------------- NEXT LINE COULD BE CAUSING PROBLEMS,
-    // but try to fix the problems elsewhere so that we can preserve empty strings here.
-    // return StringX.OnTrivial(StringX.TrivialDefault(ret, "").trim(), " "); // Why are we doing this ?!?!?!?  I think because leaving it out makes empty (raised) boxes in the html tables, but we should fix those in the html tables, and not here.
     return StringX.TrivialDefault(ret, "").trim();
   }
 
@@ -1605,10 +1529,7 @@ public class DBMacros extends GenericDB {
   }
 
   public static boolean getBooleanFromRS(String column, ResultSet myrs) {
-    String boolstr = getStringFromRS(column, myrs);
-    boolean ret = Bool.For(boolstr);
-    dbg.VERBOSE("Returning " + ret + " for string " + boolstr);
-    return ret;
+    return Bool.For(getStringFromRS(column, myrs));
   }
 
   public static boolean getBooleanFromRS(ColumnProfile column, ResultSet myrs) {
@@ -1675,13 +1596,10 @@ public class DBMacros extends GenericDB {
 
   public static void closeStmt(Statement stmt) {
     if (stmt != null) {
-      try {
-        dbg.VERBOSE("Calling Statement.close() ...");
+      try (ErrorLogStream pop = dbg.Push("Statement.close()")) {
         stmt.close();
       } catch (Exception t) {
-        dbg.WARNING("Exception closing statement.");
-      } finally {
-        dbg.VERBOSE("Done calling Statement.close().");
+        dbg.WARNING("closing statement gave {0}", t);
       }
     }
   }
@@ -1691,28 +1609,20 @@ public class DBMacros extends GenericDB {
    */
   public static void closeRS(ResultSet rs) {
     if (rs != null) {
-      try {
-        dbg.VERBOSE("Calling ResultSet.close() ...");
+      try (ErrorLogStream pop = dbg.Push("ResultSet.close()")) {
         rs.close();
       } catch (Exception t) {
-        dbg.WARNING("Exception closing result set.");
-      } finally {
-        dbg.VERBOSE("Done calling ResultSet.close().");
+        dbg.WARNING("Exception closing result set: {0}", t);
       }
     }
   }
 
   public static Statement getStatement(ResultSet rs) {
-    try {
-      if (rs != null) {
-        dbg.VERBOSE("Calling ResultSet.getStatement() ...");
+    if (rs != null) {
+      try (ErrorLogStream pop = dbg.Push("ResultSet.getStatement()")) {
         return rs.getStatement();
-      }
-    } catch (Exception t) {
-      dbg.WARNING("Exception getting statement from resultset.");
-    } finally {
-      if (rs != null) {
-        dbg.VERBOSE("Done calling ResultSet.getStatement().");
+      } catch (Exception t) {
+        dbg.WARNING("Exception getting statement from resultset: {0}.", t);
       }
     }
     return null;
