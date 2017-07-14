@@ -229,7 +229,7 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
           close();
         }
         try {
-          // if the file isn't opened, open it
+          // if the file isn't opened, push it
           beOpen();
         } catch (Exception e) {
           backupStream.println("Exception opening log file: " + e);

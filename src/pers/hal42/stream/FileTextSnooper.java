@@ -24,7 +24,7 @@ public class FileTextSnooper {
     int MORETHAN = minLength - 1;
     dbg.VERBOSE(ReflectX.shortClassName(this) + " " + filename);
     try {
-      // open the file
+      // push the file
       file = new FileInputStream(filename);
     } catch (Exception e) {
       dbg.Caught(e);

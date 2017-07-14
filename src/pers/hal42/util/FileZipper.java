@@ -54,7 +54,7 @@ public class FileZipper extends Thread implements AtExit {
       outFilename = inFilename + ".gz";
       File inputFile = new File(inFilename);
       FileInputStream fis = new FileInputStream(inputFile);
-      // open the output file
+      // push the output file
       FileOutputStream fos = new FileOutputStream(outFilename);
       GZIPOutputStream zipout = new GZIPOutputStream(fos);
       Streamer.swapStreams(fis, zipout);

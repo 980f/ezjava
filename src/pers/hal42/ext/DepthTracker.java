@@ -31,13 +31,13 @@ public class DepthTracker {
     nested.setto(0);
   }
 
-  public CountedLock open() {
+  public CountedLock push() {
     nested.open();
     maxDepth.inspect(nested.asInt());
     return nested;
   }
 
-  public CountedLock open(int loc) {
+  public CountedLock push(int loc) {
     nested.open();
     maxDepth.inspect(loc, nested.asInt());
     return nested;
@@ -48,12 +48,11 @@ public class DepthTracker {
    */
   public static int main(String argv[]) {
     DepthTracker testee = new DepthTracker();
-
-    try (CountedLock arf = testee.open()) {
+    try (CountedLock arf = testee.push()) {
       System.out.println("first level " + testee.maxDepth.getExtremum(~0));
-      try (CountedLock arf2 = testee.open()) {
+      try (CountedLock arf2 = testee.push()) {
         System.out.println("second level " + testee.maxDepth.getExtremum(~0));
-        try (CountedLock arf3 = testee.open()) {
+        try (CountedLock arf3 = testee.push()) {
           System.out.println("third level " + testee.maxDepth.getExtremum(~0));
         } finally {
           System.out.println("third exit " + arf2.asInt());

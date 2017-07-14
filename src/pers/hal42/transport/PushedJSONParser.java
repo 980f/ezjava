@@ -12,15 +12,53 @@ import static pers.hal42.transport.PushedJSONParser.JsonAction.*;
  * tracks incoming byte sequence, records interesting points, reports interesting events
  */
 public class PushedJSONParser extends PushedParser {
-  static final ErrorLogStream dbg = ErrorLogStream.getForClass(PushedJSONParser.class);
+  public enum JsonAction {
+    Illegal,    //not a valid char given state, user must decide how to recover.
+    Continue,   //continue scanning
+    BeginWad, //push brace encountered
+    EndItem,  //comma between siblings
+    EndWad,   //closing wad
+    Done
+  }
+
   /**
-   * whether a name was seen, bounds recorded in 'name'.
+   * attributes of the file, only interesting for debug
    */
-  public boolean haveName;
+  static public class JsonStats {
+    /**
+     * number of values
+     */
+    int totalNodes = 0;
+    /**
+     * number of terminal values
+     */
+    int totalScalar = 0;
+
+    DepthTracker depthTracker = new DepthTracker();
+
+    void reset() {
+      totalNodes = 0;
+      totalScalar = 0;
+      depthTracker.reset();
+    }
+
+    void onNode(boolean scalar) {
+      ++totalNodes;
+      if (scalar) {
+        ++totalScalar;
+      }
+    }
+  }
   /**
    * 'cursor' recorded at start and end of name token
    */
   public final Span name = new Span();
+  public final JsonStats stats = new JsonStats();
+  private final boolean equalsAndSemi;
+  /**
+   * whether a name was seen, bounds recorded in 'name'.
+   */
+  public boolean haveName;
   /**
    * whether the name was quoted.
    */
@@ -29,8 +67,7 @@ public class PushedJSONParser extends PushedParser {
    * our first user doesn't care about the difference between [ and {, but someone else may so:
    */
   public boolean orderedWad;
-  public final JsonStats stats = new JsonStats();
-  private final boolean equalsAndSemi;
+  static final ErrorLogStream dbg = ErrorLogStream.getForClass(PushedJSONParser.class);
 
   /**
    * @param equalsAndSemi determines dialect of JSON allowed.
@@ -123,6 +160,8 @@ public class PushedJSONParser extends PushedParser {
   public void reset(boolean fully) {
     super.reset(fully);
   }
+//  private void endToken(int mark) {
+//  }
 
   /**
    * subtract the @param offset from all values derived from cursor, including cursor.
@@ -137,46 +176,5 @@ public class PushedJSONParser extends PushedParser {
    */
   protected void recordName() {
     dbg.VERBOSE("found name between {0} and {1}", name.lowest, name.highest);
-  }
-
-//  private void endToken(int mark) {
-//  }
-
-  public enum JsonAction {
-    Illegal,    //not a valid char given state, user must decide how to recover.
-    Continue,   //continue scanning
-    BeginWad, //open brace encountered
-    EndItem,  //comma between siblings
-    EndWad,   //closing wad
-    Done
-  }
-
-  /**
-   * attributes of the file, only interesting for debug
-   */
-  static public class JsonStats {
-    /**
-     * number of values
-     */
-    int totalNodes = 0;
-    /**
-     * number of terminal values
-     */
-    int totalScalar = 0;
-
-    DepthTracker depthTracker = new DepthTracker();
-
-    void reset() {
-      totalNodes = 0;
-      totalScalar = 0;
-      depthTracker.reset();
-    }
-
-    void onNode(boolean scalar) {
-      ++totalNodes;
-      if (scalar) {
-        ++totalScalar;
-      }
-    }
   }
 }

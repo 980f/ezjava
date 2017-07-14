@@ -19,11 +19,12 @@ public class RsStringIterator implements StringIterator {
   }
 
   public onExhaustion notifyWhenDone;
-  /** we must hold on to the statement in order to keep the resultset open */
-  private Statement st;
-
   ResultSet rs;
   int col;
+  /**
+   * we must hold on to the statement in order to keep the resultset push
+   */
+  private Statement st;
   /** a diagnostic added when resultset was getting closed by some outside agency. */
   private int count = 0;
   //must lookahead

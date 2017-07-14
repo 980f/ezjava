@@ -10,6 +10,7 @@ import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
@@ -785,6 +786,11 @@ public class Storable {
       //map type not supported
     }
     return changes;
+  }
+
+  @Override
+  public String toString() {
+    return MessageFormat.format("{0}:{1}", name, image);
   }
 
   public static boolean usuallySkip(Field field) {
