@@ -5,8 +5,6 @@ import pers.hal42.logging.ErrorLogStream;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 
-import static pers.hal42.transport.JsonStorable.filenameTag;
-
 /**
  * a storable node which is associated with a file.
  * Extend from this as the concrete class name is used to find the file.
@@ -19,11 +17,20 @@ public class JsonOptions {
   /** how forcefully to map the DOM to the object */
   transient  //don't save, and especially don't load, the rules.
   public Storable.Rules rules;
-  protected static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonOptions.class);//use base here, not the extension
+  protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(JsonOptions.class);//use base here, not the extension
 
   protected JsonOptions() {
     node = JsonStorable.StandardRoot(getClass());
     rules = Storable.Rules.Master;
+  }
+
+  /**
+   * create and initialize from random file @param altfilename
+   */
+  public JsonOptions(String altfilename) {//public for test access, normal use is to derive from this class.
+    node = new Storable(altfilename);
+    rules = Storable.Rules.Master;
+    load(altfilename);
   }
 
   /** apply DOM to object */
@@ -36,13 +43,16 @@ public class JsonOptions {
     applyNode();
   }
 
-  public void load() {
+  public void load(String filename) {
     final JsonStorable optsloader = new JsonStorable(true);
-    if (optsloader.loadFile(node.name)) {
+    if (optsloader.loadFile(JsonStorable.Filenamer(node, filename))) {
       optsloader.parse(node);
-      node.child(filenameTag).setValue(node.name);
       applyNode();
     }
+  }
+
+  public void load() {
+    load(null);
   }
 
   public void save(String filename) {

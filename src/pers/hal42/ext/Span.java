@@ -44,7 +44,6 @@ public class Span {
     return highest != Invalid;
   }
 
-
   /**
    * @returns whether subString will return an actual subString as one normally thinks of that word.
    */
@@ -146,6 +145,18 @@ public class Span {
         return StringX.subString(tocut, lowest, highest);
       }
     }
+  }
+
+  /**
+   * end at first c after the present lowest.
+   */
+  public boolean find(String s, char c) {
+    if (lowest == Invalid) {
+      end(s.indexOf(c));
+    } else {
+      end(s.indexOf(c, lowest));
+    }
+    return highest != Invalid;
   }
 
   @Override

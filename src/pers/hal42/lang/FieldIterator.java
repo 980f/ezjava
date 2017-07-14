@@ -2,10 +2,11 @@ package pers.hal42.lang;
 
 import java.lang.reflect.Field;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 /**
  * Created by Andy on 6/8/2017.
- *
+ * <p>
  * To return fields of an object that are of a given type.
  */
 public class FieldIterator<Type> implements Iterator<Type> {
@@ -23,6 +24,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
   private boolean belongs(Field f) {
     return type == null || ReflectX.isImplementorOf(f.getType(), type);
   }
+
   @Override
   public boolean hasNext() {
     while (pointer < fields.length) {
@@ -49,9 +51,29 @@ public class FieldIterator<Type> implements Iterator<Type> {
   /**
    * random access by name, even works if hasNext() returns false.
    */
+  public Type find(Predicate<Type> filter) {
+    for (Field f : fields) {
+      if (belongs(f)) {
+        try {
+          //noinspection unchecked
+          Type probate = (Type) f.get(parent);
+          if (filter.test(probate)) {
+            return probate;
+          }
+        } catch (IllegalAccessException e) {
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
+   * random access by name, even works if hasNext() returns false.
+   */
   public Type find(String named) {
     for (Field f : fields) {
-      if (f.getName().equals(named)) {
+      if (f.getName().equals(named)) {//not using generic search as testing name is quite a bit faster.
         if (belongs(f)) {
           try {
             //noinspection unchecked
@@ -64,5 +86,4 @@ public class FieldIterator<Type> implements Iterator<Type> {
     }
     return null;
   }
-
 }

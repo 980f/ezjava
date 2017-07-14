@@ -1295,10 +1295,17 @@ public class DBMacros extends GenericDB {
    */
   public boolean doSimpleQuery(String query, Consumer<ResultSet> actor) {
     try (Statement stmt = makeStatement()) {
+      StopWatch timer = new StopWatch(true);
+      stmt.setFetchSize(Integer.MIN_VALUE);//hint that we want row at a time fetching from the server, necessary for large sets and irrelevangt for small.
       ResultSet rs = stmt.executeQuery(query);//allow null strings to throw an exception, so that the log tells the user how they screwed up
+      dbg.WARNING("Simplequery took {0} seconds, {1}", timer.seconds(), query);
       if (rs.next()) {
         if (actor != null) {
           actor.accept(rs);
+        }
+        //noinspection StatementWithEmptyBody
+        while (rs.next()) {
+          //statement won't close if we don't exhaust results set.
         }
         return true;
       } else {

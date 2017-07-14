@@ -5,20 +5,30 @@ import java.text.MessageFormat;
 
 public enum ColumnType {
   DECIMAL(Types.DECIMAL, false),   //good for money
-  BIGINT(Types.BIGINT, false), INTEGER(Types.INTEGER, false),  //int4 seems to have been postgres specific.
-  SMALLINT(Types.SMALLINT, false), TINYINT(Types.TINYINT, false), NUMERIC(Types.NUMERIC, false), BOOL(Types.BOOLEAN, false), TIME(Types.TIME, false),       //externally supplied time
+  BIGINT(Types.BIGINT, false), //
+  INTEGER(Types.INTEGER, false),  //int4 seems to have been postgres specific.
+  SMALLINT(Types.SMALLINT, false),  //
+  TINYINT(Types.TINYINT, false), //
+  NUMERIC(Types.NUMERIC, false), //
+  BOOL(Types.BOOLEAN, false),   //
+  TIME(Types.TIME, false),       //externally supplied time
   TIMESTAMP(Types.TIMESTAMP, false),  //database generated time value
   DATE(Types.DATE, false), //  BYTE(Types.,false),
   CHAR(Types.CHAR, false), //
   SERIAL(Types.OTHER, false),     //mysql: "SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
   //  TEXT(Types.VARCHAR,true),       //human readable tag, use varchar for content
-  VARCHAR(Types.VARCHAR, true), LONGVARCHAR(Types.LONGVARCHAR, true),
+  VARCHAR(Types.VARCHAR, true),  //
+  LONGVARCHAR(Types.LONGVARCHAR, true),
 
-  BIT(Types.BIT, false), BLOB(Types.BLOB, false), CLOB(Types.CLOB, false),
+  BIT(Types.BIT, false), //
+  BLOB(Types.BLOB, false),  //
+  CLOB(Types.CLOB, false),
 
-  BINARY(Types.BINARY, false), VARBINARY(Types.VARBINARY, true), LONGVARBINARY(Types.LONGVARBINARY, true),
-
-  NULL(Types.NULL, false), REF(Types.REF, false),
+  BINARY(Types.BINARY, false), //
+  VARBINARY(Types.VARBINARY, true), //
+  LONGVARBINARY(Types.LONGVARBINARY, true),//
+  //
+  NULL(Types.NULL, false), REF(Types.REF, false)
   //end of list
   ;
   /**

@@ -9,6 +9,7 @@ package pers.hal42.text;
 public class ListWrapper implements AutoCloseable {
   public StringBuilder s;//sb is final, damn them.
   public String comma = ",";
+  public int counter = 0;// a courtesy, counts number of times append has been called
   protected int excessCommaAt = -1;
   private String closer = null;
 
@@ -26,9 +27,10 @@ public class ListWrapper implements AutoCloseable {
     wrapWith(opener, closer);
   }
 
-  public void wrapWith(String opener, String closer) {
+  public ListWrapper wrapWith(String opener, String closer) {
     open(opener);
     this.closer = closer;
+    return this;
   }
 
   /**
@@ -42,6 +44,7 @@ public class ListWrapper implements AutoCloseable {
   }
 
   public ListWrapper append(String field) {
+    ++counter;
     addComma();
     s.append(field);
     return this;
@@ -66,9 +69,9 @@ public class ListWrapper implements AutoCloseable {
   @Override
   public void close() {
     if (excessCommaAt >= 0) {
-      s.append(closer != null ? closer : ")");
       s.deleteCharAt(excessCommaAt);
       excessCommaAt = -1;
+      s.append(closer != null ? closer : ")");
       closer = null;
     }
   }

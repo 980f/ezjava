@@ -129,10 +129,10 @@ public class JsonStorable extends PushedJSONParser {
   /**
    * record name early, for debug, could wait until makeChild
    */
-  String name = "";
-  int illegalsCount = 0;
-  static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonStorable.class);
-  public static final String filenameTag = "#filename";
+  private String name = "";
+  private int illegalsCount = 0;
+  public static ErrorLogStream dbg = ErrorLogStream.getForClass(JsonStorable.class);
+  protected static final String filenameTag = "#filename";
 
   public JsonStorable(boolean equalsAndSemi) {
     super(equalsAndSemi);
@@ -211,6 +211,7 @@ public class JsonStorable extends PushedJSONParser {
         //no more content
         //were we in the middle of an item?
         cleanup(parent);
+        root.child(filenameTag).setValue(filename);
       } else {
         return false;
       }
@@ -295,7 +296,6 @@ public class JsonStorable extends PushedJSONParser {
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile)) {
       optsloader.parse(root);
-      root.child(filenameTag).setValue(optsfile);
     }
     //todo:2 either dbg the stats or print them to a '#attribute field
     return root;
@@ -306,7 +306,7 @@ public class JsonStorable extends PushedJSONParser {
    */
   public static Storable StandardRoot(Class claz) {
     String optsfile = Filename(claz);
-    return new Storable(ReflectX.justClassName(claz));
+    return new Storable(optsfile);//#JsonOptions expects the node name to be the filename.
   }
 
   /**
@@ -340,14 +340,14 @@ public class JsonStorable extends PushedJSONParser {
       if (filename.endsWith(".json")) {
         return filename;
       } else {
-        return filename + ".json";//because we run on windows and filetype must be encoded in the name.
+        return filename + ".json";//because we often run on windows and filetype must be encoded in the name.
       }
     }
     Storable tagged = root.existingChild(filenameTag);
     if (tagged != null) {
       return tagged.getImage();
     }
-    return root.name;
+    return root.name;//#JsonOptions somewhat relies upon this.
   }
 
   public static Storable FromFile(Path optsfile) {
@@ -355,7 +355,6 @@ public class JsonStorable extends PushedJSONParser {
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile.toString())) {//todo:1 path versions of this method
       optsloader.parse(root);
-      root.child(filenameTag).setValue(optsfile.toString());
     }
     //todo:2 either dbg the stats or print them to a '#attribute field
     return root;
