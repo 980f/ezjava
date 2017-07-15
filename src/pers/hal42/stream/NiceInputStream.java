@@ -59,6 +59,7 @@ public class NiceInputStream {
       flushBits();
       count -= pushed;
       if (count > 0) {
+        //noinspection ResultOfMethodCallIgnored
         wrapped.skip(count);
         pushed = 0;
       } else {
@@ -66,9 +67,9 @@ public class NiceInputStream {
       }
     } catch (java.io.IOException ignored) {
       //don't care if we go off the end of input.
-    } finally {
-      return this;
     }
+    return this;
+
   }
 
   /**

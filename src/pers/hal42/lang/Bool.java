@@ -159,26 +159,25 @@ public class Bool extends Value implements Comparable {
     return ell != 0;
   }
 
-  // +++ write a tester for this!
+  /**
+   * @returns best guess as to whether the @param trueorfalse means
+   */
   public static boolean For(String trueorfalse) {
-    boolean ret = false;
     try {
       if (StringX.equalStrings(SHORTTRUE(), trueorfalse)) {
-        ret = true;
+        return true;
       } else if (Boolean.valueOf(trueorfalse)) {
-        ret = true;
+        return true;
       } else if (StringX.equalStrings("t", trueorfalse)) { // the database returns "t" for true!
-        ret = true;
+        return true;
       } else //noinspection RedundantIfStatement
         if (StringX.parseInt(trueorfalse) == 1) {
-          ret = true;
+          return true;
         } else {
-          ret = false;
+          return false;
         }
     } catch (Exception ex) {
-      // +++ ??? dbg.Caught(ex);
-    } finally {
-      return ret;
+      return false;
     }
   }
 
