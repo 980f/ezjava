@@ -1,5 +1,6 @@
 package pers.hal42.database;
 
+import pers.hal42.lang.Finally;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.transport.Storable;
 
@@ -25,7 +26,7 @@ public class DBConn {
       }
       dbConnection = null;
     }
-    try (ErrorLogStream pop = dbg.Push("Connect to Database")) {
+    try (Finally pop = dbg.Push("Connect to Database")) {
 
       Properties loginProperties = new java.util.Properties();
       loginProperties.put("user", connInfo.username);

@@ -14,6 +14,7 @@ package pers.hal42.thread;
   NOTE: JVM requires that we synch on the same object that is used for wait and notify!
  */
 
+import pers.hal42.lang.Finally;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.Ascii;
 import pers.hal42.text.Formatter;
@@ -166,7 +167,7 @@ public class Waiter {
     synchronized (waitOnMe) {
 
       dbg.VERBOSE("waiter state is:" + this + " toat:" + millisecs);
-      try (ErrorLogStream pop = dbg.Push("Wait")) {
+      try (Finally pop = dbg.Push("Wait")) {
         resleeper.Start(); //always a fresh start, no "lap time" on our stopwatches.
         if (state == Extending) {//allow for extending before starting.
           state = Ready;

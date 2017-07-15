@@ -1,8 +1,5 @@
 package pers.hal42.lang;
 
-import java.io.Closeable;
-import java.io.IOException;
-
 /**
  * Created by Andy on 5/9/2017.
  *
@@ -10,19 +7,18 @@ import java.io.IOException;
  * This is handy when you know what needs to be done on the way out when you are at the start, but don't want to have to remember (as a developer) to do it.
  * Consider this as a model, to be reimplemented with something done on creation that needs to be undone later, like popping a stack!
  */
-public class Finally implements Closeable {
-  Lambda agent;
-
-  interface Lambda {
-    void act();
+public class Finally implements AutoCloseable {
+  public interface Lambda {
+    void pop();
   }
+  Lambda agent;
 
   public Finally(Lambda lamda) {
     this.agent = lamda;
   }
 
   @Override
-  public void close() throws IOException {
-    agent.act();
+  public void close() {
+    agent.pop();
   }
 }

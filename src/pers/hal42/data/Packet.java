@@ -1,5 +1,6 @@
 package pers.hal42.data;
 
+import pers.hal42.lang.Finally;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.math.MathX;
@@ -22,9 +23,9 @@ public class Packet {
   protected boolean ended = false;
   protected int size = 0;  //pre-allocated space
   int instance = 0;
-  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Packet.class);
   //for comparing instances, don't want to trust object compare. // --- this shouldn't be necessary; test to see
   static int instanceCounter = 0;
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(Packet.class);
 
   public Packet(int maxsize) {
     start(maxsize);
@@ -155,8 +156,7 @@ public class Packet {
    * usually overridden for things like etx detection and incremental lrc computation.
    */
   public boolean append(byte b) {//often extended
-    dbg.Push("Packet.append");//#gc
-    try {
+    try (Finally pop = dbg.Push("Packet.append")) {
       if (!ended) {
         if (nexti < size) {//haveSpaceFor(1);
           buffer[nexti++] = b;
@@ -170,8 +170,6 @@ public class Packet {
       } else {
         return false;
       }
-    } finally {
-      dbg.Exit();//#gc
     }
   }
 

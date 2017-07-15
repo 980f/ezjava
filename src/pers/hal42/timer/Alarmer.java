@@ -1,6 +1,7 @@
 package pers.hal42.timer;
 
 import pers.hal42.lang.DateX;
+import pers.hal42.lang.Finally;
 import pers.hal42.lang.Monitor;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
@@ -320,8 +321,7 @@ public class Alarmer implements Runnable {
    */
   public static Alarmum reset(int fuse, Alarmum alarm) {
     Defuse(alarm);
-
-    try (ErrorLogStream pop = dbg.Push("NewAlarm")) {
+    try (Finally pop = dbg.Push("NewAlarm")) {
       if (alarm != null) {
         return Set(alarm.refuse(fuse)); //to provide access so that it can be defused.
       } else {

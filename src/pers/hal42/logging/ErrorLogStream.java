@@ -1,9 +1,6 @@
 package pers.hal42.logging;
 
-import pers.hal42.lang.AtExit;
-import pers.hal42.lang.DateX;
-import pers.hal42.lang.Safe;
-import pers.hal42.lang.StringX;
+import pers.hal42.lang.*;
 import pers.hal42.stream.VirtualPrinter;
 import pers.hal42.text.TextList;
 import pers.hal42.util.PrintFork;
@@ -29,7 +26,7 @@ import static pers.hal42.logging.LogLevelEnum.*;
  * WARNING: turning a stream on OR off while in an enter/exit scope screws up the stack.
  * this was done to improve efficiency the rest of the time.
  */
-public class ErrorLogStream implements AtExit, AutoCloseable {
+public class ErrorLogStream implements AtExit, Finally.Lambda {
 
   static class NullBugger extends ErrorLogStream {
     NullBugger() {
@@ -58,6 +55,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
    * top of context stack
    */
   protected String ActiveMethod = "?"; //cached top of context stack
+  Finally popper = new Finally(this);
   public static LogFile fpf = null; //just  so that we can close the file explicitly on program exit.
   private static LogSwitch DONTaccessMEuseINSTEADglobalLevellerFUNCTION;
   // for the embedded exceptions
@@ -129,13 +127,13 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     return myLevel.passes(msgLevel) && globalLeveller().passes(msgLevel);
   }
 
-  public boolean willOutput(LogLevelEnum msgLevel) {
-    return willOutput(msgLevel.level);
-  }
-
 //  public static final boolean isDown() {
 //    return (fpf != null) ? fpf.IsDown() : true;
 //  }
+
+  public boolean willOutput(LogLevelEnum msgLevel) {
+    return willOutput(msgLevel.level);
+  }
 
   //////////////////////////////////////////////////////////
   public void rawMessage(int msgLevel, String message) {
@@ -224,7 +222,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
     logArray(ERROR, message, clump.toArray());
   }
 
-  public void close() {
+  public void pop() {
     Message(TRACE, "Exits");
     ActiveMethod = context.pop();
   }
@@ -232,11 +230,11 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   /**
    * push teh context stack, @returns object that will pop it when 'closed'
    */
-  public ErrorLogStream Push(String methodName) {
+  public Finally Push(String methodName) {
     context.push(ActiveMethod);
     ActiveMethod = methodName;
     Message(TRACE, "Entered");
-    return this;
+    return popper;
   }
 
   public void Caught(Throwable caught) {
@@ -400,7 +398,7 @@ public class ErrorLogStream implements AtExit, AutoCloseable {
   }
 
   public void Exit() {
-    close();
+    pop();
   }
 
   public void dump(int level, String path, String content) {

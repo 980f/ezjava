@@ -1,9 +1,6 @@
 package pers.hal42.database;
 
-import pers.hal42.lang.Bool;
-import pers.hal42.lang.Monitor;
-import pers.hal42.lang.ObjectX;
-import pers.hal42.lang.StringX;
+import pers.hal42.lang.*;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.Tracer;
 import pers.hal42.math.Accumulator;
@@ -807,7 +804,7 @@ public class DBMacros extends GenericDB {
   }
 
   public boolean primaryKeyExists(PrimaryKeyProfile primaryKey) {
-    try (ErrorLogStream pop = dbg.Push("Calling DatabaseMetadata.getPrimaryKeys()")) {
+    try (Finally pop = dbg.Push("Calling DatabaseMetadata.getPrimaryKeys()")) {
       String tablename = primaryKey.table.name().toLowerCase(); // MUST BE LOWER for PG
       try (ResultSet rs = getDatabaseMetadata().getPrimaryKeys(null/*catalog*/, null/*schema*/, tablename)) {
         if (rs != null) {
@@ -983,7 +980,7 @@ public class DBMacros extends GenericDB {
    * Returns true if the field was properly dropped
    */
   protected final boolean dropField(ColumnProfile column) {
-    try (ErrorLogStream pop = dbg.Push("dropField")) {
+    try (Finally pop = dbg.Push("dropField")) {
       if (fieldExists(column.tq(), column.name())) {
         if (!getDatabaseMetadata().supportsAlterTableWithDropColumn()) {//todo:1 cache all such attributes
           dbg.ERROR("dropField " + column.fullName() + ": was not able to run since the DBMS does not support it!");
@@ -1007,7 +1004,7 @@ public class DBMacros extends GenericDB {
    */
   protected final boolean dropIndex(String indexname, String tablename) {
     int i = -1;
-    try (ErrorLogStream pop = dbg.Push("dropIndex")) {
+    try (Finally pop = dbg.Push("dropIndex")) {
       if (indexExists(indexname, tablename)) {
         return update(QueryString.genDropIndex(indexname)) >= 0;
       } else {
@@ -1021,7 +1018,7 @@ public class DBMacros extends GenericDB {
    * @returns true if the table is gone
    */
   protected final boolean dropTable(String tablename) {
-    try (ErrorLogStream pop = dbg.Push("dropTable")) {
+    try (Finally pop = dbg.Push("dropTable")) {
       if (tableExists(tablename)) {
         dbg.ERROR("dropTable" + tablename + " returned " + update(QueryString.genDropTable(tablename)));
         return !tableExists(tablename);
@@ -1033,7 +1030,7 @@ public class DBMacros extends GenericDB {
 
   // +++ use dbmd's getMaxColumnNameLength to see if the name is too long
   protected final boolean addField(ColumnProfile column) {
-    try (ErrorLogStream pop = dbg.Push("addField")) {
+    try (Finally pop = dbg.Push("addField")) {
       if (!fieldExists(column.tq(), column.name())) {
         dbg.ERROR("addField {0} returned {1}", column.fullName(), update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
           QueryString.genAddField(column)));
@@ -1045,7 +1042,7 @@ public class DBMacros extends GenericDB {
   }
 
   protected final boolean changeFieldType(ColumnProfile from, ColumnProfile to) {
-    try (ErrorLogStream pop = dbg.Push("changeFieldType")) {
+    try (Finally pop = dbg.Push("changeFieldType")) {
 //      dbg.ERROR("changeFieldType " + to.fullName() + " returned " + update(QueryString.genChangeFieldType(to)));
       dbg.ERROR("changeFieldType is not yet supported.  Write code in the content validator to handle this!");
       return false;//fieldExists(to.table().name(), to.name()); // +++ instead, need to do the things you do to check that a column is correct, not just check to see if it is added!
@@ -1064,7 +1061,7 @@ public class DBMacros extends GenericDB {
   // database profiling
 
   protected final boolean changeFieldNullable(ColumnProfile to) {
-    try (ErrorLogStream pop = dbg.Push("changeFieldNullable")) {
+    try (Finally pop = dbg.Push("changeFieldNullable")) {
       dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
@@ -1073,7 +1070,7 @@ public class DBMacros extends GenericDB {
   }
 
   protected final boolean changeFieldDefault(ColumnProfile to) {
-    try (ErrorLogStream pop = dbg.Push("changeFieldDefault")) {
+    try (Finally pop = dbg.Push("changeFieldDefault")) {
       dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(QueryString.genChangeFieldDefault(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
@@ -1490,7 +1487,7 @@ public class DBMacros extends GenericDB {
     try {
       if (myrs != null) {//valid non empty resultset
         if (column < 1) {//code that tells us to use the name field
-          try (ErrorLogStream pop = dbg.Push("ResultSet.findColumn()")) {
+          try (Finally pop = dbg.Push("ResultSet.findColumn()")) {
             column = myrs.findColumn(fieldName);//excepts if results set is empty!
           } catch (SQLException ex) {
             dbg.VERBOSE("Coding error: \n" + ErrorLogStream.whereAmI());
@@ -1500,7 +1497,7 @@ public class DBMacros extends GenericDB {
         if (column < 1) {//happens when field is present but result set is empty.
           dbg.ERROR("getStringFromRS: column [{0}] (not included in query?): ", fieldName);
         } else {
-          try (ErrorLogStream pop = dbg.Push("ResultSet.getString()")) {
+          try (Finally pop = dbg.Push("ResultSet.getString()")) {
             ret = myrs.getString(column);
           }
         }
@@ -1579,7 +1576,7 @@ public class DBMacros extends GenericDB {
 
   public static ResultSet getResultSet(Statement stmt) {
     if (stmt != null) {
-      try (ErrorLogStream pop = dbg.Push("getResultSet()")) {
+      try (Finally pop = dbg.Push("getResultSet()")) {
         return stmt.getResultSet();
       } catch (Exception e) {
         dbg.ERROR("attempting to get the ResultSet from the executed statement {1} got {0}", e, stmt.toString());
@@ -1593,7 +1590,7 @@ public class DBMacros extends GenericDB {
 
   public static void closeCon(Connection con) {
     if (con != null) {
-      try (ErrorLogStream pop = dbg.Push("closeCon()")) {
+      try (Finally pop = dbg.Push("closeCon()")) {
         con.close();
       } catch (Exception t) {
         dbg.WARNING("Exception closing connection.");
@@ -1603,7 +1600,7 @@ public class DBMacros extends GenericDB {
 
   public static void closeStmt(Statement stmt) {
     if (stmt != null) {
-      try (ErrorLogStream pop = dbg.Push("Statement.close()")) {
+      try (Finally pop = dbg.Push("Statement.close()")) {
         stmt.close();
       } catch (Exception t) {
         dbg.WARNING("closing statement gave {0}", t);
@@ -1616,7 +1613,7 @@ public class DBMacros extends GenericDB {
    */
   public static void closeRS(ResultSet rs) {
     if (rs != null) {
-      try (ErrorLogStream pop = dbg.Push("ResultSet.close()")) {
+      try (Finally pop = dbg.Push("ResultSet.close()")) {
         rs.close();
       } catch (Exception t) {
         dbg.WARNING("Exception closing result set: {0}", t);
@@ -1626,7 +1623,7 @@ public class DBMacros extends GenericDB {
 
   public static Statement getStatement(ResultSet rs) {
     if (rs != null) {
-      try (ErrorLogStream pop = dbg.Push("ResultSet.getStatement()")) {
+      try (Finally pop = dbg.Push("ResultSet.getStatement()")) {
         return rs.getStatement();
       } catch (Exception t) {
         dbg.WARNING("Exception getting statement from resultset: {0}.", t);
