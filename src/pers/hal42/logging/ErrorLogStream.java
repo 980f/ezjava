@@ -14,9 +14,9 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
-import java.text.MessageFormat;
 import java.util.Vector;
 
+import static java.text.MessageFormat.format;
 import static pers.hal42.logging.LogLevelEnum.*;
 
 /**
@@ -155,7 +155,7 @@ public class ErrorLogStream implements AtExit, Finally.Lambda {
         builder.append(":").append(ActiveMethod);
         builder.append(":");
       }
-      builder.append(MessageFormat.format(message, args));
+      builder.append(format(message, args));
       rawMessage(msgLevel, builder.toString());
     } catch (java.lang.NoClassDefFoundError e) {
       systemOutCaught(e);
@@ -230,9 +230,9 @@ public class ErrorLogStream implements AtExit, Finally.Lambda {
   /**
    * push teh context stack, @returns object that will pop it when 'closed'
    */
-  public Finally Push(String methodName) {
+  public Finally Push(String methodName, Object... clump) {
     context.push(ActiveMethod);
-    ActiveMethod = methodName;
+    ActiveMethod = format(methodName, clump);
     Message(TRACE, "Entered");
     return popper;
   }
