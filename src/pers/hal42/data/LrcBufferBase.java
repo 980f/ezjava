@@ -1,10 +1,13 @@
 package pers.hal42.data;
 
+import pers.hal42.lang.Finally;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.Formatter;
 import pers.hal42.text.TextList;
 
-/** ascii block with simple longitudinal redundancy checksum */
+/**
+ * ascii block with simple longitudinal redundancy checksum
+ */
 public class LrcBufferBase extends Packet {
   //configuration flags
   protected byte lrcStart = 0;//allows extension to omit stx's or such from lrc
@@ -18,7 +21,6 @@ public class LrcBufferBase extends Packet {
     super(maxsize); //unforuntately the super MUST precede setting the receiver mode flag.
     this.isReceiver = receiver;
   }
-
 //  public boolean start(int size){
 // super.start() calls our reset()
 //  }
@@ -82,8 +84,7 @@ public class LrcBufferBase extends Packet {
    * @return whether character successfully went into buffer
    */
   public boolean append(byte b) {
-    dbg.Push("LrcBB.append");//gc
-    try {
+    try (Finally pop = dbg.Push("LrcBB.append")) {
       if (expectinglrc) {
         expectinglrc = false;
         updateLrc(b);//if correct will make lrc zero.
@@ -91,8 +92,6 @@ public class LrcBufferBase extends Packet {
       } else {
         return super.append(b);
       }
-    } finally {
-      dbg.Exit();//gc
     }
   }
 

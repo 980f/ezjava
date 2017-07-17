@@ -2,6 +2,10 @@ package pers.hal42.logging;
 
 import pers.hal42.lang.StringX;
 
+/**
+ * an errorLogStream with an added 'location' field.
+ * todo: restore utility by adding varargs methods.
+ */
 public class Tracer extends ErrorLogStream {
   public String location;
 
@@ -57,6 +61,5 @@ public class Tracer extends ErrorLogStream {
   public void VERBOSE(String msg) {
     super.VERBOSE(prefix() + msg);
   }
-
 }
 

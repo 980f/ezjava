@@ -1,6 +1,6 @@
 package pers.hal42.thread;
 
-
+import pers.hal42.lang.Finally;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.timer.Ticks;
 
@@ -100,7 +100,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
   public void run() {//implements Runnable
     amStopped = false;
     waitingForInput.ensure(failsafeKeepAlive);//we will spin hard if wait time is too small.\
-    try (AutoCloseable pop=dbg.Push(myname)){
+    try (Finally pop = dbg.Push(myname)) {
       while (!killed) {
         try {
           waitingForInput.prepare();

@@ -17,6 +17,8 @@ import java.util.Vector;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static pers.hal42.database.DBMacros.Op.*;
+
 /*
  * functions for performing database queries and updates
 * usage:  class MyDatabase extends DBMacros implements Database, ConfigurationManager, HardwareCfgMgr , BusinessCfgMgr
@@ -37,6 +39,19 @@ enum DBFunctionType {
 }
 
 public class DBMacros extends GenericDB {
+
+  public enum Op {
+    FAILED, ALREADY, DONE;
+
+    int asInt() {
+      return ordinal() - 1;//a legacy value
+    }
+
+    public boolean Ok() {
+      return this != FAILED;
+    }
+  }
+
   class NamedStatementList extends Vector<NamedStatement> {
     private ErrorLogStream dbg = null;
 
@@ -80,7 +95,6 @@ public class DBMacros extends GenericDB {
       this.name = Thread.currentThread().getName() + ";" + name;
     }
   }
-
   Counter queryCounter = new Counter(); // used to number queries for loggin purposes
   public static DBMacrosService service = null; // set elsewhere, once
   public static Accumulator queryStats = new Accumulator();
@@ -117,13 +131,10 @@ public class DBMacros extends GenericDB {
 //  }
   private static PrintFork pf = null;
   public static final String ALLTABLES = null;
-  public static final int FAILED = -1; //where #of rows is expected
   public static final ErrorLogStream dbg = ErrorLogStream.getForClass(DBMacros.class);
   protected static final Tracer dbv = new Tracer(DBMacros.class, "Validator");
-  protected static final int ONLYCOLUMN = 1;
-  // +++ eventually an enumeration?
-  protected static final int DONE = 0;
-  protected static final int ALREADY = 1;
+  protected static final int ONLYCOLUMN = 1;//index of column if there is only one
+
   private static final Fstring timerStr = new Fstring(7, ' ');
   private static final int NOT_A_COLUMN = ObjectX.INVALIDINDEX;
 
@@ -383,9 +394,9 @@ public class DBMacros extends GenericDB {
     TextList tl = new TextList(50, 50);
     int col = 1;
     if ((cp != null) && (rs != null)) {
-      try (AutoCloseable pop = dbg.Push("Calling ResultSet.findColumn() ...")) {
+      try (Finally pop = dbg.Push("Calling ResultSet.findColumn() ...")) {
         col = rs.findColumn(cp.name());
-      } catch (Exception e) {
+      } catch (SQLException e) {
         dbg.Caught(e);
       }
     }
@@ -459,7 +470,7 @@ public class DBMacros extends GenericDB {
     Connection mycon = null;
     boolean needsReattempt = false;
     long qn = queryCounter.incr();
-    try (AutoCloseable pop = dbg.Push("query")) {
+    try (Finally pop = dbg.Push("query")) {
       mycon = getConnection();
       if (mycon != null) {
         dbg.VERBOSE("Calling Connection.createStatement() ...");
@@ -486,8 +497,6 @@ public class DBMacros extends GenericDB {
         dbg.Caught(t, toLog);
         log(toLog);
       }
-    } catch (Exception e) {
-      e.printStackTrace();
     }
     queryStats.add(swatch.millis());
     logQuery(DBFunctionType.QUERY, swatch.millis(), -1, true, qn);
@@ -547,16 +556,16 @@ public class DBMacros extends GenericDB {
 //    checkDBthreadSelect();
     if (queryStr == null) {
       dbg.WARNING("queryStr == null");
-      return 0;//todo:1 perhaps Failed?
+      return FAILED.asInt();
     }
     String qs = String.valueOf(queryStr);
     StopWatch swatch = new StopWatch();
     Connection mycon = getConnection();
     if (mycon == null) {
-      return FAILED;
+      return FAILED.asInt();
     }
     long qn = queryCounter.incr();
-    try (AutoCloseable pop = dbg.Push("update" + (throwException ? "(RAW)" : "")); Statement stmt = mycon.createStatement()) {
+    try (Finally pop = dbg.Push("update {0}", (throwException ? "(RAW)" : "")); Statement stmt = mycon.createStatement()) {
       if (stmt != null) {
         // insert it into the table
         dbg.VERBOSE("Calling Connection.executeUpdate() ...");
@@ -574,21 +583,16 @@ public class DBMacros extends GenericDB {
       } else {
         dbg.WARNING("Could not create a statement");
       }
-      return FAILED; // the error code
+      return FAILED.asInt(); // the error code
     } catch (SQLException e) {
       if (throwException) {
         throw e;
       }
       dbg.Caught(e, "Exception performing update: " + queryStr);
       recycleConnection(e, mycon, queryStr); // +++ testing this !!!
-      return FAILED;
-    } catch (Exception e1) {
-      dbg.Caught(e1, "closing resources");
-      return FAILED;
+      return FAILED.asInt();
     }
-//    } catch (Exception e) {
-//      //ignore, won't be thrown
-//    } finally {
+//     finally {
 //      try {
 //        updateStats.add(swatch.millis());
 //        logQuery(DBFunctionType.UPDATE, swatch.millis(), retval, true, qn);
@@ -613,7 +617,7 @@ public class DBMacros extends GenericDB {
       return update(queryStr, false);
     } catch (Exception e) {
       dbg.Caught(e);
-      return FAILED; // changed from 0 recently.  should have?
+      return FAILED.asInt();
     }
   }
 
@@ -685,11 +689,11 @@ public class DBMacros extends GenericDB {
   }
 
   private String getTableInfo(ResultSet rs, String info) {
-    try (AutoCloseable pop = dbg.Push("getTableInfo")) {
+    try (Finally pop = dbg.Push("getTableInfo")) {
       dbg.VERBOSE("Calling ResultSet.getString() regarding: " + info + "...");
       return rs.getString(info);
-    } catch (Exception e) {
-      dbg.ERROR("Excepted trying to get field " + info + " from result set.");
+    } catch (SQLException e) {
+      dbg.ERROR("Excepted trying to get field {0} from result set threw {1}.", info, e);
       return "";
     }
   }
@@ -1125,85 +1129,63 @@ public class DBMacros extends GenericDB {
 //    return ret;
 //  }
 
-  protected final int validateAddIndex(IndexProfile index) {
-    String functionName = "validateAddIndex";
-    int success = FAILED;
+  protected final Op validateAddIndex(IndexProfile index) {
     String indexName = index.name;
     String tableName = index.table.name();
     String fieldExpression = index.columnNamesCommad();
-    try (AutoCloseable pop = dbv.Push(functionName)) {
+    try (Finally pop = dbv.Push("validateAddIndex")) {
       dbv.mark("Add Index " + indexName + " for " + tableName + ":" + fieldExpression);
       if (!indexExists(index)) {
         QueryString qs = QueryString.genCreateIndex(index);
         if (update(qs) != -1) {
-          success = DONE;
-          dbv.ERROR(functionName + ": SUCCEEDED!");
+          return DONE;
         } else {
-          dbv.ERROR(functionName + ": ERROR [" + qs + "]!");
+          return FAILED;
         }
       } else {
-        success = ALREADY;
-        dbv.ERROR("Index " + indexName + " already exists!");
-      }
-      return success;
-    } catch (Exception e) {
-      dbv.Caught(e);
-      return FAILED;
-    } finally {
-      if (success == FAILED) {
-        dbv.ERROR(functionName + ": FAILED!");
+        return ALREADY;
       }
     }
   }
 
-  protected final int validateAddField(ColumnProfile column) {
-    String functionName = "validateAddField(fromProfile)";
-    try (AutoCloseable pop = dbv.Push(functionName)) {
+  protected final Op validateAddField(ColumnProfile column) {
+    try (Finally pop = dbv.Push("validateAddField(fromProfile)")) {
       dbv.mark("Add field " + column.fullName());
       if (!fieldExists(column.tq(), column.name())) {
         boolean did = addField(column);
-        int success = (did ? DONE : FAILED);
-        dbv.ERROR((did ? "Added" : "!! COULD NOT ADD") + " field " + column.fullName());
+        Op success = (did ? DONE : FAILED);
+        dbv.ERROR("{0} field {1}", (success.Ok() ? "Added" : "!! COULD NOT ADD"), column.fullName());
         return success;
       } else {
-        dbv.ERROR("Field " + column.fullName() + " already added.");
+        dbv.ERROR("Field {0} already added.", column.fullName());
         return ALREADY;
       }
-    } catch (Exception e) {
-      dbv.Caught(e);
-      return FAILED;
     }
   }
 
   // +++ generalize internal parts between validate functions!
-  protected final int validateAddPrimaryKey(PrimaryKeyProfile primaryKey) {
-    String functionName = "validateAddPrimaryKey";
-    int success = FAILED;
-    try (AutoCloseable pop = dbv.Push(functionName)) {
+  protected final Op validateAddPrimaryKey(PrimaryKeyProfile primaryKey) {
+    try (Finally pop = dbv.Push("validateAddPrimaryKey")) {
       String blurb = "Primary Key " + primaryKey.name + " for " + primaryKey.table.name() + "." + primaryKey.field.name();
       dbv.mark("Add " + blurb);
       if (!primaryKeyExists(primaryKey)) {
         QueryString qs = QueryString.genAddPrimaryKeyConstraint(primaryKey);
         if (update(qs) != -1) {
-          success = DONE;
-          dbv.ERROR(functionName + ": SUCCEEDED!");
+          return DONE;
+        } else {
+          return FAILED;
         }
       } else {
-        success = ALREADY;
-        dbv.ERROR(blurb + " already added.");
+        return ALREADY;
       }
-      return success;
-    } catch (Exception e) {
-      dbv.Caught(e);
-      return FAILED;
     }
   }
   //todo:2 use dbmd's getMaxColumnNameLength to see if the name is too long
 
   // +++ generalize internal parts and move to DBMacros!
-  protected final int validateAddForeignKey(ForeignKeyProfile foreignKey) {
+  protected final Op validateAddForeignKey(ForeignKeyProfile foreignKey) {
     String functionName = "validateAddForeignKey";
-    try (AutoCloseable pop = dbv.Push(functionName)) {
+    try (Finally pop = dbv.Push(functionName)) {
       String blurb = "Foreign Key " + foreignKey.name + " for " + foreignKey.table.name() + "." + foreignKey.field.name() + " against " + foreignKey.referenceTable.name();
       dbv.mark("Add " + blurb);
       if (!foreignKeyExists(foreignKey)) {
@@ -1218,15 +1200,12 @@ public class DBMacros extends GenericDB {
         dbv.VERBOSE(blurb + " already added.");
         return ALREADY;
       }
-    } catch (Exception e) {
-      dbv.Caught(e);
-      return FAILED;
     }
   }
 
-  protected final int validateAddTable(TableProfile table) {
+  protected final Op validateAddTable(TableProfile table) {
     String functionName = "validateAddTable";
-    try (AutoCloseable pop = dbv.Push(functionName)) {
+    try (Finally pop = dbv.Push(functionName)) {
       dbv.mark("Add table " + table.name());
       if (!tableExists(table.name())) {
         boolean did = createTable(table);
@@ -1236,24 +1215,14 @@ public class DBMacros extends GenericDB {
         dbv.VERBOSE("Table " + table.name() + " already added.");
         return ALREADY;
       }
-    } catch (Exception e) {
-      dbv.Caught(e);
-      return FAILED;
     }
   }
 
   protected final boolean dropTableConstraint(String tablename, String constraintname) {
-    String functionName = "dropTableConstraint";
     String toDrop = "drop constraint " + tablename + "." + constraintname;
-    try (AutoCloseable pop = dbv.Push(functionName)) {
-//      dbv.mark(toDrop);
+    try (Finally pop = dbv.Push("dropTableConstraint")) {
       TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
-      int success = (tableExists(tablename)) ? update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) : ALREADY;
-      return (success != FAILED);
-    } catch (Exception e) {
-      // muffle
-      //dbv.Caught(e);
-      return false;
+      return !tableExists(tablename) || update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) >= 0;
     }
   }
 
@@ -1268,16 +1237,13 @@ public class DBMacros extends GenericDB {
 
   //todo:1 use dbmd's getMaxTableNameLength to see if the name is too long
   protected final boolean createTable(TableProfile tp) {
-    try (AutoCloseable pop = dbg.Push("haveTable")) {
+    try (Finally pop = dbg.Push("haveTable")) {
       if (!tableExists(tp.name())) {
         dbg.ERROR("haveTable " + tp.name() + " returned " + update(QueryString.genCreateTable(tp)));
         return tableExists(tp.name());
       } else {
         return true;
       }
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
 

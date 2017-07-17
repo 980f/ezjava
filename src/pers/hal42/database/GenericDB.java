@@ -2,6 +2,7 @@ package pers.hal42.database;
 
 
 import com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException;
+import pers.hal42.lang.Finally;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
@@ -104,19 +105,19 @@ public class GenericDB {
   }
 
   public final DatabaseMetaData getDatabaseMetadata() {
-    try (AutoCloseable pop = dbg.Push("getDatabaseMetadata")) {
+    try (Finally pop = dbg.Push("getDatabaseMetadata")) {
       Connection mycon = getConnection();
       if (mycon != null) {
-        try (AutoCloseable freer = connMonitor.getMonitor()) {
+        try (Monitor freer = connMonitor.getMonitor()) {
           dbg.VERBOSE("Calling Connection.getMetaData() ...");
           dbmd = mycon.getMetaData();
           return dbmd;
+        } catch (SQLException e) {
+          dbg.Caught(e);
+          return null;
         }
       }
-      return dbmd;//return a stale instance.
-    } catch (Exception t) {
-      dbg.Caught(t);
-      return null;
+      return dbmd;//can return a stale instance.
     }
   }
 
