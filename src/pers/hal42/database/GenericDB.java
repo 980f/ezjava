@@ -190,5 +190,9 @@ public class GenericDB {
       }
     }
   }
+
+  public boolean wakeup() {
+    return haveConnection();//devolved into this.
+  }
 }
 
