@@ -18,7 +18,7 @@ public class CsvIterator implements StringIterator {
     this.inReverse = inReverse;
     this.comma = comma;
     this.line = StringX.TrivialDefault(line, "");
-    span.highest = line.length();
+    span.highest = this.line.length();
     span.lowest = 0;
     bump();
   }
