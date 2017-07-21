@@ -39,13 +39,13 @@ public class MapX<K, V> {
       Map<K, Diff<V>> diffs = thiss.getClass().newInstance();
       thiss.forEach((k, v) -> {
         V probate = that.get(k);
-        if (probate != null ? !probate.equals(v):v !=null) {
+        if ((probate != null) ? !probate.equals(v) : (v != null)) {
           diffs.put(k, new Diff(v,probate));
         }
       });
-      that.forEach((k, v)->{
+      that.forEach((k, probate) -> {
         if(!thiss.containsKey(k)){
-          diffs.put(k, new Diff(null,v));
+          diffs.put(k, new Diff(null, probate));
         }
       });
       return diffs;
