@@ -6,6 +6,7 @@ import pers.hal42.logging.ErrorLogStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ListIterator;
+import java.util.function.Predicate;
 
 /**
  * Created by Andy on 7/12/2017.
@@ -21,13 +22,13 @@ public class TableFiller {
    *
    * @returns the number of added fields. If the value is negative then it is the complement of how many were added before an exception halted the process.
    */
-  public static int addToList(ResultSet rs, Class ref, boolean local, ListIterator list) {
+  public static <T> int addToList(ResultSet rs, Class<? extends T> ref, boolean local, ListIterator<T> list, Predicate<T> refinclude) {
     int successes = 0;
     DbColumn all = ReflectX.getAnnotation(ref, DbColumn.class);
     try {
-      while (rs.next()) {//for each row in result set
-        Object obj = ref.newInstance();
-        ReflectX.FieldWalker fields = new ReflectX.FieldWalker(ref, local);//this line is expensive enough that we should make a rewindable list.
+      do {//for each row in result set, which has already been 'nexted' once.
+        T obj = ref.newInstance();
+        ReflectX.FieldWalker fields = new ReflectX.FieldWalker(ref, local);//todo:1 this line is expensive enough that we should make a rewindable list.
         fields.forEachRemaining(field -> {
             DbColumn colAttr = field.getAnnotation(DbColumn.class);
             if (colAttr != null || (all != null && !ReflectX.ignorable(field))) {
@@ -44,7 +45,7 @@ public class TableFiller {
                   field.setDouble(obj, rs.getDouble(name));
                 } else if (fclaz == int.class) {
                   field.setInt(obj, rs.getInt(name));
-                } else if (fclaz.isEnum()) {
+                } else if (fclaz.isEnum() && colAttr != null) {
                   int enumMod = colAttr.size();
                   if (enumMod == 0) {//if field is integer then index into enum constants
                     int ordinal = rs.getInt(name);
@@ -62,9 +63,11 @@ public class TableFiller {
             }
           }
         );
-        list.add(obj);
-        ++successes;
-      }
+        if (refinclude == null || refinclude.test(obj)) {
+          list.add(obj);
+          ++successes;
+        }
+      } while (rs.next());
       return successes;
     } catch (SQLException e) {
       dbg.Caught(e, "iterating to create objects by reflection");
@@ -75,7 +78,11 @@ public class TableFiller {
     }
   }
 
-  public static void loadTable(String query, Class infoClass, boolean local, ListIterator all, DBMacros jdbc) {
-    jdbc.doSimpleQuery(query, rs -> addToList(rs, infoClass, local, all));
+  public static <T> void loadTable(String query, Class<? extends T> infoClass, boolean local, ListIterator<T> all, DBMacros jdbc) {
+    loadTable(query, infoClass, local, null, all, jdbc);
+  }
+
+  public static <T> void loadTable(String query, Class<? extends T> infoClass, boolean local, Predicate<T> refinclude, ListIterator<T> all, DBMacros jdbc) {
+    jdbc.doSimpleQuery(query, rs -> addToList(rs, infoClass, local, all, refinclude));
   }
 }
