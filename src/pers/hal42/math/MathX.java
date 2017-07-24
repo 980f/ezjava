@@ -1,11 +1,27 @@
 package pers.hal42.math;
 
+import static java.lang.Math.abs;
+
 public class MathX {
   public static final int INVALIDINTEGER = Integer.MIN_VALUE; //NOT the same as invalid index
   public static final long INVALIDLONG = Long.MIN_VALUE;
 
   private MathX() {
     // don't instantiate me.  I am here for static purposes
+  }
+
+  /**
+   * check for nearly equal, to deal with parsing of text yielding values that aren't the same as a later print.
+   */
+  public static boolean nearlyEqual(double value, double other) {
+    if (value == other) {
+      return true;//expeditious and a zero after this point is a denorm
+    }
+    if (value == 0) {
+      return false;
+    }
+    double diff = value - other;
+    return abs(diff) <= 2 * Math.ulp(value);
   }
 
   public static int signum(int signed) {
@@ -76,9 +92,8 @@ public class MathX {
     return (numerator % denominator) == 0;
   }
 
-
+  /** @returns sign of difference of objects. Intended for values already boxed, else just use native compares. */
   public static int cmp(Number lefty, Number righty) {
-
     if (lefty instanceof Integer) {
       return signum(lefty.intValue() - righty.intValue());
     } else if (lefty instanceof Double) {
