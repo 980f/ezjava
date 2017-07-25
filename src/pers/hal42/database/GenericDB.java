@@ -1,6 +1,5 @@
 package pers.hal42.database;
 
-
 import com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException;
 import pers.hal42.lang.Finally;
 import pers.hal42.lang.Monitor;
@@ -126,7 +125,7 @@ public class GenericDB {
       getConnection();
     } else {
       try {
-        if (conn.isClosed()) {//getting 'connection is closed' apparently due to autoclose on timeout.
+        if (conn.isClosed() || !conn.isValid(1)) {//getting 'connection is closed' apparently due to autoclose on timeout.
           connectOk = false;
           getConnection();
         }
@@ -139,7 +138,6 @@ public class GenericDB {
   }
 
   public final Connection getConnection() {
-
     try (Monitor freer = connMonitor.getMonitor()) {//mutex needed when we restore connection pooling
       if (!connectOk && conn != null) {
         releaseConn();//nulls conn.
