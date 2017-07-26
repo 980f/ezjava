@@ -675,6 +675,20 @@ public class TextList {
     };
   }
 
+  /**
+   * an expensive list unique merge.
+   */
+  public void addUnique(TextList more) {
+    if (more != null) {
+      for (StringIterator it = more.iterator(); it.hasNext(); ) {
+        String another = it.next();
+        if (indexOf(another) == -1) {
+          this.add(another);
+        }
+      }
+    }
+  }
+
   public static String safe(String o) {
     return StringX.TrivialDefault(o, ""); //# DO NOT USE StringX.OnTrivial: It turns "" into " ", which is NOT what we need here.
   }

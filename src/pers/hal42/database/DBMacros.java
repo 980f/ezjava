@@ -95,6 +95,7 @@ public class DBMacros extends GenericDB {
       this.name = Thread.currentThread().getName() + ";" + name;
     }
   }
+
   Counter queryCounter = new Counter(); // used to number queries for loggin purposes
   public static DBMacrosService service = null; // set elsewhere, once
   public static Accumulator queryStats = new Accumulator();
@@ -287,6 +288,27 @@ public class DBMacros extends GenericDB {
       result = results[field].trim();
     }
     return result;
+  }
+
+  /**
+   * @returns a new TextList built from the 1-based @param field of the @param query. On SQL exception returns null;
+   */
+  public TextList getTextListFromQuery(String qs, int field) {
+    try (Finally pop = dbg.Push("getTextListFromQuery"); Statement stmt = makeStatement()) {
+      if (stmt != null) {
+        ResultSet rs = stmt.executeQuery(qs);
+        TextList tl = new TextList(50, 50);
+        while (next(rs)) {
+          tl.add(getStringFromRS(field, rs));
+        }
+        return tl;
+      } else {
+        return null;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e);
+      return null;
+    }
   }
 
   public TextList getTextListColumnFromQuery(QueryString qs, ColumnProfile cp) {
