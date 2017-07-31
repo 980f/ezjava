@@ -1466,6 +1466,15 @@ public class DBMacros extends GenericDB {
     }
   }
 
+  public static int doBatch(PreparedStatement pst) throws SQLException {
+    int[] qty = pst.executeBatch();
+    int batchsum = 0;
+    for (int one : qty) {
+      batchsum += one;
+    }
+    return batchsum;
+  }
+
   public static String getStringFromRS(int column, ResultSet myrs) {
     return getStringFromRS(column, null, myrs);
   }
