@@ -137,6 +137,12 @@ public class ReflectX {
     // I exist for static reasons only.
   }
 
+  @SuppressWarnings("unchecked")
+  public static <T> T CopyConstruct(T prefill) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+    Constructor<T> maker = constructorFor((Class<? extends T>) prefill.getClass(), prefill.getClass());
+    return maker != null ? maker.newInstance(prefill) : null;
+  }
+
   /**
    * @returns @param ordinal th enum constant, or null if ordinal out of range or there are no such constants
    */
@@ -311,7 +317,8 @@ public class ReflectX {
   /**
    * @return constructor for class @param claz with single argument @param argclaz
    */
-  public static Constructor constructorFor(Class claz, Class argclaz) {
+  @SuppressWarnings("unchecked")
+  public static <T> Constructor<T> constructorFor(Class<? extends T> claz, Class argclaz) {
     try {
       Constructor[] ctors = claz.getConstructors();
       for (int i = ctors.length; i-- > 0; ) {
