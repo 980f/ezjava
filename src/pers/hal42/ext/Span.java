@@ -169,9 +169,13 @@ public class Span {
   }
 
   /**
-   * @returns whether getString will return a non-empty string (ignoring some gross defects)
+   * @returns whether getString may return a non-empty string
    */
+  public boolean nonTrivial(boolean forward) {
+    return (forward ? lowest : highest) != Invalid && lowest != highest;
+  }
+
   public boolean nonTrivial() {
-    return lowest != highest;
+    return nonTrivial(true);
   }
 }
