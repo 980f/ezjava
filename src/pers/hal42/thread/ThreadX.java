@@ -208,9 +208,9 @@ public class ThreadX {
   }
 
   /**
-   * start a background task
+   * start a background service type task.
    *
-   * @param target
+   * @param target task to run
    * @return null on defective target else a running thread running that target
    */
   public static Thread Demonize(Runnable target, String traceName) {
@@ -223,5 +223,20 @@ public class ThreadX {
     return null;
   }
 
+  /**
+   * start a background worker type task
+   *
+   * @param target to run
+   * @return null on defective target else a running thread running that target
+   */
+  public static Thread Launch(Runnable target, String traceName) {
+    if (target != null) {
+      Thread runner = new Thread(target, StringX.OnTrivial(traceName, "ThreadX.Demonized"));
+      runner.setDaemon(false);
+      runner.start();
+      return runner;
+    }
+    return null;
+  }
 }
 
