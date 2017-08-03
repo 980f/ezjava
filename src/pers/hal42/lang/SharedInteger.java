@@ -25,4 +25,9 @@ public class SharedInteger {
   public int raw() {
     return raw;
   }
+
+  @Override
+  public String toString() {//4debug
+    return String.valueOf(raw);
+  }
 }

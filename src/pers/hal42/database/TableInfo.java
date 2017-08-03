@@ -10,25 +10,14 @@ import static java.text.MessageFormat.format;
  */
 
 public class TableInfo implements Comparable<TableInfo> {
-  //don't want to depend upon db connection features for these:
-  public static String SharedCatalog;
-  public static String SharedSchema;
-
   private String catalog;
   private String schema;
-
-  public void setSchema(String schema) {
-    this.schema = schema;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
   private String name;
   private String type;
   private String remark;
-
+  //don't want to depend upon db connection features for these:
+  public static String SharedCatalog;
+  public static String SharedSchema;
   public TableInfo(String catalog, String schema, String name, String type, String remark) {
     this.catalog = StringX.TrivialDefault(catalog, SharedCatalog);
     this.schema = StringX.TrivialDefault(schema, SharedSchema);
@@ -37,8 +26,20 @@ public class TableInfo implements Comparable<TableInfo> {
     this.remark = StringX.TrivialDefault(remark, "");
   }
 
+  public TableInfo(String schema, String name) {
+    this(null, schema, name, null, null);
+  }
+
   public TableInfo(String name) {
     this(null, null, name, null, null);
+  }
+
+  public void setSchema(String schema) {
+    this.schema = schema;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 
   public String catalog() {
