@@ -16,7 +16,7 @@ public enum ColumnType {
   DATE(Types.DATE, false), //  BYTE(Types.,false),
   CHAR(Types.CHAR, false), //
   SERIAL(Types.OTHER, false),     //mysql: "SERIAL is an alias for BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE"
-  //  TEXT(Types.VARCHAR,true),       //human readable tag, use varchar for content
+  TEXT(Types.VARCHAR, true),       //human readable tag, use varchar for content
   VARCHAR(Types.VARCHAR, true),  //
   LONGVARCHAR(Types.LONGVARCHAR, true),
 
@@ -78,6 +78,28 @@ public enum ColumnType {
     try {
       return ColumnType.valueOf(name.toUpperCase());
     } catch (IllegalArgumentException e) {
+      switch (name.toLowerCase()) {//mysql synonyms
+      case "int":
+        return INTEGER;
+      case "longtext":
+        return TEXT;
+      case "datetime":
+        return TIMESTAMP;
+      case "double":
+        return NUMERIC;
+      case "float":
+        return NUMERIC;
+      case "longblob":
+        return BLOB;
+      case "enum":
+        return TEXT;
+      case "mediumtext":
+        return TEXT;
+      case "set":
+        return BLOB;
+      case "year":
+        return INTEGER;
+      }
       return null;
     }
   }
@@ -95,3 +117,35 @@ public enum ColumnType {
     return null;
   }
 }
+
+/*
+* mysql madness:
+* select distinct(data_type)
+from
+INFORMATION_SCHEMA.COLUMNS
+"data_type"
+"varchar"
+"bigint"
+"longtext"
+"datetime"
+"int"
+"tinyint"
+"decimal"
+"double"
+"char"
+"timestamp"
+"date"
+"float"
+"binary"
+"longblob"
+"blob"
+"text"
+"enum"
+"smallint"
+"mediumtext"
+"set"
+"year"
+"time"
+
+*
+* */
