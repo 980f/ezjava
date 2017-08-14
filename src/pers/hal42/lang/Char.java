@@ -51,7 +51,7 @@ public class Char {
   public char slashee() {
     Index present = new Index(SeaScapes.indexOf(raw));
     if (present.isValid()) {
-      return SeaScapes.charAt(1 ^ present.get());//xor with 1 swaps even and odd.
+      return SeaScapes.charAt(1 ^ present.value());//xor with 1 swaps even and odd.
     } else {
       return (char) raw;
     }

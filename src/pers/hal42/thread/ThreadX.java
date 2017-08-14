@@ -231,7 +231,7 @@ public class ThreadX {
    */
   public static Thread Launch(Runnable target, String traceName) {
     if (target != null) {
-      Thread runner = new Thread(target, StringX.OnTrivial(traceName, "ThreadX.Demonized"));
+      Thread runner = new Thread(target, StringX.OnTrivial(traceName, "ThreadX.Worker"));
       runner.setDaemon(false);
       runner.start();
       return runner;

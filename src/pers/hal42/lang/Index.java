@@ -1,35 +1,19 @@
 package pers.hal42.lang;
 
 /**
- * cppext/index.h -> java
- * <p>
  * sanity checked int, for use as a 0-based array index.
- * The C implementation used an unsigned which saved a lot of compares<0
+ * unsigned reasoning is used for all index operations.
  * <p>
  * Created by andyh on 4/3/17.
  */
 public class Index {
-  
-
-/* unsigned is used for all index operations.
-  For prior uses of int typically the only negative index value is a marker, -1.
-  It happens that if you view -1 as an unsigned it is the maximum possible value. That has the advantage of replacing the signed integer dance:
-  index>=0 && index < quantity with a simple index<quantity, less runtime code.
-
-  The only risk here is that someone might use -1 as a quantity value indicating that there is not even a container to have a quantity of items in. Just don't do that, return a quantity of 0 for 'not a valid question', that will almost always yield the expected behavior.
- */
-public int raw;
-//  //marker for bad difference of indexes:
-//  constexpr unsigned BadLength=~0U; //legacy
   /**
-   * the magic value, it is all ones
+   * a magic value for 'there is no index', it is all ones.
    */
   public static final int BadIndex = ~0;
+  protected int raw;
 
-  /**
-   * marker class for an integer used as an array index or related value. Leave all in header file as we need to strongly urge the compiler to inline all this code
-   */
-
+  /** force user to explicitly initialize */
   public Index(int raw) {
     this.raw = raw;
   }
@@ -49,7 +33,8 @@ public int raw;
     return raw = ord;
   }
 
-  public int get() {
+  /** */
+  public int value() {
     return raw;
   }
 
@@ -86,10 +71,10 @@ public int raw;
    * decrement IF valid
    */
   public int dec(int other) {
-    if (isValid()) {
+    if (raw >= other) {
       return raw -= other;
     } else {
-      return BadIndex;
+      return raw = BadIndex;
     }
   }
 
@@ -98,6 +83,11 @@ public int raw;
    */
   public int postinc() {
     return raw++;
+//    try {
+//      return raw;
+//    } finally {
+//      ++raw;
+//    }
   }
 
   /**
@@ -107,4 +97,12 @@ public int raw;
     return ++raw;
   }
 
+  /** @returns an element from @param array if it contains this index, else returns @param onBadIndex */
+  public <AT> AT get(AT[] array, AT onBadIndex) {
+    if (isValid() && array.length > raw) {
+      return array[raw];
+    } else {
+      return onBadIndex;
+    }
+  }
 }
