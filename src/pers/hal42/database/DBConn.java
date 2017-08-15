@@ -27,14 +27,19 @@ public class DBConn {
       dbConnection = null;
     }
     try (Finally pop = dbg.Push("Connect to Database")) {
-
       Properties loginProperties = new java.util.Properties();
       loginProperties.put("user", connInfo.username);
       loginProperties.put("password", connInfo.password);
-
+      //mysql specials:      //todo:1 source from properties node on DBConnInfo
+      loginProperties.put("connectTimeout", 0);
+      loginProperties.put("socketTimeout", 0);
+      loginProperties.put("useCompression", true);
+      loginProperties.put("useCursorFetch", true);
+      loginProperties.put("useInformationSchema", true); //todo:1 see if this fixes useing metadata instead of direct access to infoschema.
       dbg.VERBOSE("Attempting connection to: {0}", url );
       dbConnection = DriverManager.getConnection(url, loginProperties);
       dbConnection.setAutoCommit(connInfo.autoCommit);
+      dbConnection.setReadOnly(connInfo.readOnly);
     } catch (SQLException e) {
       dbConnection = null;
       dbg.ERROR("Couldn''t connect to datasource {0}  via user: {1} reason: {2}",  url,connInfo.username,e.getMessage() );
