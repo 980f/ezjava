@@ -52,6 +52,7 @@ public class DBMacros extends GenericDB {
     }
   }
 
+
   class NamedStatementList extends Vector<NamedStatement> {
     private ErrorLogStream dbg = null;
 
@@ -279,6 +280,25 @@ public class DBMacros extends GenericDB {
       dbg.ERROR("getStringFromQuery()->query() call did not succeed (null statement)");
     }
     return str1;
+  }
+
+  /** @returns the first field of the first record of @param query, null if anything goes wrong. */
+  public String getStringFromQuery(String query) {
+    try (Statement stmt = makeStatement()) {
+      if (stmt.execute(query)) {
+        ResultSet rs = getResultSet(stmt);
+        if (rs != null && rs.next()) {
+          return rs.getString(1);
+        } else {
+          return null;
+        }
+      } else {
+        return null;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e);
+      return null;
+    }
   }
 
   public String getStringFromQuery(QueryString queryStr, int field) {
@@ -661,6 +681,7 @@ public class DBMacros extends GenericDB {
   private ResultSet getTables(TableInfo ti) {
     ResultSet rs = null;
     try {
+      //noinspection ConstantConditions
       if (false) {
         String types[] = {"BASE TABLE",//mysql's text for this.
           //--mysql doesn't allow query on this      "VIEW",
@@ -680,8 +701,10 @@ public class DBMacros extends GenericDB {
           }
         }
       }
-      SQLWarning barf = rs.getWarnings();
-      dbg.WARNING(barf.getMessage());
+      if (rs != null) {
+        SQLWarning barf = rs.getWarnings();
+        dbg.WARNING(barf.getMessage());
+      }
     } catch (Exception e) {
       dbg.Caught(e);
     }
@@ -1571,6 +1594,7 @@ public class DBMacros extends GenericDB {
     }
   }
 
+  /** @returns result set from <b>already executed</b> @param stmt, or null with lots of diagnostic spew */
   public static ResultSet getResultSet(Statement stmt) {
     if (stmt != null) {
       try (Finally pop = dbg.Push("getResultSet()")) {

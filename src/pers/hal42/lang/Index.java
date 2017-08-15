@@ -10,7 +10,7 @@ public class Index {
   /**
    * a magic value for 'there is no index', it is all ones.
    */
-  public static final int BadIndex = ~0;
+  public static final int BadIndex = ~0;//~0 is a.k.a -1, but doesn't look like you are subtracting something.
   protected int raw;
 
   /** force user to explicitly initialize */
