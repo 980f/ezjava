@@ -36,6 +36,12 @@ public class JsonOptions {
   /** apply DOM to object */
   public void applyNode() {
     node.applyTo(this, rules);
+    postApply();
+  }
+
+  /** hook that is called after applyNode has finished. */
+  protected void postApply() {
+    //#nada
   }
 
   public void applyNode(Storable newRoot) {
@@ -51,10 +57,12 @@ public class JsonOptions {
     }
   }
 
+  /** load from default file, named for extended class. */
   public void load() {
     load(null);
   }
 
+  /** if @param filename is null then writes over file was loaded from, or default for extended class. */
   public void save(String filename) {
     // apply object to DOM
     updateDOM();
@@ -68,4 +76,26 @@ public class JsonOptions {
   public void updateDOM() {
     node.apply(this, rules);
   }
+
+  /** when you are too busy to make a variable to receive a value: */
+  public long byName(String name, long ell) {
+    Storable child = node.child(name);
+    child.setDefault(ell);
+    return (long) child.getValue();
+  }
+
+  /** when you are too busy to make a variable to receive a value: */
+  public double byName(String name, double ell) {
+    Storable child = node.child(name);
+    child.setDefault(ell);
+    return child.getValue();
+  }
+
+  /** when you are too busy to make a variable to receive a value: */
+  public boolean byName(String name, boolean ell) {
+    Storable child = node.child(name);
+    child.setDefault(ell);
+    return child.getValue() != 0.0;
+  }
+
 }
