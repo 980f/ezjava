@@ -10,6 +10,7 @@ import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.Iterator;
@@ -45,6 +46,7 @@ public class Storable {
     Parsed,
     Assigned
   }
+
   /**
    * marker annotation for use by applyTo and apply()
    * if class is annotated with @Stored then process all fields, not just those annotated with Stored.
@@ -52,7 +54,7 @@ public class Storable {
   @Documented
   @Inherited
   @Retention(RetentionPolicy.RUNTIME)
-  @Target({ElementType.FIELD, ElementType.TYPE})
+  @Target({ElementType.FIELD, ElementType.TYPE, ElementType.METHOD})
   public @interface Stored {
     /** if nontrivial AND child is not found by the field name then it is sought by this name. */
     String legacy() default "";
@@ -231,7 +233,7 @@ public class Storable {
    * set the values of fields marked 'Stored' (and set the local types).
    * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
    * if @param aggressive then private fields are modified. (untested)
-   *
+   * <p>
    * Note: java makes you choose between all fields at one level of the hierarchy or only public fields throughout the hierarchy. You can iterate through base classes to get all fields.
    *
    * @returns the number of assignments made (a diagnostic)
@@ -326,12 +328,22 @@ public class Storable {
         }
       }
     }
+    final Method method = ReflectX.methodFor(claz, Stored.class, stored -> "postload".equals(stored.legacy()));
+    if (method != null) {
+      try {
+        method.invoke(obj);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        dbg.Caught(e);
+      }
+    }
+
     return changes;
   }
 
   /**
    * @return which member of a wad this is
    */
+
   public int ordinal() {
     return index;
   }

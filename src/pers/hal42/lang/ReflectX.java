@@ -7,6 +7,7 @@ import pers.hal42.transport.EasyCursor;
 import java.lang.annotation.*;
 import java.lang.reflect.*;
 import java.util.Iterator;
+import java.util.function.Predicate;
 
 /**
  * Utilities to ease use of reflection.
@@ -362,6 +363,18 @@ public class ReflectX {
         }
       } catch (IllegalAccessException ignored) {
         //
+      }
+    }
+    return null;
+  }
+
+  /** @returns a method of @param claz that has an annotation of @param noted which matches the optional argument @param matches. The compiler chooses which if there are more than one. */
+  public static <A extends Annotation> Method methodFor(Class claz, Class<A> noted, Predicate<A> matches) {
+    final Method[] methods = claz.getDeclaredMethods();
+    for (Method method : methods) {
+      A annotation = method.getAnnotation(noted);
+      if (annotation != null && (matches == null || matches.test(annotation))) {
+        return method;
       }
     }
     return null;
