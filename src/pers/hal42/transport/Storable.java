@@ -2,6 +2,7 @@ package pers.hal42.transport;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import pers.hal42.lang.Finally;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.text.TextList;
@@ -12,10 +13,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 import static pers.hal42.lang.StringX.NonTrivial;
 import static pers.hal42.transport.JsonStorable.dbg;
@@ -268,7 +266,7 @@ public class Storable {
               field.setAccessible(true);
             }
             if (fclaz == String.class) {
-              field.set(obj, child.getImage());//this is our only exception to recursing on non-natives.
+              field.set(obj, child.getImage());//this is our main exception to recursing on non-natives.
             } else if (fclaz == boolean.class) {
               field.setBoolean(obj, child.getTruth());
             } else if (fclaz == double.class) {
@@ -293,24 +291,32 @@ public class Storable {
                 dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
                 //autocreate members if no args constructor exists, which our typical usage pattern makes common.
                 if (r.create) {
-                  Generator generator = new Generator(fclaz);
-                  nestedObject = generator.newInstance(this, r);
-                  //if object is compound ..
-                  if (nestedObject != null && nestedObject instanceof Collection) {
-                    Collection objs = (Collection) nestedObject;
-                    applyTo(objs, r);
-                    return changes;
+                  if (fclaz == java.util.Properties.class) { //map stored into properties
+                    nestedObject = new java.util.Properties();
+                  } else {
+                    Generator generator = new Generator(fclaz);
+                    nestedObject = generator.newInstance(this, r);
+                    //if object is compound ..
+                    if (nestedObject != null && nestedObject instanceof Collection) {
+                      Collection objs = (Collection) nestedObject;
+                      applyTo(objs, r);
+                      return changes;
+                    }
                   }
                 }
               }
               if (nestedObject != null) {
                 child.setType(Type.Wad);//should already be true
-                if (nestedObject instanceof Map) {
-                  return changes;
+                if (nestedObject instanceof Properties) { //must precede map and collections since it is one.
+                  changes += child.applyTo((Properties) nestedObject);
+                } else if (nestedObject instanceof Map) {
+                  return changes; //NYI!
                 } else if (nestedObject instanceof Collection) {
                   Collection objs = (Collection) nestedObject;
                   changes += applyTo(objs, r);
-                } else { //simple treewalk
+                }
+                //
+                else { //simple treewalk
                   int subchanges = child.applyTo(nestedObject, r);
                   if (subchanges >= 0) {
                     changes += subchanges;
@@ -338,6 +344,26 @@ public class Storable {
     }
 
     return changes;
+  }
+
+  public int applyTo(PropertyCursor cursor) {
+    int count = 0;
+    for (Storable child : wad) {
+      if (child.type == Wad) {
+        try (Finally pop = cursor.push(child.name)) {
+          count += child.applyTo(cursor);
+        }
+      } else {
+        cursor.setProperty(child.name, child.getImage());
+        ++count;
+      }
+    }
+    return count;
+  }
+
+  public int applyTo(Properties properties) {
+    PropertyCursor cursor = new PropertyCursor(properties);
+    return applyTo(cursor);
   }
 
   /**
