@@ -49,12 +49,12 @@ public class PushedJSONParser extends PushedParser {
       }
     }
   }
+
   /**
    * 'cursor' recorded at start and end of name token
    */
   public final Span name = new Span();
   public final JsonStats stats = new JsonStats();
-  private final boolean equalsAndSemi;
   /**
    * whether a name was seen, bounds recorded in 'name'.
    */
@@ -73,7 +73,6 @@ public class PushedJSONParser extends PushedParser {
    * @param equalsAndSemi determines dialect of JSON allowed.
    */
   public PushedJSONParser(boolean equalsAndSemi) {
-    this.equalsAndSemi = equalsAndSemi;
     String seps = "{}[]:,";
     if (equalsAndSemi) {
       seps += "=;";
@@ -152,23 +151,6 @@ public class PushedJSONParser extends PushedParser {
     } //else name will construct to a null one.
     super.wasQuoted = false;
     super.token.clear();
-  }
-
-  /**
-   * @param fully is whether to prepare for a new stream, versus just prepare for next item.
-   */
-  public void reset(boolean fully) {
-    super.reset(fully);
-  }
-//  private void endToken(int mark) {
-//  }
-
-  /**
-   * subtract the @param offset from all values derived from cursor, including cursor.
-   * this is useful when a buffer is reused, such as in reading a file a line at a time.
-   */
-  public void shift(int offset) {
-    super.shift(offset);
   }
 
   /**

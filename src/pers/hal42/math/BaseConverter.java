@@ -31,7 +31,7 @@ public class BaseConverter {
   /* print with minimum precision: */
   public static String dtoa(double value, int mindigits, boolean doRounding, int base) {
     if (!dtoaBaseOk(base)) {
-      return "0#NaN"; //really need to find the official NaN's
+      return Double.toString(Double.NaN);
     }
     @SuppressWarnings("UnnecessaryLocalVariable")
     double radix = base; //so we don't do a zillion int to floats
@@ -64,8 +64,8 @@ public class BaseConverter {
     int oss = signum; //state machine starts with sign cursor
 
     char retval[] = new char[numChars];
-    int i = 0;
-    for (i = 0; i < numChars; i++) {
+//    int i = 0;
+    for (int i = 0; i < numChars; i++) {
       switch (oss) {
         case signum: {
           if (isNegative) {
@@ -133,9 +133,6 @@ public class BaseConverter {
         break;
       }
     }
-    if (value == 30.0 && base == 10) {  // this was a problem in the past
-      // +++ barf errors -- dtoadebug.dbg(dbg_INFO, "%f == %s?", value, retval.c_str());
-    }
     return new String(retval);
   }
 
@@ -192,6 +189,7 @@ public class BaseConverter {
       boolean sawdp = false; //haven't seen a decimal point yet
       boolean isnegative = false;
       double retval = 0;
+      @SuppressWarnings("UnnecessaryLocalVariable")
       double radix = base; //to make for a single timely conversion
       double dm = 0; //digit multiplier
       boolean stillwhite = true;

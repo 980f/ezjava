@@ -25,7 +25,7 @@ public class MathX {
   }
 
   public static int signum(int signed) {
-    return signed > 0 ? 1 : signed < 0 ? -1 : 0;
+    return Integer.compare(signed, 0);
   }
 
   public static int signum(long signed) {

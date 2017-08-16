@@ -1,11 +1,12 @@
 package pers.hal42.database;
+
+import java.lang.annotation.*;
+
 /**
  * Created by Andy on 7/11/2017.
  * <p>
  * tag field to be associated with a database.
  */
-
-import java.lang.annotation.*;
 
 @Documented
 @Retention(RetentionPolicy.RUNTIME)

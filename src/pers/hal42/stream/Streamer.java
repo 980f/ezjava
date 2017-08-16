@@ -234,26 +234,27 @@ public class Streamer implements Runnable {
   }
 
   public static InputStream getInputStream(Object item) {
-    InputStream casted = null;
     try {
       if (item != null) {
         if (item instanceof InputStream) {
-          casted = (InputStream) item;
+          return (InputStream) item;
         } else if (item instanceof byte[]) {
-          casted = new ByteArrayInputStream((byte[]) item);
+          return new ByteArrayInputStream((byte[]) item);
         } else if (item instanceof FileDescriptor) {
-          casted = new FileInputStream((FileDescriptor) item);
+          return new FileInputStream((FileDescriptor) item);
         } else if (item instanceof File) {//structured filename
-          casted = new FileInputStream((File) item);
+          return new FileInputStream((File) item);
         } else if (item instanceof String) {//raw file name
-          casted = new FileInputStream(Main.LocalFile((String) item));
+          return new FileInputStream(Main.LocalFile((String) item));
+        } else {
+          return null;
         }
+      } else {
+        return null;
       }
     } catch (IOException ioex) {
       //should we let it throw?
-      //by doing nothing we return a null on error.
-    } finally {
-      return casted;
+      return null;
     }
 
   }

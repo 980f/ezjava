@@ -60,10 +60,10 @@ public class FileZipper extends Thread implements AtExit {
       Streamer.swapStreams(fis, zipout);
       // close the output stream
       zipout.flush();
-      fos.flush();
       zipout.close();
-      fos.close(); // --- will except?
       zipout = null;
+      fos.flush();
+      fos.close(); // --- will except?
       fos = null;
       fis.close();
       fis = null;

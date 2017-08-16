@@ -881,11 +881,9 @@ public class Storable {
 
   /**
    * try to filter out accidentally created nodes.
-   * I think this was left over from a parser that didn't handle trailing commas.
    */
   public boolean isTrivial() {
-    return false;
-//    return origin== Ether && type==Unclassified;
+    return origin == Ether && type == Unclassified;
   }
 
   public int numChildren() {
@@ -972,6 +970,7 @@ public class Storable {
     return MessageFormat.format("{0}:{1}", name, image);
   }
 
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public static boolean usuallySkip(Field field) {
     return ReflectX.ignorable(field);
   }

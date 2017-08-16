@@ -279,6 +279,7 @@ public class LogSwitch implements Comparable {
         if (ls != null) {//if it exists change its setting
           ls.setto(level);
         } else {//create a new one
+          //noinspection UnusedAssignment
           ls = new LogSwitch(key, level);
         }
       }

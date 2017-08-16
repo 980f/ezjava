@@ -212,7 +212,7 @@ public abstract class Query {
   }
 
   private synchronized static Field[] getFieldsFor(Class klass) {
-    Field[] ret = null;
+
     try {
       // look it up to see if we already have it
       Object o = allclassesfields.get(klass);
@@ -235,19 +235,15 @@ public abstract class Query {
         System.arraycopy(goodfields, 0, toret, 0, goods);
         // set it in the hashishtable
         allclassesfields.put(klass, toret);
-        ret = toret; // don't set the reference until we got passed all exceptions
-        dbg.ERROR("Generated Field Cache for class " + klass.getName() + ": " +
-          forReporting.asParagraph(","));
-      } else {
-        // if we do, return it
-        ret = (Field[]) o;
-        dbg.VERBOSE("found field cache for class " + klass.getName());
+        dbg.ERROR("Generated Field Cache for class {0} : {1}", klass.getName(), forReporting.asParagraph(","));
+        return toret; // don't set the reference until we got passed all exceptions
+      } else { // if we do, return it
+        dbg.VERBOSE("found field cache for class {)}", klass.getName());
+        return (Field[]) o;
       }
     } catch (Exception e) {
       dbg.Caught(e);
-    } finally {
-      return ret;
+      return null;
     }
   }
-
 }

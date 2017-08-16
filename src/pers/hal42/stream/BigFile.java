@@ -128,6 +128,7 @@ public class BigFile {
 
   /**
    * split the file by size
+   *
    * @deprecated broken:needs to wait on stream completion
    */
   void splitfile() {
@@ -143,7 +144,7 @@ public class BigFile {
 
     long filelength = infile.length();
 
-    try(FileInputStream is = new FileInputStream(infile)) {
+    try (FileInputStream is = new FileInputStream(infile)) {
       long tot = 0;
       long p = 0;
       while (tot < filelength) {
@@ -198,7 +199,7 @@ public class BigFile {
     }
     String name = path.substring(0, dotindex);
 
-    if(!StringX.isInteger(path.substring(dotindex + 1, path.length()))){
+    if (!StringX.isInteger(path.substring(dotindex + 1, path.length()))) {
       dbg.ERROR("Not a valid JavaSplit file.");
       return;
     }
@@ -260,13 +261,7 @@ public class BigFile {
         break;
       }
     }
-
-    if (os instanceof FileOutputStream) {
-      try {
-        os.close();
-      } catch (Exception s) {
-      }
-    }
+    IOX.Close(os);
   }
 
 
@@ -278,31 +273,31 @@ public class BigFile {
   public static void main(String args[]) {
 // use the setall    ErrorLogStream.cpf.myLevel.setLevel(ErrorLogStream.VERBOSE);
     switch (args.length) {
-      default:
-      case 0: {
-        System.out.println("BigFile filename [size [-lines]]");
-      }
-      break;
-      case 1: {
-        //only filename means to join
-        BigFile fa = new BigFile(args[0]);
-        fa.joinfile();
-      }
-      break;
-      case 3: {
-        // split by size or lines
-        if (StringX.equalStrings("-lines", args[2])) {
-          BigFile fa = new BigFile(args[0], Integer.parseInt(args[1]));
-          fa.splitfilelines();
-          break;
-        }
-      } // else fall through to case 2
-      case 2: {
-        // filesize means to split
+    default:
+    case 0: {
+      System.out.println("BigFile filename [size [-lines]]");
+    }
+    break;
+    case 1: {
+      //only filename means to join
+      BigFile fa = new BigFile(args[0]);
+      fa.joinfile();
+    }
+    break;
+    case 3: {
+      // split by size or lines
+      if (StringX.equalStrings("-lines", args[2])) {
         BigFile fa = new BigFile(args[0], Integer.parseInt(args[1]));
-        fa.splitfile();
+        fa.splitfilelines();
+        break;
       }
-      break;
+    } // else fall through to case 2
+    case 2: {
+      // filesize means to split
+      BigFile fa = new BigFile(args[0], Integer.parseInt(args[1]));
+      fa.splitfile();
+    }
+    break;
     }
   }
 

@@ -14,6 +14,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.sql.SQLException;
+import java.text.MessageFormat;
 import java.util.Vector;
 
 import static java.text.MessageFormat.format;
@@ -531,11 +532,7 @@ public class ErrorLogStream implements AtExit, Finally.Lambda {
   protected static String extendedInfo(Throwable t) {
     if ((t != null) && (t instanceof SQLException)) {
       SQLException e = (SQLException) t;
-      StringBuilder ret = new StringBuilder();
-      ret.append("\n  SQLState:").append(e.getSQLState()).
-        append("\n  SQLMessage:").append(e.getMessage()).
-        append("  SQLVendor:").append(String.valueOf(e.getErrorCode()));
-      return ret.toString();
+      return MessageFormat.format("\n\tSQLState: {0} \n\tSQLMessage: {1}\tSQLVendor:{2}", e.getSQLState(), e.getMessage(), e.getErrorCode());
     }
     return null;
   }

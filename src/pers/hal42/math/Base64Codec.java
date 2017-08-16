@@ -123,8 +123,8 @@ public class Base64Codec {
 
   public static void Test(String[] argv) {
     try {
-      int argc = argv.length;
       boolean deen = true;
+      int argc = argv.length;
       String str = "!_!";
       switch (argc) {
         case 2:

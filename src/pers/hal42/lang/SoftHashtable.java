@@ -54,19 +54,19 @@ public class SoftHashtable extends Dictionary implements Map {
 
   // get the object out that is
   public synchronized Object get(Object key) {
-    Object ret = null;
+
     try {
       processQueue();
       Object value = content.get(key);
       if (value != null) {
         // +++ if not value instanceof WeakObject, do somethign drastic, as everything is broken!  (can't happen)
         SoftObject wo = (SoftObject) value;
-        ret = wo.get();
+        return wo.get();
+      } else {
+        return null;
       }
     } catch (Exception ex) {
-      // ???
-    } finally {
-      return ret;
+      return null;
     }
   }
 

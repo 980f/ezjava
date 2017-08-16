@@ -123,7 +123,7 @@ public class Executor {
           try {
             process.exitValue();  // throws if process is not complete; how I tell it isn't
             done = true;
-          } catch (IllegalThreadStateException itse) {
+          } catch (IllegalThreadStateException ignored) {
           }
           counter--;
           if (!done && !kill && (counter == 0)) {

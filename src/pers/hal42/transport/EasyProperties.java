@@ -98,12 +98,12 @@ public class EasyProperties extends Properties {
             nullCtor = ctor;
           }
           if (plist.length == 1 && plist[0] == String.class) {
-            return (T) ctor.newInstance(arglist); //preferred exit
+            return ctor.newInstance(arglist); //preferred exit
           }
         }
         //2nd chance: cosntruct then set:
         if (nullCtor != null) {
-          T obj = (T) nullCtor.newInstance();
+          T obj = nullCtor.newInstance();
           Class[] plist = new Class[1];
           plist[0] = String.class;
           Method setto = act.getMethod("setto", plist);

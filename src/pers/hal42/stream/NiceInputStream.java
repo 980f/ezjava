@@ -161,13 +161,11 @@ public class NiceInputStream {
    * @deprecated should be simple....but doesn't seem to work.
    */
   public int bitsAvailable() {
-    int bitsonhand = (32 - bitPtr);
     try {
-      return bitsonhand + 8 * wrapped.available();
+      return (32 - bitPtr) + 8 * wrapped.available();
     } catch (java.io.IOException dammit) {
       //won't ever happen but compiler is dumb (available() never actually throws)
-    } finally {
-      return bitsonhand;
+      return (32 - bitPtr);
     }
   }
 
