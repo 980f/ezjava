@@ -86,7 +86,7 @@ public class URLEncoderFilterInputStream extends FilterInputStream {
    * @throws IOException if an I/O error occurs.
    */
   public int read() throws IOException {
-    try (AutoCloseable free = thisMonitor.getMonitor()) {
+    try (Monitor free = thisMonitor.getMonitor()) {
       // if the temp buffer has anything in it, use that, otherwise
       // +++ there is a better way; fixup later
       if (tmpBuff.length() > 0) {
@@ -121,9 +121,6 @@ public class URLEncoderFilterInputStream extends FilterInputStream {
           return '%';
         }
       }
-    } catch (Exception e) {//false alarm
-      e.printStackTrace();
-      return 0;
     }
   }
 

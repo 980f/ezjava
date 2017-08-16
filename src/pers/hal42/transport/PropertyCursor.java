@@ -11,7 +11,8 @@ public class PropertyCursor implements Finally.Lambda {
   protected StringBuilder cursor = new StringBuilder(100);
   private int lastdot = 0;
   private Finally popper = new Finally(this);
-
+  /** used by data sources, not used internally */
+  public boolean enumsAsSymbol = true;
   public PropertyCursor(Properties wrapped) {
     this.wrapped = wrapped;
   }
@@ -30,6 +31,16 @@ public class PropertyCursor implements Finally.Lambda {
     try {
       cursor.append(key);
       wrapped.setProperty(cursor.toString(), value);
+      return value;
+    } finally {
+      clip();
+    }
+  }
+
+  public Object putProperty(String key, Object value) {
+    try {
+      cursor.append(key);
+      wrapped.put(cursor.toString(), value);
       return value;
     } finally {
       clip();

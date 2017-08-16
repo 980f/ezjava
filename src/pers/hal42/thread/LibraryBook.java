@@ -15,31 +15,24 @@ public class LibraryBook {
 
   // for standins
   public boolean Checkout() {
-
-    try (AutoCloseable free = checkoutMutex.getMonitor()) {
+    try (Monitor free = checkoutMutex.getMonitor()) {
       if (!value) {
         value = true;
         return true;
       } else {
         return false;
       }
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
 
   public boolean Return() {
-    try (AutoCloseable free = checkoutMutex.getMonitor()) {
+    try (Monitor free = checkoutMutex.getMonitor()) {
       if (value) {
         value = false;
         return true;
       } else {
         return false;
       }
-    } catch (Exception e) {
-      dbg.Caught(e);
-      return false;
     }
   }
 

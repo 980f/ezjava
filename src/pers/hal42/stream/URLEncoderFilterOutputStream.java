@@ -55,7 +55,7 @@ public class URLEncoderFilterOutputStream extends FilterOutputStream {
    * @throws IOException if an I/O error occurs.
    */
   public void write(int b) throws IOException {
-    try (AutoCloseable free = thisMonitor.getMonitor()) {
+    try (Monitor free = thisMonitor.getMonitor()) {
       // check to see if it needs converting.  If so, conert it
       // otherwise, pass it through
       b = b & 255; // prevents dumbass negatives
@@ -77,8 +77,6 @@ public class URLEncoderFilterOutputStream extends FilterOutputStream {
           super.write((byte) ch);
         }
       }
-    } catch (Exception e) {
-// false alarm     e.printStackTrace();
     }
   }
 }

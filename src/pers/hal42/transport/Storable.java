@@ -350,20 +350,42 @@ public class Storable {
         dbg.Caught(e);
       }
     }
-
     return changes;
   }
 
   public int applyTo(PropertyCursor cursor) {
     int count = 0;
     for (Storable child : wad) {
-      if (child.type == Wad) {
+      switch (child.type) {
+      case Wad:
         try (Finally pop = cursor.push(child.name)) {
           count += child.applyTo(cursor);
         }
-      } else {
-        cursor.setProperty(child.name, child.getImage());
+        break;
+      case Null: //don't output actual nulls, underlying hashtable will NPE.
+        //todo:1 add enum to PropertyCursor to decide how to express nulls.
+        break;
+      case Boolean:
+        cursor.putProperty(child.name, child.getTruth());
         ++count;
+        break;
+      case Enummy:
+        cursor.putProperty(child.name, cursor.enumsAsSymbol ? child.getImage() : child.getIntValue());
+        ++count;
+        break;
+      case WholeNumber:
+        cursor.putProperty(child.name, child.getIntValue());
+        ++count;
+        break;
+      case Floating:
+        cursor.putProperty(child.name, child.getValue());
+        ++count;
+        break;
+      case Unclassified:
+      case Textual:
+        cursor.putProperty(child.name, child.getImage());
+        ++count;
+        break;
       }
     }
     return count;
@@ -771,7 +793,6 @@ public class Storable {
           }
         }
       }
-
     }
     return type;
   }

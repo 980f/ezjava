@@ -65,11 +65,9 @@ public class Counter {
    * @return modified value
    */
   public final long chg(long by) {
-    try (AutoCloseable free = mon.getMonitor()) {
+    try (Monitor free = mon.getMonitor()) {
       count += by;
       return norm();
-    } catch (Exception ex) {
-      return -1;
     }
   }
 
@@ -77,10 +75,8 @@ public class Counter {
    * @return object after clearing
    */
   public final long Clear() {
-    try (AutoCloseable free = mon.getMonitor()) {
+    try (Monitor free = mon.getMonitor()) {
       count = min;
-      return min;
-    } catch (Exception ex) {
       return min;
     }
   }

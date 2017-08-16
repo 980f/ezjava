@@ -41,19 +41,6 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
     super(out);
   }
 
-  public void flush() throws IOException {
-    try (AutoCloseable free = tmpBuffMonitor.getMonitor()) {
-      // if anything is left in the buffer, it is not a valid format,
-      // so spew it as-is
-      // +++ in that case, should we except?
-      super.write(tmpBuff, 0, used);
-      used = 0;
-      super.flush();  // +++ should be out.flush()?
-    } catch (Exception e) {
-//      e.printStackTrace();
-    }
-  }
-
   /**
    * Writes the specified byte to this URLDecoded output stream.
    *
@@ -61,7 +48,7 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
    * @throws IOException if an I/O error occurs.
    */
   public synchronized void write(int c) throws IOException {
-    try (AutoCloseable free = tmpBuffMonitor.getMonitor()) {
+    try (Monitor free = tmpBuffMonitor.getMonitor()) {
       if ((c == '%') || used > 0) {
         tmpBuff[used++] = (byte) c;
         if (used == 2) {
@@ -82,8 +69,17 @@ public class URLDecoderFilterOutputStream extends FilterOutputStream {
         }
         super.write((byte) c);
       }
-    } catch (Exception e) {
-      e.printStackTrace();
+    }
+  }
+
+  public void flush() throws IOException {
+    try (Monitor free = tmpBuffMonitor.getMonitor()) {
+      // if anything is left in the buffer, it is not a valid format,
+      // so spew it as-is
+      // +++ in that case, should we except?
+      super.write(tmpBuff, 0, used);
+      used = 0;
+      super.flush();  // +++ should be out.flush()?
     }
   }
 }

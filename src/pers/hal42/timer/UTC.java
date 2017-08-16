@@ -163,18 +163,14 @@ public class UTC implements Comparable<UTC> {
   }
 
   public String toString() {
-    try (AutoCloseable free = formatting.getMonitor()) {
+    try (Monitor free = formatting.getMonitor()) {
       return hrtf.format(new Date(utc));
-    } catch (Exception e) {
-      return "";
     }
   }
 
   public UTC setto(String dbvalue) {
-    try (AutoCloseable free = formatting.getMonitor()) {
+    try (Monitor free = formatting.getMonitor()) {
       utc = hrtf.parse(dbvalue).getTime();
-      return this;
-    } catch (Exception e) {
       return this;
     }
   }

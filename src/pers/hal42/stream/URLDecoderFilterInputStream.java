@@ -76,7 +76,7 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
    */
   public int read() throws IOException {
     int retval = 0;
-    try (AutoCloseable free = thisMonitor.getMonitor()) {
+    try (Monitor free = thisMonitor.getMonitor()) {
       int c = -1;
       // be sure we have at least one character in the buffer
       if (tmpBuff.length() == 0) {
@@ -86,6 +86,7 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
       if (tmpBuff.length() > 0) {
         // otherwise, something's in the buffer; see if it needs conversion
         if (tmpBuff.charAt(0) == '%') {
+          //noinspection StatementWithEmptyBody
           while ((tmpBuff.length() < 3) && getOne()) {
           }
           // we got what we could; so attempt the conversion
@@ -115,9 +116,7 @@ public class URLDecoderFilterInputStream extends FilterInputStream {
 //      if(c == '+') {
 //        c = ' ';
 //      }
-      retval = (byte) c; // one exit point
-    } finally {
-      return retval;
+      return (byte) c; // one exit point
     }
   }
 

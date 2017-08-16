@@ -66,7 +66,7 @@ public class GenericDB {
 
   public GenericDB(MysqlConnectionInfo connInfo, String threadname) {
     connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
-    try (AutoCloseable free = genericDBclassMonitor.getMonitor()) {
+    try (Monitor free = genericDBclassMonitor.getMonitor()) {
       this.myThreadName = threadname;
       this.connInfo = connInfo;
       dbg.VERBOSE("Preloading driver class {0}", connInfo.drivername);
@@ -75,8 +75,6 @@ public class GenericDB {
       }
 //      cpool = list.get(connInfo);
       getConnection();
-    } catch (Exception e) {
-      // can't happen
     }
   }
 

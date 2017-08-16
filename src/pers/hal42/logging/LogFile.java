@@ -153,12 +153,10 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   }
 
   public PrintFork getPrintFork(String name, int defaultLevel, boolean register) {
-    try (AutoCloseable free = logFileMon.getMonitor()) {
+    try (Monitor free = logFileMon.getMonitor()) {
       if (pf == null) {
         pf = new LogFilePrintFork(name, getPrintStream(), defaultLevel, register);
       }
-      return pf;
-    } catch (Exception e) {
       return pf;
     }
   }
@@ -366,23 +364,18 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
     Vector<LogFile> v = new Vector<>(); // for sorting
     LogFile[] sortedList = new LogFile[0];
     //noinspection TryWithIdenticalCatches
-    try (AutoCloseable free = listMonitor.getMonitor()) {
+    try (Monitor free = listMonitor.getMonitor()) {
       v.addAll(lflist);
       sort(v);
       sortedList = new LogFile[v.size()];
       v.toArray(sortedList);
       return sortedList;
-    } catch (Exception e) {
-      ErrorLogStream.Global().Caught(e);
-      return sortedList;
     }
   }
 
   private static void register(LogFile logFile) {
-    try (AutoCloseable free = listMonitor.getMonitor()) {
+    try (Monitor free = listMonitor.getMonitor()) {
       lflist.add(logFile);
-    } catch (Exception e) {
-      ErrorLogStream.Global().Caught(e);
     }
   }
 
