@@ -28,7 +28,7 @@ public class MysqlConnectionInfo extends DBConnInfo {
   /** add options to login properties object */
   @Override
   public void addOptions(Properties props) {
-    opts.putInto(props);
+    opts.putInto(props, true);
   }
 
   public static class Options extends JsonOptions {

@@ -104,7 +104,7 @@ public class JsonOptions {
     node.applyTo(pc);
   }
 
-  public void putInto(Properties props) {
-    node.applyTo(props);
+  public void putInto(Properties props, boolean stringify) {
+    node.applyTo(props, stringify);
   }
 }

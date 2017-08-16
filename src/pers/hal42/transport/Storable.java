@@ -316,7 +316,7 @@ public class Storable {
               if (nestedObject != null) {
                 child.setType(Type.Wad);//should already be true
                 if (nestedObject instanceof Properties) { //must precede map and collections since it is one.
-                  changes += child.applyTo((Properties) nestedObject);
+                  changes += child.applyTo((Properties) nestedObject, false);//todo:1 review choice of stringify, or find a means to configure it.
                 } else if (nestedObject instanceof Map) {
                   return changes; //NYI!
                 } else if (nestedObject instanceof Collection) {
@@ -391,8 +391,8 @@ public class Storable {
     return count;
   }
 
-  public int applyTo(Properties properties) {
-    PropertyCursor cursor = new PropertyCursor(properties);
+  public int applyTo(Properties properties, boolean stringify) {
+    PropertyCursor cursor = new PropertyCursor(properties, stringify);
     return applyTo(cursor);
   }
 
@@ -570,6 +570,19 @@ public class Storable {
     return ivalue;
   }
 
+  public void setValue(int whole) {
+    ivalue = whole;
+    if (type == Type.Unclassified) {
+      setType(WholeNumber);
+    }
+
+    bit = ivalue != 0;//coa
+    if (enumerizer != null) {
+      enumOnSetNumber();
+    }
+//    image= unchanged, can't afford to render to text on every change
+  }
+
   public void setEnumerizer(Class<? extends Enum> enumer) {
     if (enumer != null && enumer != enumerizer) {//#object identity compare intended.
       this.enumerizer = enumer;
@@ -640,22 +653,60 @@ public class Storable {
   public boolean setType(Type newtype) {
     boolean wasUnknown = type == Type.Unclassified;
     if (type != newtype) {
-      if (newtype == Textual) {
-        if (type == Floating) {
+      switch (newtype) {
+      case Textual://target
+        switch (type) {
+        case Floating:
           image = Double.toString(dvalue);
-        } else if (type == WholeNumber) {
+          break;
+        case WholeNumber:
           image = Integer.toString(ivalue);
-        } else if (type == Boolean) {
+          break;
+        case Boolean:
           image = java.lang.Boolean.toString(bit);
+          break;
         }
-      } else if (newtype == Floating) {
-        dvalue = StringX.parseDouble(image);
-      } else if (newtype == WholeNumber) {
-        ivalue = StringX.parseInt(image);
-      } else if (newtype == Boolean) {
-        parseBool(image);//#returns whether the field appeared to be boolean.
+        break;
+      case Floating://target
+        switch (type) {
+        default:
+          dvalue = StringX.parseDouble(image);
+          break;
+        case WholeNumber:
+          dvalue = ivalue;
+          break;
+        case Boolean:
+          dvalue = bit ? 1.0 : 0.0;
+          break;
+        }
+        break;
+      case WholeNumber: //target
+        switch (type) {
+        default:
+          ivalue = StringX.parseInt(image);
+          break;
+        case Floating:
+          ivalue = (int) Math.round(dvalue);
+          break;
+        case Boolean:
+          ivalue = bit ? 1 : 0;
+          break;
+        }
+        break;
+      case Boolean: //target
+        switch (type) {
+        default:
+          parseBool(image);//#returns whether the field appeared to be boolean.
+          break;
+        case Floating:
+          bit = !Double.isNaN(dvalue);
+          break;
+        case WholeNumber:
+          bit = ivalue != 0;
+          break;
+        }
+        break;
       }
-      //more such mappings might make sense
       type = newtype;
     }
     return wasUnknown;
