@@ -3,6 +3,8 @@ package pers.hal42.database;
 import pers.hal42.lang.StringX;
 import pers.hal42.transport.Storable;
 
+import java.util.Properties;
+
 import static java.text.MessageFormat.format;
 
 /**
@@ -22,10 +24,13 @@ public class DBConnInfo {
   public boolean autoCommit = false;
   public boolean readOnly = true; //
 
+  public Properties custom = new Properties();
+
   public int intervalsecs = 0;
   public String keepaliveSQL = "";
 
   public DBConnInfo() {
+//    mysqlDefaults();//todo:1 push this to elsewhere
   }
 
   /**
@@ -37,6 +42,14 @@ public class DBConnInfo {
 
   public String fullUrl() {
     return format(urlFormat, server);
+  }
+
+  public void mysqlDefaults() {
+    custom.put("connectTimeout", 0);
+    custom.put("socketTimeout", 0);
+    custom.put("useCompression", true);
+    custom.put("useCursorFetch", true);
+    custom.put("useInformationSchema", true); //todo:1 see if this fixes useing metadata instead of direct access to infoschema.
   }
 
   @Override

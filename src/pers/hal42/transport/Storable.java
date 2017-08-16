@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import pers.hal42.lang.Finally;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
+import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
 
 import java.lang.annotation.*;
@@ -16,7 +17,6 @@ import java.text.MessageFormat;
 import java.util.*;
 
 import static pers.hal42.lang.StringX.NonTrivial;
-import static pers.hal42.transport.JsonStorable.dbg;
 import static pers.hal42.transport.Storable.Origin.Defawlted;
 import static pers.hal42.transport.Storable.Origin.Ether;
 import static pers.hal42.transport.Storable.Type.Boolean;
@@ -28,6 +28,7 @@ import static pers.hal42.transport.Storable.Type.*;
  * This can be viewed as a DOM good for JSON data. It is intended to replace usage of java properties, despite us having nice classes to make properties look like a tree.
  */
 public class Storable {
+  public static final ErrorLogStream dbg = ErrorLogStream.getForClass(Storable.class);
   public enum Type {
     Unclassified,
     Null,
@@ -68,6 +69,8 @@ public class Storable {
     /** if nontrivial then it is the classname for creating objects from a node. */
     String fqcn() default "";
   }
+
+  private final char splitchar = '/';
 
   /**
    * used to create objects from Storable's
@@ -366,6 +369,18 @@ public class Storable {
     return applyTo(cursor);
   }
 
+  /**
+   * add children as properties parsing 'dot' seperated paths
+   *
+   * @deprecated untested
+   */
+  public void merge(Properties properties) {
+    properties.forEach((k, v) -> {
+      String name = StringX.replace(String.valueOf(k), ".", String.valueOf(splitchar));
+      Storable child = findChild(name, true);
+      child.setValue(String.valueOf(v));
+    });
+  }
   /**
    * @return which member of a wad this is
    */
@@ -714,7 +729,7 @@ public class Storable {
    */
   public Storable findChild(String pathname, boolean autocreate) {
     pers.hal42.text.TextList names = new TextList();
-    names.simpleParse(pathname, '/', false);
+    names.simpleParse(pathname, splitchar, false);
     int depth = names.size();
     if (depth == 0) {
       return null;

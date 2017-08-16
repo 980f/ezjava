@@ -15,20 +15,14 @@ import java.util.Collections;
 import java.util.Vector;
 
 public final class Monitor implements Comparable<Monitor>, AutoCloseable {
-  private class FancyUnlocker implements AutoCloseable {
-    String message;
-
-    public FancyUnlocker(String message) {
-      this.message = message;
+  //noisy versions of the above:
+  public Pop LOCK(String moreinfo) {
+    dbg().VERBOSE(moreinfo + " trying to Lock:" + ownerInfo());
+    synchronized (name) {
+      getMonitor();
+      dbg().VERBOSE("Locked by: " + moreinfo + " " + Thread.currentThread());
     }
-
-    @Override
-    public void close() throws Exception {
-      synchronized (name) {
-        dbg().VERBOSE("Freed by: " + message + " " + Thread.currentThread());
-        freeMonitor();
-      }
-    }
+    return new Pop(moreinfo);
   }
   /**
    * for debug, but also is internally used for locking.
@@ -125,14 +119,20 @@ public final class Monitor implements Comparable<Monitor>, AutoCloseable {
     }
   }
 
-  //noisy versions of the above:
-  public AutoCloseable LOCK(String moreinfo) {
-    dbg().VERBOSE(moreinfo + " trying to Lock:" + ownerInfo());
-    synchronized (name) {
-      getMonitor();
-      dbg().VERBOSE("Locked by: " + moreinfo + " " + Thread.currentThread());
+  public class Pop implements AutoCloseable {
+    String message;
+
+    public Pop(String message) {
+      this.message = message;
     }
-    return new FancyUnlocker(moreinfo);
+
+    @Override
+    public void close() {
+      synchronized (name) {
+        dbg().VERBOSE("Freed by: " + message + " " + Thread.currentThread());
+        freeMonitor();
+      }
+    }
   }
 
   public boolean tryMonitor() {

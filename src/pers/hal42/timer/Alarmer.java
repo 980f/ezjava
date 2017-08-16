@@ -7,7 +7,6 @@ import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.text.TextList;
 import pers.hal42.thread.ThreadX;
-import pers.hal42.transport.EasyProperties;
 
 import java.util.Vector;
 
@@ -46,10 +45,8 @@ class AlarmList {
    * @return the earliest that any will blow.
    */
   long soonest() {
-    try (AutoCloseable pop=lock.LOCK("soonest")) {
+    try (Monitor.Pop pop = lock.LOCK("soonest")) {
       return size() > 0 ? next().blowtime : 0;
-    } catch (Exception ignored) {
-      return 0;//wont' happen but compiler doesn't know that
     }
   }
 
@@ -65,7 +62,7 @@ class AlarmList {
       return false;//caller should treat this as an error.
     }
 
-    try (AutoCloseable pop= lock.LOCK("insert " + newalarm.toSpam())){
+    try (Monitor.Pop pop = lock.LOCK("insert " + newalarm.toSpam())) {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         if (newalarm.blowtime < alarm.blowtime) {
@@ -88,7 +85,7 @@ class AlarmList {
    * @return true if new one goes to top of stack.
    */
   boolean remove(Alarmum newalarm) {
-    try (AutoCloseable pop = lock.LOCK("remove:" + newalarm.toSpam())) {
+    try (Monitor.Pop pop = lock.LOCK("remove:" + newalarm.toSpam())) {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         if (alarm == newalarm) {//same object
@@ -97,8 +94,6 @@ class AlarmList {
           return true; //presume single instance
         }
       }
-    } catch (Exception ignored) {
-
     }
     return false;
   }
@@ -107,21 +102,20 @@ class AlarmList {
    * @return COPY of object if it is in list
    */
   Alarmum info(Alarmum analarm) {
-    try (AutoCloseable pop = lock.LOCK("info")) {
+    try (Monitor.Pop pop = lock.LOCK("info")) {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         if (alarm == analarm) {//same object
           return analarm.Clone();//return snapshot, one that is NOT in the active list.
         }
       }
-    } catch (Exception ignored) {
     }
     return null;
   }
 
   AlarmList ringers(long now) {
     AlarmList ringers = new AlarmList(dbg);
-    try (AutoCloseable pop = lock.LOCK("ringers")) {
+    try (Monitor.Pop pop = lock.LOCK("ringers")) {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         dbg.VERBOSE("Checking:" + alarm.toSpam());
@@ -135,8 +129,6 @@ class AlarmList {
         }
         //+_+ recode above to find the break point then make an ARRAY for ringers.
       }
-    } catch (Exception ignored) {
-
     }
     return ringers;
   }
@@ -145,38 +137,21 @@ class AlarmList {
    * adjust the time value of all alarms in list
    */
   void adjust(int diff) {
-    try (AutoCloseable pop = lock.LOCK("adjust")) {
+    try (Monitor.Pop pop = lock.LOCK("adjust")) {
       for (int i = list.size(); i-- > 0; ) {
         alarm(i).blowtime += diff;
       }
-    } catch (Exception ignored) {
-
     }
   }
 
   TextList toSpam(TextList spam) {
-    try (AutoCloseable pop=lock.LOCK("spamlist")){
+    try (Monitor.Pop pop = lock.LOCK("spamlist")) {
       spam.Add("<ActiveAlarms size=" + size() + ">");
       for (int i = list.size(); i-- > 0; ) {
         spam.Add(alarm(i).toSpam());
       }
       spam.Add("</ActiveAlarms>");
       return spam;
-    } catch (Exception ignored) {
-      return null;//appease compiler
-    }
-  }
-
-  EasyProperties toEzpSpam() {
-    EasyProperties ret = new EasyProperties();
-    //noinspection finally
-    try(AutoCloseable pop=lock.LOCK("spamlist")){
-      for (int i = list.size(); i-- > 0; ) {
-        ret.setString("" + i, alarm(i).toSpam());
-      }
-    } finally {
-      //noinspection ReturnInsideFinallyBlock
-      return ret;
     }
   }
 
@@ -248,10 +223,6 @@ public class Alarmer implements Runnable {
       spam = new TextList();
     }
     return my.active.toSpam(spam);
-  }
-
-  private EasyProperties ezpDump() {
-    return my.active.toEzpSpam();
   }
 
   private static void setMy() {
@@ -332,10 +303,6 @@ public class Alarmer implements Runnable {
 
   public static TextList dump() {
     return my.dump(null);
-  }
-
-  public static EasyProperties EzpDump() {
-    return my.ezpDump();
   }
 
   public static void dump(ErrorLogStream els, int importance) {

@@ -31,11 +31,14 @@ public class DBConn {
       loginProperties.put("user", connInfo.username);
       loginProperties.put("password", connInfo.password);
       //mysql specials:      //todo:1 source from properties node on DBConnInfo
-      loginProperties.put("connectTimeout", 0);
-      loginProperties.put("socketTimeout", 0);
-      loginProperties.put("useCompression", true);
-      loginProperties.put("useCursorFetch", true);
-      loginProperties.put("useInformationSchema", true); //todo:1 see if this fixes useing metadata instead of direct access to infoschema.
+//NPE in a stupid place in driver:      loginProperties.putAll(connInfo.custom);
+      loginProperties.put("connectTimeout", String.valueOf(0));
+      loginProperties.put("socketTimeout", String.valueOf(0));
+      loginProperties.put("useCompression", String.valueOf(true));
+      loginProperties.put("useCursorFetch", String.valueOf(true));
+      loginProperties.put("useInformationSchema", String.valueOf(true)); //todo:1 see if this fixes useing metadata instead of direct access to infoschema.
+
+
       dbg.VERBOSE("Attempting connection to: {0}", url );
       dbConnection = DriverManager.getConnection(url, loginProperties);
       dbConnection.setAutoCommit(connInfo.autoCommit);

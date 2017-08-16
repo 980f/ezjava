@@ -138,10 +138,15 @@ public class ReflectX {
     // I exist for static reasons only.
   }
 
+
   @SuppressWarnings("unchecked")
-  public static <T> T CopyConstruct(T prefill) throws IllegalAccessException, InvocationTargetException, InstantiationException {
+  public static <T> T CopyConstruct(T prefill) {
     Constructor<T> maker = constructorFor((Class<? extends T>) prefill.getClass(), prefill.getClass());
-    return maker != null ? maker.newInstance(prefill) : null;
+    try {
+      return maker != null ? maker.newInstance(prefill) : null;
+    } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+      return null;
+    }
   }
 
   /**
@@ -160,7 +165,7 @@ public class ReflectX {
    * @return constructor for class @param claz with single argument @param argclaz
    */
   public static Method factoryFor(Class claz, Class argclaz) {
-    try {
+//    try {
       Method[] candidates = claz.getMethods();
       for (Method m : candidates) {
         int mods = m.getModifiers();
@@ -172,9 +177,7 @@ public class ReflectX {
         }
       }
       return null;
-    } catch (Exception ex) {
-      return null;
-    }
+//    }
   }
 
   public static Object enumObject(Class fclaz, String string) {
@@ -296,8 +299,6 @@ public class ReflectX {
         return classForName(packageRoot + classname);//2nd chance
       }
       return null;
-    } catch (Exception ex) {
-      return null;
     }
   }
 
@@ -310,7 +311,7 @@ public class ReflectX {
     try {
       //noinspection ConstantConditions
       return classForName(classname).newInstance();
-    } catch (Exception ex) {
+    } catch (IllegalAccessException | InstantiationException e) {
       return null;
     }
   }

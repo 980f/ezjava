@@ -192,5 +192,10 @@ public class GenericDB {
   public boolean wakeup() {
     return haveConnection();//devolved into this.
   }
+
+  /** @returns whether we asked for the connection to not be read-only */
+  public boolean isWritable() {
+    return !dbConnector.connInfo.readOnly;
+  }
 }
 
