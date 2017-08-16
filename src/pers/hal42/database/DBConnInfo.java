@@ -39,6 +39,6 @@ public class DBConnInfo {
 
   @Override
   public String toString() {
-    return format("DBConnInfo driver:{0}  url:{1} server:{2} username:{3} password:{4} ", drivername, urlFormat, server, username, StringX.NonTrivial(password) ? "<set>" : "<blank>");
+    return format("{0}\t{1} X :{2} u:{3} pass:{4} ", drivername, urlFormat, server, username, StringX.NonTrivial(password) ? "<set>" : "<blank>");
   }
 }

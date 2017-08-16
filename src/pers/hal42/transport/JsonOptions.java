@@ -38,12 +38,6 @@ public class JsonOptions {
   /** apply DOM to object */
   public void applyNode() {
     node.applyTo(this, rules);
-    postApply();
-  }
-
-  /** hook that is called after applyNode has finished. */
-  protected void postApply() {
-    //#nada
   }
 
   public void applyNode(Storable newRoot) {

@@ -509,10 +509,10 @@ public class TextList {
     Span cutter = new Span();
     if (StringX.NonTrivial(csv)) {
       cutter.lowest = 0;
-      for (int index = 0; index < csv.length(); ) {
-        if (csv.charAt(index++) == splitchar) {
+      for (int index = 0; index < csv.length(); ++index) {
+        if (csv.charAt(index) == splitchar) {
           cutter.highest = index;
-          String element = cutter.subString(csv, 0).trim();
+          String element = cutter.subString(csv, 1).trim();
           if (StringX.NonTrivial(element) || keepEmpties) {
             add(element);
           }
