@@ -140,7 +140,7 @@ public class DBMacros extends GenericDB {
   private static final Fstring timerStr = new Fstring(7, ' ');
   private static final int NOT_A_COLUMN = ObjectX.INVALIDINDEX;
 
-  public DBMacros(DBConnInfo connInfo, String threadname) {
+  public DBMacros(MysqlConnectionInfo connInfo, String threadname) {
     super(connInfo, threadname);
   }
 

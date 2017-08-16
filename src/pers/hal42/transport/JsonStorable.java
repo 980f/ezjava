@@ -67,7 +67,7 @@ public class JsonStorable extends PushedJSONParser {
       if (node.isTrivial()) { //drop autocreated but unused nodes.
         return false;
       }
-//this c++ functionality must be done by caller, until we register watchers and all that jazz.      node.preSave(); //when not trivial this flushes cached representations
+
       switch (node.type) {
       case Null:
         printName(node);
@@ -77,22 +77,28 @@ public class JsonStorable extends PushedJSONParser {
         printName(node);
         ps.print(java.lang.Boolean.toString(node.getTruth()));//todo:0 these are getting quoted, perhaps not recognized in a timely fashion as booleans.
         break;
-      default:
+      case WholeNumber:
+        printName(node);
+        int number = node.getIntValue();
+        ps.print(number);//print nicely
+        break;
+
       case Unclassified:
         printName(node);
         printText(node.getImage(), true); //always quote
         break;
-      case Numeric: {
+      case Floating: {
         printName(node);
-        double number = node.getValue();
+        double dvalue = node.getValue();
         //todo:1 output nans as keyword
-        if ((long) number == number) {//if is an integer value
-          ps.print((long) number);//print nicely
+        if ((long) dvalue == dvalue) {//if is an integer value
+          ps.print((long) dvalue);//print nicely
         } else {
-          ps.print(number);
+          ps.print(dvalue);
         }
       }
       break;
+      case Enummy:
       case Textual:
         printName(node);
         printText(node.getImage(), true); //always quote
@@ -119,6 +125,7 @@ public class JsonStorable extends PushedJSONParser {
       ps.print('}');
     } /* printWad */
   }
+
   public Storable root;
   public String filename;
   public boolean specialRootTreatment = true;//@see BeginWad clause of parse().

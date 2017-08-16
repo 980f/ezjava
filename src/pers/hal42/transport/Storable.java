@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.*;
 
+import static pers.hal42.lang.Index.BadIndex;
 import static pers.hal42.lang.StringX.NonTrivial;
 import static pers.hal42.transport.Storable.Origin.Defawlted;
 import static pers.hal42.transport.Storable.Origin.Ether;
@@ -29,12 +30,14 @@ import static pers.hal42.transport.Storable.Type.*;
  */
 public class Storable {
   public static final ErrorLogStream dbg = ErrorLogStream.getForClass(Storable.class);
+
   public enum Type {
     Unclassified,
     Null,
     Boolean,
     Enummy,
-    Numeric,
+    WholeNumber,
+    Floating, //as in mathematics
     Textual,
     Wad
   }
@@ -197,8 +200,10 @@ public class Storable {
   @Nullable Storable parent; //can be null.
   Type type = Unclassified;
   Origin origin = Ether;
+  //4 value types:
   String image = "";
-  double value;
+  int ivalue;
+  double dvalue;
   boolean bit;
   /**
    * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
@@ -221,7 +226,7 @@ public class Storable {
   public Object getEnum() {
     if (enumerizer != null) {
       try {
-        return enumerizer.getEnumConstants()[(int) value];
+        return enumerizer.getEnumConstants()[ivalue];
       } catch (Exception any) {
         return null;
       }
@@ -381,6 +386,7 @@ public class Storable {
       child.setValue(String.valueOf(v));
     });
   }
+
   /**
    * @return which member of a wad this is
    */
@@ -400,7 +406,8 @@ public class Storable {
       type = Null;
       image = "";
       bit = false;
-      value = Double.NaN;
+      ivalue = BadIndex;
+      dvalue = Double.NaN;
       return;
     }
     image = text.trim();
@@ -414,11 +421,18 @@ public class Storable {
       parseBool(image);
       //else silently ignore garbage.
       break;
-    case Numeric:
+    case Floating:
       try {
-        value = Double.parseDouble(image);//leave this as the overly picky parser
+        dvalue = Double.parseDouble(image);//leave this as the overly picky parser
       } catch (Throwable any) {
-        value = Double.NaN;
+        dvalue = Double.NaN;
+      }
+      break;
+    case WholeNumber:
+      try {
+        ivalue = Integer.parseInt(image);//leave this as the overly picky parser
+      } catch (Throwable any) {
+        ivalue = BadIndex;
       }
       break;
     case Enummy:
@@ -451,7 +465,8 @@ public class Storable {
   public void setValue(boolean truly) {
     setType(Boolean);
     bit = truly;
-    value = truly ? 1.0 : 0.0;
+    ivalue = truly ? 1 : 0;//coa
+    dvalue = ivalue;       //coa
     image = java.lang.Boolean.toString(bit);
   }
 
@@ -508,27 +523,35 @@ public class Storable {
 
   public double getValue() {
     if (type == Type.Unclassified) {
-      setType(Numeric);
+      setType(Floating);
     }
-    return value;
+    return dvalue;
   }
 
   public void setValue(double dee) {
     if (type == Type.Unclassified) {
-      setType(Numeric);
+      setType(Floating);
     }
-    value = dee;
-    bit = !Double.isNaN(value);
+    dvalue = dee;
+    ivalue = (int) Math.round(dvalue);
+    bit = !Double.isNaN(dvalue);//coa
     if (enumerizer != null) {
       enumOnSetNumber();
     }
 //    image= unchanged, can't afford to render to text on every change
   }
 
+  public int getIntValue() {
+    if (type == Type.Unclassified) {
+      setType(WholeNumber);
+    }
+    return ivalue;
+  }
+
   public void setEnumerizer(Class<? extends Enum> enumer) {
     if (enumer != null && enumer != enumerizer) {//#object identity compare intended.
       this.enumerizer = enumer;
-      if (type == Numeric) {
+      if (type == Floating || type == WholeNumber) {
         enumOnSetNumber();
       } else {
         //what basis do we have for validating enum?
@@ -547,7 +570,24 @@ public class Storable {
       setValue(number);
       //#join
     case Parsed:
-      setType(Type.Numeric);
+      setType(Type.Floating);
+      break;
+    case Assigned:
+      //do nothing
+      break;
+    }
+  }
+
+  public void setDefault(int number) {
+    switch (origin) {
+    case Ether:
+      origin = Defawlted;
+      //#join
+    case Defawlted:
+      setValue(number);
+      //#join
+    case Parsed:
+      setType(Type.WholeNumber);
       break;
     case Assigned:
       //do nothing
@@ -579,13 +619,17 @@ public class Storable {
     boolean wasUnknown = type == Type.Unclassified;
     if (type != newtype) {
       if (newtype == Textual) {
-        if (type == Numeric) {
-          image = Double.toString(value);
+        if (type == Floating) {
+          image = Double.toString(dvalue);
+        } else if (type == WholeNumber) {
+          image = Integer.toString(ivalue);
         } else if (type == Boolean) {
           image = java.lang.Boolean.toString(bit);
         }
-      } else if (newtype == Numeric) {
-        value = StringX.parseDouble(image);
+      } else if (newtype == Floating) {
+        dvalue = StringX.parseDouble(image);
+      } else if (newtype == WholeNumber) {
+        ivalue = StringX.parseInt(image);
       } else if (newtype == Boolean) {
         parseBool(image);//#returns whether the field appeared to be boolean.
       }
@@ -598,7 +642,7 @@ public class Storable {
   private void enumOnSetImage() {
     try {
       //noinspection unchecked
-      value = Enum.valueOf(enumerizer, image).ordinal();
+      ivalue = Enum.valueOf(enumerizer, image).ordinal();
     } catch (NullPointerException | IllegalArgumentException e) {
       dbg.Caught(e); //not our job to enforce validity
     }
@@ -606,7 +650,7 @@ public class Storable {
 
   private void enumOnSetNumber() {
     try {
-      image = enumerizer.getEnumConstants()[(int) value].toString();
+      image = enumerizer.getEnumConstants()[ivalue].toString();
     } catch (Exception e) {
       dbg.Caught(e);
       image = "#invalid";
@@ -709,15 +753,25 @@ public class Storable {
   public Type guessType() {
     if (type == Type.Unclassified) {
       try {
-        value = Double.parseDouble(image);//leave this as the overly picky parser
-        setType(Numeric);
+        ivalue = Integer.parseInt(image);//leave this as the overly picky parser
+        setType(WholeNumber);
       } catch (Throwable any) {
-        if (parseBool(image)) {
-          setType(Boolean);
-        } else {
-          setType(Textual);
+        ivalue = BadIndex;
+        try {
+
+          dvalue = Double.parseDouble(image);//leave this as the overly picky parser
+
+          setType(Floating);
+        } catch (Throwable anymore) {
+          dvalue = Double.NaN;
+          if (parseBool(image)) {
+            setType(Boolean);
+          } else {
+            setType(Textual);
+          }
         }
       }
+
     }
     return type;
   }

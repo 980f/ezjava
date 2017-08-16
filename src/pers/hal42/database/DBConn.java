@@ -17,7 +17,7 @@ public class DBConn {
   public static ErrorLogStream dbg = ErrorLogStream.getForClass(DBConn.class);
 
   public Connection makeConnection() {
-    String url=connInfo.fullUrl();
+    String url = connInfo.fullUrl();
     if (dbConnection != null) {
       try {
         dbConnection.close();//don't trust finalizer
@@ -30,27 +30,20 @@ public class DBConn {
       Properties loginProperties = new java.util.Properties();
       loginProperties.put("user", connInfo.username);
       loginProperties.put("password", connInfo.password);
-      //mysql specials:      //todo:1 source from properties node on DBConnInfo
-//NPE in a stupid place in driver:      loginProperties.putAll(connInfo.custom);
-      loginProperties.put("connectTimeout", String.valueOf(0));
-      loginProperties.put("socketTimeout", String.valueOf(0));
-      loginProperties.put("useCompression", String.valueOf(true));
-      loginProperties.put("useCursorFetch", String.valueOf(true));
-      loginProperties.put("useInformationSchema", String.valueOf(true)); //todo:1 see if this fixes useing metadata instead of direct access to infoschema.
+      connInfo.addOptions(loginProperties);
 
-
-      dbg.VERBOSE("Attempting connection to: {0}", url );
+      dbg.VERBOSE("Attempting connection to: {0}", url);
       dbConnection = DriverManager.getConnection(url, loginProperties);
       dbConnection.setAutoCommit(connInfo.autoCommit);
       dbConnection.setReadOnly(connInfo.readOnly);
     } catch (SQLException e) {
       dbConnection = null;
-      dbg.ERROR("Couldn''t connect to datasource {0}  via user: {1} reason: {2}",  url,connInfo.username,e.getMessage() );
+      dbg.ERROR("Couldn''t connect to datasource {0}  via user: {1} reason: {2}", url, connInfo.username, e.getMessage());
     }
     return dbConnection;
   }
 
-  public Connection makeConnection(DBConnInfo connInfo){
+  public Connection makeConnection(DBConnInfo connInfo) {
     this.connInfo = connInfo;
     return makeConnection();
   }

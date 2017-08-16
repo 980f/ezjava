@@ -50,7 +50,7 @@ public class GenericDB {
 //    list.startCaretakers();
 //  }
 //private ConnectionPool cpool;
-  private DBConnInfo connInfo;
+  private MysqlConnectionInfo connInfo;
   /**
    * the live connection, see connectOk
    */
@@ -64,7 +64,7 @@ public class GenericDB {
   private static final Monitor genericDBclassMonitor = new Monitor(GenericDB.class.getName());
   private static final Counter metaDataCounter = new Counter();
 
-  public GenericDB(DBConnInfo connInfo, String threadname) {
+  public GenericDB(MysqlConnectionInfo connInfo, String threadname) {
     connMonitor = new Monitor(GenericDB.class.getName() + ".MetaData." + metaDataCounter.incr());
     try (AutoCloseable free = genericDBclassMonitor.getMonitor()) {
       this.myThreadName = threadname;

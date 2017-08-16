@@ -4,12 +4,14 @@ import pers.hal42.logging.ErrorLogStream;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
+import java.util.Properties;
 
 /**
  * a storable node which is associated with a file.
  * Extend from this as the concrete class name is used to find the file.
  * It is intended for you to have your stored members in your extension of this class.
  */
+@Storable.Stored  //someday inheritance might work with this
 public class JsonOptions {
   /** root of the options DOM, typically named for the file it is loaded from */
   transient  //don't want unexpected recursions
@@ -98,4 +100,11 @@ public class JsonOptions {
     return child.getValue() != 0.0;
   }
 
+  public void putInto(PropertyCursor pc) {
+    node.applyTo(pc);
+  }
+
+  public void putInto(Properties props) {
+    node.applyTo(props);
+  }
 }
