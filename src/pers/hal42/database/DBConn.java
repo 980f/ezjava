@@ -30,12 +30,12 @@ public class DBConn {
       Properties loginProperties = new java.util.Properties();
       loginProperties.put("user", connInfo.username);
       loginProperties.put("password", connInfo.password);
-      connInfo.addOptions(loginProperties);
+      connInfo.addOptions(loginProperties); //NEW
 
       dbg.VERBOSE("Attempting connection to: {0}", url);
       dbConnection = DriverManager.getConnection(url, loginProperties);
       dbConnection.setAutoCommit(connInfo.autoCommit);
-      dbConnection.setReadOnly(connInfo.readOnly);
+      dbConnection.setReadOnly(connInfo.readOnly); //NEW
     } catch (SQLException e) {
       dbConnection = null;
       dbg.ERROR("Couldn''t connect to datasource {0}  via user: {1} reason: {2}", url, connInfo.username, e.getMessage());

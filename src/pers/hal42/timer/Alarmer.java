@@ -66,7 +66,7 @@ class AlarmList {
       for (int i = list.size(); i-- > 0; ) {
         Alarmum alarm = alarm(i);
         if (newalarm.blowtime < alarm.blowtime) {
-          if (i == list.size()) { //new "next to fire"
+          if (i == list.size()) { //is a new "next to fire"
             list.add(newalarm);
           } else {
             list.add(i + 1, newalarm);

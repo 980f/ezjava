@@ -61,7 +61,7 @@ public class EasyProperties extends Properties {
   public boolean Assert(String key, String defawlt) {
     if (!StringX.NonTrivial(getString(key))) {
       setProperty(key, defawlt);
-      return false; //new setting is used
+      return false; //the new setting is used
     }
     return true;//was already good
   }
@@ -342,10 +342,12 @@ public class EasyProperties extends Properties {
   }
 
   //java Enums are not mutable
+  @SuppressWarnings("unchecked")
   public <E extends Enum> E loadEnum(String key, E target) {
     String prop = getString(key);
     if (prop != null) {
-//todo:0 java is being a pain about type checking here, bound is tigher than needed yet it bitches:      return Enum.valueOf(target.getClass(), prop);
+//todo:0 java is being a pain about type checking here, bound is tighter than needed yet it bitches:
+      return (E) Enum.valueOf(target.getClass(), prop);
     }
     return target;
   }

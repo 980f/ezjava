@@ -37,7 +37,7 @@ public class ByteArray {
       } else { //stretch until new offset is a legal position.
         target = new byte[offset + 1];
         System.arraycopy(src, 0, target, 0, src.length);
-        //new byte[] will have filled the rest with 0.
+        //the 'new byte[]' will have filled the rest with 0.
       }
       target[offset] = (byte) toinsert;
     } else {
