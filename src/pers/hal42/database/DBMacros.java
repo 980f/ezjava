@@ -576,7 +576,6 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  // +++ add this to the catch of next() ?
   private boolean recycleConnection(Exception t, Connection mycon, QueryString originalQuery) {
     closeCon(mycon); // pray that nobody else is using it!  probably is hosed, either way
     String msg = "DB.CONNCLOSED";

@@ -41,8 +41,7 @@ public class QueryString {
     AND,
     NOT,
     WHERE,
-    ORDERBY,
-    GROUPBY,
+
     ASC,
     DESC,
     UNION,
@@ -91,6 +90,9 @@ public class QueryString {
       return spaced;
     }
   }
+
+  private static final String ORDERBY = "ORDER BY";
+  private static final String GROUPBY = "GROUP BY";
 
 //  protected static final String NEXTVAL = " NEXTVAL ";
   //   EMPTY = "";
