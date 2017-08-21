@@ -1,15 +1,14 @@
 package pers.hal42.database;
 
 
-import pers.hal42.lang.Bool;
-import pers.hal42.lang.ObjectX;
-import pers.hal42.lang.StringX;
+import static pers.hal42.database.QueryString.SqlKeyword.NULL;
+import static pers.hal42.database.QueryString.SqlKeyword.SET;
 
 /* debris from temporarily abandoned TableProfile and UniqueId classes.
 This was formerly part of querystring and has PostGres dependent stuff in it.
 *
 * */
-public class PGQueryString extends QueryString {
+public class PGQueryString extends DBMacros.Modeler {
   protected static final String TABLE = " TABLE ";
   protected static final String DROP = " DROP ";
   protected static final String DEFAULT = " DEFAULT ";
@@ -18,13 +17,13 @@ public class PGQueryString extends QueryString {
   protected static final String ALTERTABLE = ALTER + TABLE;
   private static final String RENAME = " RENAME ";
   private static final String DELETE = " DELETE ";
-  private static final String DELETEFROM = DELETE + FROM;
-  private static final String RENAMECOLUMN = RENAME + COLUMN;
-  private static final String DROPCOLUMN = DROP + COLUMN;
+  //  private static final String DELETEFROM = DELETE + FROM;
+//  private static final String RENAMECOLUMN = RENAME + COLUMN;
+//  private static final String DROPCOLUMN = DROP + COLUMN;
   private static final String CREATE = " CREATE ";
   private static final String CREATETABLE = CREATE + TABLE;// + MAINSAIL;
   private static final String CONSTRAINT = " CONSTRAINT ";
-  private static final String ADDCONSTRAINT = ADD + CONSTRAINT;
+  //  private static final String ADDCONSTRAINT = ADD + CONSTRAINT;
   private static final String KEY = " KEY ";
   private static final String PRIMARYKEY = " PRIMARY " + KEY;
   private static final String FOREIGNKEY = " FOREIGN " + KEY;
@@ -41,35 +40,31 @@ public class PGQueryString extends QueryString {
   private static final String ANALYZE = " ANALYZE ";
   private static final String FULL = " FULL ";
   private static final String VERBOSE = " VERBOSE ";
-  private static final String EXPLAINANALYZE = EXPLAIN + ANALYZE; // PG only;
-
-  public PGQueryString(String starter) {
-    super(starter);
-  }
+//  private static final String EXPLAINANALYZE = EXPLAIN + ANALYZE; // PG only;
 
   ///////////////////////////////
 
   //  public QueryString commaOuter(TableProfile tp){
 //    return comma().cat(OUTER).cat(tp.name());
 //  }
-
-  public PGQueryString comma(UniqueId id) {
-    if (UniqueId.isValid(id)) {
-      comma().cat(id.value());
-    } else {
-      comma().cat(NULL);
-    }
-    return this;
-  }
-
-  public PGQueryString nvPair(ColumnProfile field, UniqueId value) {
-    if (UniqueId.isValid(value)) {
-      nvPair(field, value.value());
-    } else {
-      nvPairNull(field);
-    }
-    return this;
-  }
+//
+//  public PGQueryString comma(UniqueId id) {
+//    if (UniqueId.isValid(id)) {
+//      comma().cat(id.value());
+//    } else {
+//      comma().cat(NULL);
+//    }
+//    return this;
+//  }
+//
+//  public PGQueryString nvPair(ColumnProfile field, UniqueId value) {
+//    if (UniqueId.isValid(value)) {
+//      nvPair(field, value.value());
+//    } else {
+//      nvPairNull(field);
+//    }
+//    return this;
+//  }
 //  public QueryString SetJust(ColumnProfile field, UniqueId id) {
 //    return cat(SET).nvPair(field.name(), id); // do not change this until you read the above function !!!
 //  }
@@ -99,40 +94,40 @@ public class PGQueryString extends QueryString {
 //    return qs == null || qs.isReadOnly();
 //// read only since it cannot change the database if it is null!
 //  }
-
-  public PGQueryString all(TableProfile table) {
-    return (PGQueryString) word(table.all());
-  }
-
-  public PGQueryString from(TableProfile first) {
-    return (PGQueryString) word(FROM).word(first.name());
-  }
+//
+//  public PGQueryString all(TableProfile table) {
+//    return (PGQueryString) word(table.all());
+//  }
+//
+//  public PGQueryString from(TableProfile first) {
+//    return (PGQueryString) cat(FROM).word(first.name());
+//  }
 
   // +++ should do this by passing in both tables and making sure they both have that field?
   // LEFT OUTER JOIN ASSOCIATE USING (associateid)
   // this function extracts the table name from the column profile !!!
-  public PGQueryString leftOuterJoinUsing(ColumnProfile column) {
-    return (PGQueryString) cat(LEFT).cat(OUTER).cat(JOIN).cat(column.table().name()).using(column);
-  }
+//  public PGQueryString leftOuterJoinUsing(ColumnProfile column) {
+//    return (PGQueryString) cat(LEFT).cat(OUTER).cat(JOIN).cat(column.table().name()).using(column);
+//  }
 
   //  public QueryString fromOuter(TableProfile left, TableProfile right) {
 //    return word(FROM).word(left.name()).word(OUTER).word(JOIN).word(right.name());
 //  }
 
-  public final PGQueryString DropNotNull() {
-    return (PGQueryString) cat(DROP).not().cat(NULL);
+  public final QueryString DropNotNull() {
+    return new QueryString(DROP).not().cat(NULL);
   }
 
-  public final PGQueryString SetNotNull() {
-    return (PGQueryString) cat(SET).not().cat(NULL);
+  public final QueryString SetNotNull() {
+    return new QueryString(SET).not().cat(NULL);
   }
 
-  public final PGQueryString DropDefault() {
-    return (PGQueryString) cat(DROP).cat(DEFAULT);
+  public final QueryString DropDefault() {
+    return new QueryString(DROP).cat(DEFAULT);
   }
 
-  public final PGQueryString SetDefault(String def) {
-    return (PGQueryString) cat(SET).cat(DEFAULT).cat(def); // +-+ test this
+  public final QueryString SetDefault(String def) {
+    return new QueryString(SET).cat(DEFAULT).cat(def); // +-+ test this
   }
 
   //  public static final QueryString StatisticsAndCleanup() {
@@ -242,94 +237,94 @@ public class PGQueryString extends QueryString {
 //    return qs;
 //  }
 
-  private static String valueByColumnType(ColumnProfile column, String prevalue) {
-    return valueByColumnType(column, prevalue, true /*forceQuotes*/);
-  }
-
-  private static String valueByColumnType(ColumnProfile column, String prevalue, boolean forceQuotes) {
-    if (prevalue == null) { // do NOT use !NonTrivial() here!  NULL is the check we are doing.
-      return NULL; // do not quote a null, but instead use the word null
-    } else {
-      ColumnType type = column.getType();
-      dbg.VERBOSE("ColumnTypes for " + column.name() + " is " + type);
-      switch (type) {
-      case SERIAL:
-      case INTEGER: { // do not quote integer or serial !
-        String postvalue = "";
-        if (!StringX.NonTrivial(prevalue)) {
-          // then we WANT null!
-          if (!column.nullable()) {
-            dbg.ERROR("PANIC! valueByColumnType(INT4) passed empty string, but NULL not allowed for column " + column.fullName() + "!");
-            // then go ahead and use the value passed to us!
-          }
-          return NULL; // and pray that the field can handle a null!
-        } else {
-          int integer = StringX.parseInt(prevalue);
-          if ((integer == ObjectX.INVALIDINDEX) && column.isProbablyId()) { // but can't really check integrity any better than this
-            // --- if this column doesn't allow null, this will except, HOWEVER, we can't *guess* at a value!
-            // so, in that case, we should send a panic!
-            if (!column.nullable()) {
-              dbg.ERROR("PANIC! valueByColumnType(INT4) passed '" + prevalue + "', but NULL not allowed for column " + column.fullName() + ", so using value verbatim");
-              // then go ahead and use the value passed to us!
-              return String.valueOf(integer);
-            } else {
-              return NULL; // and pray that the field can handle a null!
-            }
-          } else {
-            // DO NOT let the database engine parse it.  It may not be as forgiving as our parser!
-            return String.valueOf(integer);
-          }
-        }
-      }
-      // +++ put serial8 and int8 in here !!!!
-      case BOOL: {
-        return Bool.toString(Bool.For(prevalue)); // convert a short or long text to a long text; also converts "" to false
-      }
-      default: // using a quoted string for an unknown type is usually converted fine by the DBMS
-//      case TEXT:
-      case CHAR: { // but we shouldn't have any CHARs, except for "char", single char values
-        if ("null".equalsIgnoreCase(prevalue.trim())) {
-          // +++ what if null isn't allowed?  Let's have it put "" in that case
-          if (column.nullable()) {
-            return NULL;
-          } else {
-            return Quoted(""); // for cases where null is not valid
-          }
-        } else {
-          if (!forceQuotes && prevalue.startsWith("'") && prevalue.endsWith("'")) { // don't add extra quotes if not needed
-            return prevalue;
-          }
-          return Quoted(prevalue); // quote char or unknown type fields
-        }
-      }
-      }
-    }
-  }
-
-  // postgresql only
-  public static PGQueryString Vacuum(TableProfile tp, boolean verbose, boolean analyze, boolean full) {
-    return VacuumAnalyze(tp, verbose, analyze, full, true);
-  }
-
-  public static PGQueryString VacuumAnalyze(TableProfile tp, boolean verbose, boolean analyze, boolean full, boolean vacuum) {
-    PGQueryString qs = new PGQueryString("");
-    if (vacuum) {
-      qs.cat(VACUUM);
-      if (full) {
-        qs.cat(FULL);
-      }
-    }
-    if (analyze) {
-      qs.cat(ANALYZE);
-    }
-    if ((vacuum || analyze) && verbose) {
-      qs.cat(VERBOSE);
-    }
-    if ((tp != null) && StringX.NonTrivial(tp.name())) {
-      qs.cat(tp.name());
-    }
-    return qs;
-  }
+//  private static String valueByColumnType(ColumnProfile column, String prevalue) {
+//    return valueByColumnType(column, prevalue, true /*forceQuotes*/);
+//  }
+//
+//  private static String valueByColumnType(ColumnProfile column, String prevalue, boolean forceQuotes) {
+//    if (prevalue == null) { // do NOT use !NonTrivial() here!  NULL is the check we are doing.
+//      return NULL.toString(); // do not quote a null, but instead use the word null
+//    } else {
+//      ColumnType type = column.getType();
+////      dbg.VERBOSE("ColumnTypes for " + column.name() + " is " + type);
+//      switch (type) {
+//      case SERIAL:
+//      case INTEGER: { // do not quote integer or serial !
+//        String postvalue = "";
+//        if (!StringX.NonTrivial(prevalue)) {
+//          // then we WANT null!
+//          if (!column.nullable()) {
+////            dbg.ERROR("PANIC! valueByColumnType(INT4) passed empty string, but NULL not allowed for column " + column.fullName() + "!");
+//            // then go ahead and use the value passed to us!
+//          }
+//          return NULL.toString(); // and pray that the field can handle a null!
+//        } else {
+//          int integer = StringX.parseInt(prevalue);
+//          if ((integer == ObjectX.INVALIDINDEX) && column.isProbablyId()) { // but can't really check integrity any better than this
+//            // --- if this column doesn't allow null, this will except, HOWEVER, we can't *guess* at a value!
+//            // so, in that case, we should send a panic!
+//            if (!column.nullable()) {
+////              dbg.ERROR("PANIC! valueByColumnType(INT4) passed '" + prevalue + "', but NULL not allowed for column " + column.fullName() + ", so using value verbatim");
+//              // then go ahead and use the value passed to us!
+//              return String.valueOf(integer);
+//            } else {
+//              return NULL.toString(); // and pray that the field can handle a null!
+//            }
+//          } else {
+//            // DO NOT let the database engine parse it.  It may not be as forgiving as our parser!
+//            return String.valueOf(integer);
+//          }
+//        }
+//      }
+//      // +++ put serial8 and int8 in here !!!!
+//      case BOOL: {
+//        return Bool.toString(Bool.For(prevalue)); // convert a short or long text to a long text; also converts "" to false
+//      }
+//      default: // using a quoted string for an unknown type is usually converted fine by the DBMS
+////      case TEXT:
+//      case CHAR: { // but we shouldn't have any CHARs, except for "char", single char values
+//        if ("null".equalsIgnoreCase(prevalue.trim())) {
+//          // +++ what if null isn't allowed?  Let's have it put "" in that case
+//          if (column.nullable()) {
+//            return NULL.toString();
+//          } else {
+//            return Quoted(""); // for cases where null is not valid
+//          }
+//        } else {
+//          if (!forceQuotes && prevalue.startsWith("'") && prevalue.endsWith("'")) { // don't add extra quotes if not needed
+//            return prevalue;
+//          }
+//          return Quoted(prevalue); // quote char or unknown type fields
+//        }
+//      }
+//      }
+//    }
+//  }
+//
+//  // postgresql only
+//  public static PGQueryString Vacuum(TableProfile tp, boolean verbose, boolean analyze, boolean full) {
+//    return VacuumAnalyze(tp, verbose, analyze, full, true);
+//  }
+//
+//  public static PGQueryString VacuumAnalyze(TableProfile tp, boolean verbose, boolean analyze, boolean full, boolean vacuum) {
+//    PGQueryString qs = new PGQueryString("");
+//    if (vacuum) {
+//      qs.cat(VACUUM);
+//      if (full) {
+//        qs.cat(FULL);
+//      }
+//    }
+//    if (analyze) {
+//      qs.cat(ANALYZE);
+//    }
+//    if ((vacuum || analyze) && verbose) {
+//      qs.cat(VERBOSE);
+//    }
+//    if ((tp != null) && StringX.NonTrivial(tp.name())) {
+//      qs.cat(tp.name());
+//    }
+//    return qs;
+//  }
 
 //  public static PGQueryString AlterTable(TableProfile table) {
 //    return new PGQueryString(ALTERTABLE).cat(table.name());

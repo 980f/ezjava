@@ -18,8 +18,11 @@ public class MapX<K, V> {
 
   private static ErrorLogStream dbg = ErrorLogStream.getForClass(MapX.class);
 
-  /** todo:1 this must already exist in Collections or something standard. */
-  public static <K, V> List<K> Union(Map<K, V> one, Map<K, V> other) {
+  /**
+   * @returns a list of the keys common to both maps.
+   * todo:1 this must already exist in Collections or something standard.
+   */
+  public static <K, V> List<K> Intersection(Map<K, V> one, Map<K, V> other) {
     List<K> joint = new ArrayList<>(Math.min(one.size(), other.size()));
     for (K k : one.keySet()) {
       if (other.containsKey(k)) {

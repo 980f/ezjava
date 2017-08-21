@@ -10,6 +10,58 @@ import pers.hal42.thread.Counter;
 import java.sql.*;
 
 public class GenericDB {
+  protected Modeler modeler = new Modeler();
+
+  /**
+   * provider for DML.
+   * Default class works for simple situations
+   */
+  static class Modeler {
+
+    public QueryString genDropIndex(String indexname) {
+      return null;
+    }
+
+    public QueryString genDropTable(String tablename) {
+      return null;
+    }
+
+    public QueryString genAddField(ColumnProfile column) {
+      return null;
+    }
+
+    public QueryString genChangeFieldNullable(ColumnProfile to) {
+      return null;
+    }
+
+    public QueryString genChangeFieldDefault(ColumnProfile to) {
+      return null;
+    }
+
+    public QueryString genCreateIndex(IndexProfile index) {
+      return null;
+    }
+
+    public QueryString genAddPrimaryKeyConstraint(PrimaryKeyProfile primaryKey) {
+      return null;
+    }
+
+    public QueryString genAddForeignKeyConstraint(ForeignKeyProfile foreignKey) {
+      return null;
+    }
+
+    public QueryString genDropConstraint(TableProfile tempprof, Constraint constraint) {
+      return null;
+    }
+
+    public QueryString genRenameColumn(String table, String oldname, String newname) {
+      return null;
+    }
+
+    public QueryString genCreateTable(TableProfile tp) {
+      return null;
+    }
+  }
 
   private final Monitor connMonitor;
   /**

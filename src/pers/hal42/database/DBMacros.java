@@ -1035,7 +1035,7 @@ public class DBMacros extends GenericDB {
           dbg.ERROR("dropField " + column.fullName() + ": was not able to run since the DBMS does not support it!");
           return true;
         } else {
-          dbg.ERROR("dropField " + column.fullName() + ": returned " + update(QueryString.genDropField(column)));
+//          dbg.ERROR("dropField " + column.fullName() + ": returned " + update(QueryString.genDropField(column)));
           return !fieldExists(column.tq(), column.name());
         }
       } else {
@@ -1055,7 +1055,7 @@ public class DBMacros extends GenericDB {
     int i = -1;
     try (Finally pop = dbg.Push("dropIndex")) {
       if (indexExists(indexname, tablename)) {
-        return update(QueryString.genDropIndex(indexname)) >= 0;
+        return update(modeler.genDropIndex(indexname)) >= 0;
       } else {
         dbg.ERROR("dropIndex {0}: index doesn't exist; can't drop.", indexname);
         return true;
@@ -1069,7 +1069,7 @@ public class DBMacros extends GenericDB {
   protected final boolean dropTable(String tablename) {
     try (Finally pop = dbg.Push("dropTable")) {
       if (tableExists(tablename)) {
-        dbg.ERROR("dropTable" + tablename + " returned " + update(QueryString.genDropTable(tablename)));
+        dbg.ERROR("dropTable" + tablename + " returned " + update(modeler.genDropTable(tablename)));
         return !tableExists(tablename);
       } else {
         return true;
@@ -1082,7 +1082,7 @@ public class DBMacros extends GenericDB {
     try (Finally pop = dbg.Push("addField")) {
       if (!fieldExists(column.tq(), column.name())) {
         dbg.ERROR("addField {0} returned {1}", column.fullName(), update(/* +++ use: db.generateColumnAdd(tp, cp) (or something similar) instead! */
-          QueryString.genAddField(column)));
+          modeler.genAddField(column)));
         return fieldExists(column.tq(), column.name());
       } else {
         return true;
@@ -1111,7 +1111,7 @@ public class DBMacros extends GenericDB {
 
   protected final boolean changeFieldNullable(ColumnProfile to) {
     try (Finally pop = dbg.Push("changeFieldNullable")) {
-      dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(QueryString.genChangeFieldNullable(to)));
+      dbg.ERROR("changeFieldNullable " + to.fullName() + " returned " + update(modeler.genChangeFieldNullable(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
       return to.sameNullableAs(aftercolumn);
@@ -1120,7 +1120,7 @@ public class DBMacros extends GenericDB {
 
   protected final boolean changeFieldDefault(ColumnProfile to) {
     try (Finally pop = dbg.Push("changeFieldDefault")) {
-      dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(QueryString.genChangeFieldDefault(to)));
+      dbg.ERROR("changeFieldDefault " + to.fullName() + " returned " + update(modeler.genChangeFieldDefault(to)));
       TableProfile afterTable = profileTable(to.tq());
       ColumnProfile aftercolumn = afterTable.column(to.name());
       return to.sameDefaultAs(aftercolumn);
@@ -1181,7 +1181,7 @@ public class DBMacros extends GenericDB {
     try (Finally pop = dbv.Push("validateAddIndex")) {
       dbv.mark("Add Index " + indexName + " for " + tableName + ":" + fieldExpression);
       if (!indexExists(index)) {
-        QueryString qs = QueryString.genCreateIndex(index);
+        QueryString qs = modeler.genCreateIndex(index);
         if (update(qs) != -1) {
           return DONE;
         } else {
@@ -1214,7 +1214,7 @@ public class DBMacros extends GenericDB {
       String blurb = "Primary Key " + primaryKey.name + " for " + primaryKey.table.name() + "." + primaryKey.field.name();
       dbv.mark("Add " + blurb);
       if (!primaryKeyExists(primaryKey)) {
-        QueryString qs = QueryString.genAddPrimaryKeyConstraint(primaryKey);
+        QueryString qs = modeler.genAddPrimaryKeyConstraint(primaryKey);
         if (update(qs) != -1) {
           return DONE;
         } else {
@@ -1234,7 +1234,7 @@ public class DBMacros extends GenericDB {
       String blurb = "Foreign Key " + foreignKey.name + " for " + foreignKey.table.name() + "." + foreignKey.field.name() + " against " + foreignKey.referenceTable.name();
       dbv.mark("Add " + blurb);
       if (!foreignKeyExists(foreignKey)) {
-        QueryString qs = QueryString.genAddForeignKeyConstraint(foreignKey);
+        QueryString qs = modeler.genAddForeignKeyConstraint(foreignKey);
         if (update(qs) != -1) {
           dbv.VERBOSE(": SUCCEEDED!");
           return DONE;
@@ -1267,7 +1267,7 @@ public class DBMacros extends GenericDB {
     String toDrop = "drop constraint " + tablename + "." + constraintname;
     try (Finally pop = dbv.Push("dropTableConstraint")) {
       TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
-      return !tableExists(tablename) || update(QueryString.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) >= 0;
+      return !tableExists(tablename) || update(modeler.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) >= 0;
     }
   }
 
@@ -1275,7 +1275,7 @@ public class DBMacros extends GenericDB {
     int count = 0;
     TableInfo tq = new TableInfo(table);
     if (fieldExists(tq, oldname)) {
-      count = update(QueryString.genRenameColumn(table, oldname, newname));
+      count = update(modeler.genRenameColumn(table, oldname, newname));
     }
     return (count == 0);
   }
@@ -1284,7 +1284,7 @@ public class DBMacros extends GenericDB {
   protected final boolean createTable(TableProfile tp) {
     try (Finally pop = dbg.Push("haveTable")) {
       if (!tableExists(tp.name())) {
-        dbg.ERROR("haveTable " + tp.name() + " returned " + update(QueryString.genCreateTable(tp)));
+        dbg.ERROR("haveTable " + tp.name() + " returned " + update(modeler.genCreateTable(tp)));
         return tableExists(tp.name());
       } else {
         return true;

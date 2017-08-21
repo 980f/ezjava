@@ -3,75 +3,100 @@ package pers.hal42.database;
 import pers.hal42.data.ObjectRange;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.AsciiIterator;
+import pers.hal42.text.ListWrapper;
 import pers.hal42.text.TextList;
 
+import static pers.hal42.database.QueryString.SqlKeyword.*;
+
+/**
+ * wraps StringBuilder since someone decided that class should be final.
+ * mostly ensures spaces are inserted where they need to be, to reduce the number of program restarts when developing new queries.
+ * Also of interest is quoting logic, which however should be deprecated in favor of using PreparedStatements which in the case of MySql does value quoting on a greater number of object types than this class does.
+ */
 public class QueryString {
   public static final ErrorLogStream dbg = ErrorLogStream.getForClass(PGQueryString.class);
 
-  protected static final String FROM = " FROM ";
-  protected static final String UPDATE = " UPDATE ";
-  protected static final String SET = " SET ";
-  protected static final String INSERTINTO = " INSERT INTO ";
-  protected static final String ON = " ON ";
-  protected static final String IN = " IN ";
-  protected static final String OPENPAREN = " (";
-  protected static final String CLOSEPAREN = ") ";
-  protected static final String SPACE = " ";
-  protected static final String EQUALS = " = ";
-  protected static final String ADD = " ADD ";
-  protected static final String NULL = " null ";
-  protected static final String JOIN = " JOIN ";
-  protected static final String LEFT = " LEFT ";
-  protected static final String SHOW = " SHOW ";
-  protected static final String EXPLAIN = " EXPLAIN ";
-  ///////////////////////////////////////
-  // Keywords:
-  protected static final String SELECT = " SELECT ";
-  protected static final String AND = " AND ";
-  protected static final String NOT = " NOT ";
-  protected static final String WHERE = " WHERE ";
-  protected static final String ORDERBY = " ORDER BY ";
-  protected static final String GROUPBY = " GROUP BY ";
-  protected static final String ASC = " ASC ";
-  protected static final String DESC = " DESC ";
-  protected static final String UNION = " UNION ";
-  protected static final String VALUES = " VALUES ";
-  protected static final String ALLFIELDS = " * ";
-  protected static final String SELECTALL = SELECT + ALLFIELDS;
-  protected static final String OR = " OR ";
-  protected static final String COMMA = " , ";
-  protected static final String GTEQ = " >= ";
-  protected static final String GT = " > ";
-  protected static final String LTEQ = " <= ";
-  protected static final String LT = " < ";
-  protected static final String EMPTY = "";
-  protected static final String IS = " IS ";
-  protected static final String ISNULL = IS + NULL; // no space since each has a space before and after
-  protected static final String DISTINCT = " DISTINCT ";
+  /** sql keywords, in CAPS and surrounded with spaces */
+  public enum SqlKeyword {
+    FROM,
+    UPDATE,
+    SET,
+    INSERTINTO,
+    ON,
+    IN,
+    OPENPAREN,
+    CLOSEPAREN,
 
-  protected static final String COLUMN = " COLUMN ";
+    EQUALS,
+    ADD,
+    NULL,
+    JOIN,
+    LEFT,
+    SHOW,
+    EXPLAIN,
+    /////////
 
-  protected static final String SUM = " SUM ";
-  protected static final String COUNT = " COUNT ";
-  protected static final String MAX = " MAX ";
-  protected static final String MIN = " MIN ";
-  protected static final String AS = " AS ";
-  protected static final String HAVING = " HAVING ";
-  //  protected static final String COMMAOUTER = COMMA + OUTER;
-  protected static final String SUBSTRING = " SUBSTRING ";
-  protected static final String TO = " TO ";
-  protected static final String FOR = " FOR ";
-  protected static final String CASE = " CASE ";
-  protected static final String END = " END ";
-  protected static final String ELSE = " ELSE ";
-  protected static final String THEN = " THEN ";
-  protected static final String WHEN = " WHEN ";
-  protected static final String USING = " USING ";
-  protected static final String CAST = " CAST ";
-  protected static final String BIGINT = " BIGINT ";
-  //added for postgres:
-  protected static final String LIMIT = " LIMIT ";
-  protected static final String NEXTVAL = " NEXTVAL ";
+    SELECT,
+    AND,
+    NOT,
+    WHERE,
+    ORDERBY,
+    GROUPBY,
+    ASC,
+    DESC,
+    UNION,
+    VALUES,
+    OR,
+    GTEQ,
+    GT,
+    LTEQ,
+    LT,
+
+    IS,
+
+    DISTINCT,
+
+    COLUMN,
+    SUM,
+    COUNT,
+    MAX,
+    MIN,
+    AS,
+    HAVING,
+
+    SUBSTRING,
+    TO,
+    FOR,
+    CASE,
+    END,
+    ELSE,
+    THEN,
+    WHEN,
+    USING,
+    CAST,
+    BIGINT,
+    LIMIT,;
+    String spaced;
+
+    SqlKeyword() {
+      spaced = " " + super.toString() + " ";
+    }
+
+    /**
+     * @return nominal name with spaces around it.
+     */
+    @Override
+    public String toString() {
+      return spaced;
+    }
+  }
+
+//  protected static final String NEXTVAL = " NEXTVAL ";
+  //   EMPTY = "";
+
+//   ALLFIELDS = " * ";
+//   SELECTALL = SELECT + ALLFIELDS;
 //
 
   //  protected static final String SLIMUPPERSELECT = SELECT.trim().toUpperCase();
@@ -79,41 +104,98 @@ public class QueryString {
 //  protected static final String SLIMUPPERSHOW = SHOW.trim().toUpperCase();
 //  protected static final String SLIMLOWERSHOW = SHOW.trim().toLowerCase();
 //  protected static final String LEFTOFEXPLAIN = StringX.subString(EXPLAIN, 0, 6);// "EXPLAI" since only 6 chars long
-  protected StringBuilder guts = new StringBuilder(200);//most queries are big
+  public StringBuilder guts = new StringBuilder(200);//most queries are big
+  /** state for deciding whether to use 'where' or 'and' when adding a filter term */
+  protected boolean whered = false;
 
-  protected QueryString(String starter) {
+  public QueryString(SqlKeyword starter) {
     guts.append(starter);
   }
 
-  protected QueryString() {
+  public QueryString(String starter) {
+    guts.append(starter);
+  }
+
+  public QueryString() {
     guts.append("");
   }
 
-  public String toString() {//works with String +
+  /** @returns query text */
+  public String toString() {
     return String.valueOf(guts);
   }
 
+  /** append @param sql wrapped with spaces */
+  public QueryString cat(SqlKeyword sql) {
+    guts.append(sql.spaced);
+    return this;
+  }
+
+  /** append @param s wrapped with spaces */
   public QueryString cat(QueryString s) {
-    cat(SPACE).cat(String.valueOf(s));
+    space();
+    cat(String.valueOf(s));
+    space();
     return this;
   }
 
+  /** append @param s wrapped with spaces */
   public QueryString cat(String s) {
+    space();
     guts.append(s);
+    space();
     return this;
   }
 
+  /** append @param c without any spaces */
   public QueryString cat(char c) {
     guts.append(c);
     return this;
   }
 
+  /** append number, with spaces */
   public QueryString cat(int s) {
     return cat((long) s);
   }
 
+  /** append number with spaces */
   public QueryString cat(long s) {
+    space();
     guts.append(s);
+    space();
+    return this;
+  }
+
+  /** append AS clause, with generous spaces */
+  public QueryString alias(String aliaser) {
+    return cat(AS).word(aliaser);
+  }
+
+  /** append AS clause, with generous spaces, advances @param aliaser */
+  public QueryString alias(AsciiIterator aliaser) {
+    return cat(AS).word(aliaser.next());
+  }
+
+  /** append newline and tab */
+  public QueryString indent() {
+    return cat("\n\t");
+  }
+
+  /** JOIN @param tablename ON aliaser.base.joincolumnname EQUALS aliaser.next().joincolumnname */
+  public QueryString join(String tablename, String joincolumnname, AsciiIterator aliaser) {
+    indent();
+    cat(JOIN);
+    cat(tablename);
+    alias(aliaser.nth());
+    cat(ON);
+    guts.append(aliaser.first());
+    guts.append('.');
+    guts.append(joincolumnname);
+    cat("=");
+    guts.append(aliaser.next());
+    guts.append('.');
+    guts.append(joincolumnname);
+    space();
     return this;
   }
 
@@ -129,13 +211,40 @@ public class QueryString {
     return cat(CLOSEPAREN);
   }
 
-
-  public QueryString where() {
-    return cat(WHERE);
+  public QueryString dot(String prefix, String postfix) {
+    space();
+    guts.append(prefix);
+    guts.append('.');
+    guts.append(postfix);
+    space();
+    return this;
   }
 
+  public Lister startList(String prefix) {
+    return new Lister(prefix);
+  }
+
+  /** you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state */
+  public QueryString where() {
+    if (whered) {
+      return and();
+    } else {
+      whered = true;
+      return cat(WHERE);
+    }
+  }
+
+  /** you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state */
   public QueryString and() {
-    return cat(AND);
+    if (whered) {
+      return cat(AND);
+    } else {
+      return where();
+    }
+  }
+
+  protected QueryString in(String list) {
+    return cat(IN).Open().cat(list).Close();
   }
 
   public QueryString or() {
@@ -146,8 +255,8 @@ public class QueryString {
     return cat(NOT);
   }
 
-  protected QueryString in(String list) {
-    return word(IN).Open().cat(list).Close();
+  protected QueryString sum(String str) {
+    return cat(SUM).Open().cat(str).Close();
   }
 
   public QueryString inQuoted(TextList list) {
@@ -182,36 +291,32 @@ public class QueryString {
     return sum(String.valueOf(qs));
   }
 
-  protected QueryString sum(String str) {
-    return word(SUM).Open().cat(str).Close();
+  public QueryString count(String it) {
+    return cat(COUNT).Open().cat(it).Close();
   }
 
   public QueryString count(ColumnProfile cp) {
     return count(cp.fullName());
   }
 
-  public QueryString count(String it) {
-    return word(COUNT).Open().cat(it).Close();
+  public QueryString max(String of) {
+    return cat(MAX).Open().word(of).Close();
   }
 
   public QueryString max(ColumnProfile cp) {
     return max(cp.fullName());
   }
 
-  public QueryString max(String of) {
-    return word(MAX).Open().word(of).Close();
+  public QueryString min(String of) {
+    return cat(MIN).Open().word(of).Close();
   }
 
   public QueryString min(ColumnProfile cp) {
     return min(cp.fullName());
   }
 
-  public QueryString min(String of) {
-    return word(MIN).Open().word(of).Close();
-  }
-
   public QueryString as(String newname) {
-    return word(AS).word(newname);
+    return cat(AS).word(newname);
   }
 
   //  CASE a WHEN 1 THEN 'one'
@@ -220,7 +325,12 @@ public class QueryString {
 //  END
   public QueryString Decode(String field, String comparedTo, String ifEquals, String ifNot) {
 //    return word(DECODE).Open().cat(field).comma().cat(comparedTo).comma().cat(ifEquals).comma().cat(ifNot).Close();
-    return word(CASE).cat(field).word(WHEN).cat(comparedTo).word(THEN).cat(ifEquals).word(ELSE).cat(ifNot).word(END);
+    return cat(CASE).cat(field).cat(WHEN).cat(comparedTo).cat(THEN).cat(ifEquals).cat(ELSE).cat(ifNot).cat(END);
+  }
+
+  /** @returns this after "VALUES (" */
+  public QueryString Values() {
+    return cat(VALUES).cat(OPENPAREN);
   }
 
   /**
@@ -260,12 +370,13 @@ public class QueryString {
     return Values().value(first);
   }
 
-  public QueryString Values() {
-    return cat(VALUES + OPENPAREN);
+  public QueryString comma() {
+    guts.append(", ");
+    return this;
   }
 
-  public QueryString comma() {
-    return cat(COMMA);
+  public QueryString comma(String s) {
+    return comma().cat(s);
   }
 
   public QueryString comma(ColumnProfile cp) {
@@ -280,16 +391,35 @@ public class QueryString {
     return comma().cat(qs);
   }
 
+  public QueryString word(String s) {
+    space();
+    guts.append(s);
+    space();
+    return this;
+  }
+
   public QueryString comma(int s) {
     return comma().cat(s);
   }
 
-  protected QueryString word(String s) {
-    return cat(SPACE).cat(s).cat(SPACE);
+  /** ensure there is a space at the end of the string */
+  private QueryString space() {
+    if (guts.length() > 0 && guts.charAt(guts.length() - 1) != ' ') {
+      guts.append(' ');
+    }
+    return this;
   }
 
   public QueryString parenth(String s) {
-    return cat(SPACE).Open().cat(s).Close().cat(SPACE);
+//    space();
+    Open().cat(s).Close();
+    space();
+    return this;
+  }
+
+  public QueryString quoted(char c) {
+    space();
+    return value(c);
   }
 
   public QueryString parenth(QueryString s) {
@@ -308,16 +438,20 @@ public class QueryString {
     return cat(/*Quoted(*/ell/*)*/); // DO NOT quote this; it can cause the database txn to be very slow, as it has to convert its type before EACH comparison!
   }
 
-  public QueryString quoted(char c) {
-    return cat(SPACE).value(c);
-  }
-
   public QueryString commaQuoted(String s) {
-    return cat(COMMA).value(s);
+    return comma().value(s);
   }
 
   public QueryString commaQuoted(char c) {
-    return cat(COMMA).value(c);
+    return comma().value(c);
+  }
+
+  public QueryString orderby(String columnName) {
+    return cat(ORDERBY).cat(columnName);
+  }
+
+  public QueryString commaAsc(ColumnProfile next) {
+    return comma().cat(next.fullName()).cat(ASC); // --- possible cause of bugs
   }
 
   public QueryString orderbyasc(ColumnProfile first) {
@@ -336,20 +470,20 @@ public class QueryString {
     return cat(ORDERBY).cat(String.valueOf(columnFirst)).cat(ASC);
   }
 
-  public QueryString commaAsc(ColumnProfile next) {
-    return cat(COMMA).cat(next.fullName()).cat(ASC); // --- possible cause of bugs
+  public QueryString commaDesc(ColumnProfile next) {
+    return comma().cat(next.fullName()).cat(DESC); // --- possible cause of bugs
   }
 
-  public QueryString commaDesc(ColumnProfile next) {
-    return cat(COMMA).cat(next.fullName()).cat(DESC); // --- possible cause of bugs
+  public QueryString having() {
+    return cat(HAVING);
   }
 
   public QueryString groupby(ColumnProfile first) {
     return cat(GROUPBY).cat(first.fullName()); // --- possible cause of bugs
   }
 
-  public QueryString having() {
-    return word(HAVING);
+  public QueryString nvPair(String field, Long value) {
+    return word(field).cat(EQUALS).cat((value == null) ? NULL.spaced : String.valueOf(value));
   }
 
   /**
@@ -387,16 +521,16 @@ public class QueryString {
     return word(field).cat(EQUALS).value(value);
   }
 
-  public QueryString nvPair(String field, Long value) {
-    return word(field).cat(EQUALS).cat((value == null) ? NULL : String.valueOf(value));
-  }
-
-  public QueryString nvcompare(ColumnProfile field, String cmpop, String value) {
+  public QueryString nvcompare(ColumnProfile field, SqlKeyword cmpop, String value) {
     return word(field.fullName()).cat(cmpop).value(value);
   }
 
-  public QueryString nvcompare(ColumnProfile field, String cmpop, long value) {
+  public QueryString nvcompare(ColumnProfile field, SqlKeyword cmpop, long value) {
     return word(field.fullName()).cat(cmpop).value(value);
+  }
+
+  public QueryString isNull(String field) {
+    return word(field).cat(IS).cat(NULL);
   }
 
   public QueryString nGTEQv(ColumnProfile field, String value) {
@@ -435,8 +569,12 @@ public class QueryString {
     return isNull(field.fullName());
   }
 
-  public QueryString isNull(String field) {
-    return word(field).cat(ISNULL);
+  @SuppressWarnings("unchecked")
+  public QueryString andRange(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
+    if (ObjectRange.NonTrivial(strange)) {
+      and().range(rangeName, strange, closeEnd);
+    }
+    return this;
   }
 
   public QueryString isTrue(ColumnProfile field) {
@@ -479,13 +617,7 @@ public class QueryString {
     return Open(field).cat(GTEQ).value(start).cat(wrapper ? OR : AND).word(field.fullName()).cat(closeEnd ? LTEQ : LT).value(end).Close();
   }
 
-  public QueryString andRange(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
-    if (ObjectRange.NonTrivial(strange)) {
-      and().range(rangeName, strange, closeEnd);
-    }
-    return this;
-  }
-
+  @SuppressWarnings("unchecked")
   public QueryString orRange(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
     if (ObjectRange.NonTrivial(strange)) {
       or().range(rangeName, strange, closeEnd);
@@ -493,6 +625,7 @@ public class QueryString {
     return this;
   }
 
+  @SuppressWarnings("unchecked")
   public QueryString range(ColumnProfile rangeName, ObjectRange strange, boolean closeEnd) {
     if (ObjectRange.NonTrivial(strange)) {
       dbg.VERBOSE("range:" + strange);
@@ -505,12 +638,16 @@ public class QueryString {
     return this;
   }
 
+  public QueryString all() {
+    return word("*");
+  }
+
   public QueryString andRange(ColumnProfile rangeName, ObjectRange strange) {
     return andRange(rangeName, strange, true);
   }
 
-  public QueryString all() {
-    return word(ALLFIELDS);
+  public QueryString union(QueryString two) {
+    return cat(UNION).word(String.valueOf(two));
   }
 
   public QueryString using(ColumnProfile column) {
@@ -518,8 +655,8 @@ public class QueryString {
     return cat(USING).Open().cat(column.name()).Close();
   }
 
-  public QueryString union(QueryString two) {
-    return word(UNION).word(String.valueOf(two));
+  public final QueryString castAsBigint(String what) {
+    return castAs(what, BIGINT.toString());
   }
 
   // postgresql only
@@ -533,8 +670,9 @@ public class QueryString {
     return cat(CAST).Open().cat(what).as(datatype).Close();
   }
 
-  public final QueryString castAsBigint(String what) {
-    return castAs(what, BIGINT);
+  public static QueryString SelectAll() {
+    QueryString noob = new QueryString();
+    return noob.cat(SELECT).all();
   }
 //
 //  public final boolean isReadOnly() {
@@ -583,12 +721,12 @@ public class QueryString {
     return new QueryString(SELECT);
   }
 
-  /**
-   * bridge for using old stuff wiht new builder technique
-   */
-  public static QueryString Wrap(String fullquery) {
-    return new QueryString(fullquery);//todo:2 additional method to idiot check like for terminating semi
-  }
+//  /**
+//   * bridge for using old stuff with new builder technique
+//   */
+//  public static QueryString Wrap(String fullquery) {
+//    return new QueryString(fullquery);
+//  }
 
   public static QueryString Select(QueryString first) {
     return Select().cat(first);
@@ -602,8 +740,8 @@ public class QueryString {
     return Select().cat(DISTINCT).cat(cp.fullName());
   }
 
-  public static QueryString SelectAll() {
-    return new QueryString(SELECTALL);
+  public static QueryString Clause() {
+    return new QueryString();
   }
 
 //   /** @returns wehter query modifies the database, records or schema*/
@@ -638,11 +776,14 @@ public class QueryString {
 //    }
 //  }
 
+  /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
+  public class Lister extends ListWrapper {
 
-
-
-  public static QueryString Clause() {
-    return new QueryString(EMPTY);
+    //todo:1 option for newline with each comma
+    Lister(String prefix) {
+      super(guts, prefix);
+      comma = ", ";
+    }
   }
 
   public static QueryString whereNot(ColumnProfile column) {

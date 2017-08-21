@@ -4,9 +4,9 @@ import pers.hal42.lang.ByteArray;
 import pers.hal42.lang.CharX;
 import pers.hal42.lang.StringX;
 
-/** I think this was created for dealing with ascii terminal communications, where bytes are chars. */
+/** Created for dealing with ascii terminal communications, where bytes are chars. */
 public class Ascii {
-
+  //todo:1 replace with an enum
   public final static byte NUL = 0x00;
   public final static byte SOH = 0x01;
   public final static byte STX = 0x02;//
@@ -144,12 +144,12 @@ public class Ascii {
   public final static byte TILDE = 0x7E;// ~
   public static final String CRLF = "\r\n";
 
+  /** @returns a string which has a single char @param which added to @param a */
   public static String computed(char a, int which) {
     int netascii = (int) a + which;
     return "" + Char(netascii);
   }
 
-  //move to safe {
   public static String bracket(String text) {//--->>safe
     return "[" + text + "]";
   }
@@ -175,8 +175,6 @@ public class Ascii {
     }
     return bracket(String.valueOf(obj));
   }
-
-  //move to safe }
 
   public static String bracket(byte[] ba) {//--->>safe
     return bracket(image(ba));

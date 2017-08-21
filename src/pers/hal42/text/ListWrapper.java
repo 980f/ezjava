@@ -70,12 +70,13 @@ public class ListWrapper implements AutoCloseable {
   public void close() {
     if (excessCommaAt >= 0) {
       s.deleteCharAt(excessCommaAt);
-      excessCommaAt = -1;
+      excessCommaAt = ~0;
       s.append(closer != null ? closer : ")");
       closer = null;
     }
   }
 
+  /** you usually don't call this. */
   public void addComma() {
     s.append(comma);
   }
