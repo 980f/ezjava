@@ -54,8 +54,9 @@ public class VectorX {
     return v;
   }
 
+  /** @returns size of vector, 0 if vector is null */
   public static int size(Vector v) {
-    return v != null ? v.size() : ObjectX.INVALIDINDEX;
+    return v != null ? v.size() : 0;
   }
 
   public static boolean NonTrivial(Vector v) {
