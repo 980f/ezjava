@@ -1,12 +1,22 @@
 package pers.hal42.lang;
 
-public class ObjectX {
+//import static pers.hal42.lang.Safe.INVALIDINDEX;
 
-  // Where else can we put this ? +++
-  public static final int INVALIDINDEX = -1;
+import static pers.hal42.lang.Index.BadIndex;
+
+public class ObjectX {
 
   private ObjectX() {
     // I exist for static purposes
+  }
+
+  /** @returns whether objects are equal, with sane behavior on either being null */
+  public static boolean Equals(Object one, Object other) {
+    if (one == null) {
+      return other == null;
+    } else {
+      return other != null && one.equals(other);
+    }
   }
 
   /**
@@ -36,7 +46,7 @@ public class ObjectX {
         return i; // key found
       }
     }
-    return INVALIDINDEX; // insert at the end
+    return BadIndex; // insert at the end
   }
 
   public static int findIndex(Object[] a, Object o) {
@@ -51,7 +61,7 @@ public class ObjectX {
         }
       }
     }
-    return INVALIDINDEX; // insert at the end
+    return BadIndex; // insert at the end
   }
 
   public static boolean NonTrivial(Object o) {

@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static pers.hal42.database.DBMacros.Op.*;
+import static pers.hal42.lang.Index.BadIndex;
 
 /*
  * functions for performing database queries and updates
@@ -138,7 +139,7 @@ public class DBMacros extends GenericDB {
   protected static final int ONLYCOLUMN = 1;//index of column if there is only one
 
   private static final Fstring timerStr = new Fstring(7, ' ');
-  private static final int NOT_A_COLUMN = ObjectX.INVALIDINDEX;
+  private static final int NOT_A_COLUMN = BadIndex;
 
   public DBMacros(MysqlConnectionInfo connInfo, String threadname) {
     super(connInfo, threadname);
@@ -877,18 +878,6 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  // due to a bug in the PG driver ...
-  protected String extractFKJustName(String fkname) {
-    if (StringX.NonTrivial(fkname)) {
-      int loc = fkname.indexOf("\\000");
-      if (loc > ObjectX.INVALIDINDEX) {
-        String tmp = StringX.left(fkname, loc);
-        dbg.VERBOSE("Extracted actual key name '" + tmp + "' from verbose PG key name '" + fkname + "'.");
-        fkname = tmp;
-      }
-    }
-    return fkname;
-  }
 
   public boolean foreignKeyExists(ForeignKeyProfile foreignKey) {
     boolean ret = false;
@@ -899,7 +888,7 @@ public class DBMacros extends GenericDB {
       String tablename = foreignKey.table.name().toLowerCase(); // MUST BE LOWER for PG
       rs = pmdmd.getImportedKeys(null, null, tablename);
       while (next(rs)) {
-        String cname = extractFKJustName(getStringFromRS("FK_NAME", rs));
+        String cname = modeler.extractFKJustName(getStringFromRS("FK_NAME", rs));
         if (foreignKey.name.equalsIgnoreCase(cname)) {
           ret = true;
           break;

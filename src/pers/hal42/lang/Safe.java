@@ -9,9 +9,7 @@ import java.io.FileOutputStream;
 import java.util.Date;
 
 public class Safe {
-  // not a good idea to have a dbg in here --- see preLoadClass
-  public static final int INVALIDINDEX = -1;
-//  public static final int INVALIDINTEGER = -1; //are likely to change this one
+
   /**
    * this is in Safe because it uses some packages that the more obvious pakages for it otherwise aren't needed
    */

@@ -1,7 +1,8 @@
 package pers.hal42.text;
 
-import pers.hal42.lang.ObjectX;
 import pers.hal42.lang.StringX;
+
+import static pers.hal42.lang.Index.BadIndex;
 
 public class NamedValue {
   public String key;
@@ -23,7 +24,7 @@ public class NamedValue {
     if (pair == null) {
       key = null;
       value = null;
-    } else if (splitter == ObjectX.INVALIDINDEX || splitter >= pair.length() - 1) {
+    } else if (splitter == BadIndex || splitter >= pair.length() - 1) {
       key = pair;
       value = null;
     } else {

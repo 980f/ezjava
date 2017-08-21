@@ -1,6 +1,9 @@
 package pers.hal42.logging;
 
-import pers.hal42.lang.*;
+import pers.hal42.lang.AtExit;
+import pers.hal42.lang.DateX;
+import pers.hal42.lang.Finally;
+import pers.hal42.lang.StringX;
 import pers.hal42.stream.VirtualPrinter;
 import pers.hal42.text.TextList;
 import pers.hal42.util.PrintFork;
@@ -18,6 +21,7 @@ import java.text.MessageFormat;
 import java.util.Vector;
 
 import static java.text.MessageFormat.format;
+import static pers.hal42.lang.Index.BadIndex;
 import static pers.hal42.logging.LogLevelEnum.*;
 
 /**
@@ -111,7 +115,7 @@ public class ErrorLogStream implements AtExit, Finally.Lambda {
     if (myLevel != null) {
       return myLevel.Level();
     }
-    return Safe.INVALIDINDEX;
+    return BadIndex;
   }
 
   public boolean levelIs(LogLevelEnum lle) {

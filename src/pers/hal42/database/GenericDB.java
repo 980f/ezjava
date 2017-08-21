@@ -4,10 +4,13 @@ import com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException;
 import pers.hal42.lang.Finally;
 import pers.hal42.lang.Monitor;
 import pers.hal42.lang.ReflectX;
+import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.thread.Counter;
 
 import java.sql.*;
+
+import static pers.hal42.lang.Index.BadIndex;
 
 public class GenericDB {
   protected Modeler modeler = new Modeler();
@@ -60,6 +63,18 @@ public class GenericDB {
 
     public QueryString genCreateTable(TableProfile tp) {
       return null;
+    }
+
+    public String extractFKJustName(String fkname) {    //!PG version
+      if (StringX.NonTrivial(fkname)) {
+        int loc = fkname.indexOf("\\000");
+        if (loc != BadIndex) {
+          String tmp = StringX.left(fkname, loc);
+          dbg.VERBOSE("Extracted actual key name {0} from verbose PG key name {1}", tmp, fkname);
+          fkname = tmp;
+        }
+      }
+      return fkname;
     }
   }
 

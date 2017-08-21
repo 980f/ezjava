@@ -1,12 +1,13 @@
 package pers.hal42.stream;
 
 
-import pers.hal42.lang.Safe;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
 
 import java.io.*;
+
+import static pers.hal42.lang.Index.BadIndex;
 
 // +++ build a listener system that can get notified of progress
 
@@ -80,7 +81,7 @@ public class BigFile {
     String root = "";
     String ext = "";
     int pos = name.lastIndexOf(".");
-    if (pos > Safe.INVALIDINDEX) {
+    if (pos > BadIndex) {
       root = StringX.left(name, pos);
       ext = StringX.subString(name, pos + 1);
       dbg.ERROR("Split [" + name + "] at " + pos + " to get [" + root + "] and [" + ext + "]");

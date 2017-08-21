@@ -3,6 +3,8 @@ package pers.hal42.lang;
 
 import pers.hal42.math.MathX;
 
+import static pers.hal42.lang.Index.BadIndex;
+
 public class StringX {
   //todo:1 replace replacers with cppext's logic.
   protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
@@ -116,7 +118,7 @@ public class StringX {
   }
 
   public static String insert(String receiver, int where, String toinsert) {
-    if ((where != ObjectX.INVALIDINDEX) && (where < receiver.length())) {
+    if ((where != BadIndex) && (where < receiver.length())) {
       StringBuilder sb = new StringBuilder(receiver);
       sb.insert(where, toinsert);
       return sb.toString();
@@ -179,7 +181,7 @@ public class StringX {
    * @return length of a string, ObjectX.INVALIDINDEX if null, 0 if trivial
    */
   public static int lengthOf(String s) {
-    return (s != null) ? s.length() : ObjectX.INVALIDINDEX;
+    return (s != null) ? s.length() : BadIndex;
   }
 
   /**
@@ -357,10 +359,6 @@ public class StringX {
     return retval;
   }
 
-//  public static final boolean hasSubstance(String s) {
-//    return s != null && s.trim().length() > 0;
-//  }
-
   ///////////////////////////////////////////////
   public static boolean NonTrivial(String s) {
     return s != null && s.length() > 0;
@@ -396,7 +394,7 @@ public class StringX {
         }
       }
     }
-    return ObjectX.INVALIDINDEX;
+    return BadIndex;
   }
 
   public static int equalStrings(String one, String[] two) {
@@ -408,7 +406,7 @@ public class StringX {
   }
 
   public static boolean equalAnyStrings(String one, String[] two, boolean ignoreCase) {
-    return equalStrings(one, two, ignoreCase) != ObjectX.INVALIDINDEX;
+    return equalStrings(one, two, ignoreCase) != BadIndex;
   }
 
   public static boolean equalStrings(String one, String two) {
@@ -432,7 +430,7 @@ public class StringX {
         return i;
       }
     }
-    return ObjectX.INVALIDINDEX; // insert at the end
+    return BadIndex; // insert at the end
   }
 
   /**

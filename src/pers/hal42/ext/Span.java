@@ -3,6 +3,8 @@ package pers.hal42.ext;
 import org.jetbrains.annotations.NotNull;
 import pers.hal42.lang.StringX;
 
+import static pers.hal42.lang.Index.BadIndex;
+
 /**
  * Created by andyh on 4/3/17.
  * <p>
@@ -11,7 +13,7 @@ import pers.hal42.lang.StringX;
 public class Span {
   public int lowest;
   public int highest;
-  public static final int Invalid = -1;  //what indexOf returns when it doesn't find a char
+  public static final int Invalid = BadIndex;  //what indexOf returns when it doesn't find a char
 
   public Span(int lowest, int highest) {
     this.lowest = lowest;
@@ -26,7 +28,7 @@ public class Span {
    * set the low bound, invalidate the high one
    */
   public void begin(int low) {
-    highest = Invalid; //for safety
+    forgetHigh();
     lowest = low;
   }
 
@@ -75,26 +77,35 @@ public class Span {
   public void leapfrog(int skip) {
     if (skip >= 0) {
       if (highest == Invalid) {//if at or past the end
-        lowest = Invalid;   //we are past the end for sure.
+        forgetLow();
       } else {//begin next field
         lowest = highest + skip;
-        highest = Invalid;
+        forgetHigh();
       }
     } else {
       if (lowest == Invalid) {//if at or past the end
-        highest = Invalid;   //we are past the end for sure.
+        forgetHigh();
       } else {//begin next field
         highest = lowest - ~skip;
-        lowest = Invalid;
+        forgetLow();
       }
     }
+  }
+
+  public void forgetLow() {
+    lowest = Invalid;   //we are past the end for sure.
+  }
+
+  public void forgetHigh() {
+    highest = Invalid;
   }
 
   /**
    * set both ends of span to 'invalid'
    */
   public void clear() {
-    highest = lowest = Invalid;
+    forgetHigh();
+    forgetLow();
   }
 
   /**
@@ -159,9 +170,10 @@ public class Span {
     return highest != Invalid;
   }
 
+  /** @returns debug string */
   @Override
   public String toString() {
-    return "Span:{" + "lowest:" + lowest + ", highest:" + highest + '}';
+    return "[" + lowest + ":" + highest + ')';
   }
 
   public void end(int probe) {

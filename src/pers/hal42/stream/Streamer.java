@@ -1,7 +1,6 @@
 package pers.hal42.stream;
 
 import pers.hal42.Main;
-import pers.hal42.lang.ObjectX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.logging.LogLevelEnum;
 import pers.hal42.text.Ascii;
@@ -10,6 +9,8 @@ import pers.hal42.util.InstanceNamer;
 
 import java.io.*;
 import java.util.EventObject;
+
+import static pers.hal42.lang.Index.BadIndex;
 
 public class Streamer implements Runnable {
   public long count = 0;
@@ -141,7 +142,7 @@ public class Streamer implements Runnable {
             break;
           }
         }
-        if (bytes > ObjectX.INVALIDINDEX) {//other negative values will come in someday!
+        if (bytes > BadIndex) {//other negative values will come in someday!
           dbg.VERBOSE("piped:" + Ascii.bracket(bytes));
           out.write(bytes);
           out.flush(); // ----- testing !!!
