@@ -32,7 +32,7 @@ public class IncludeFileIterator extends FancyArgIterator {
       if (hasNext()) {
         return next();
       } else {
-        //we lied about their being another string, pass an empty one
+        //we lied about there being another string, pass an empty one
         return "";
       }
     }

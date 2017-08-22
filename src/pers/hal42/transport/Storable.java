@@ -3,6 +3,7 @@ package pers.hal42.transport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import pers.hal42.lang.Finally;
+import pers.hal42.lang.LinearMap;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
@@ -198,18 +199,46 @@ public class Storable {
    */
   protected int index = -1;
   @Nullable Storable parent; //can be null.
-  Type type = Unclassified;
-  Origin origin = Ether;
+  protected Type type = Unclassified;
+  protected Origin origin = Ether;
   //4 value types:
-  String image = "";
-  int ivalue;
-  double dvalue;
-  boolean bit;
+  protected String image = "";
+  protected int ivalue;
+  protected double dvalue;
+  protected boolean bit;
   /**
    * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
    * for really big nodes create a nodeIndexer outside of this class and access members herein by index.
    */
-  Vector<Storable> wad = new Vector<>();
+  protected Vector<Storable> wad = new Vector<>();
+
+  /** part of flattenedImage */
+  protected void addToMap(Map<String, String> map, TreeName cursor) {
+    try (Finally pop = cursor.push(name)) {
+      for (Storable kid : wad) {
+        if (Wad == kid.type) {
+          kid.addToMap(map, cursor);
+        } else {
+          map.put(cursor.leaf(kid.name), kid.getImage());
+        }
+      }
+    }
+  }
+
+  /** @returns new Map of images of child nodes, if @param deep then recurses into children that are wads */
+  public LinearMap<String, String> flattenedImage(String slash) {
+    LinearMap<String, String> map = new LinearMap<>(wad.size());
+    boolean deep = slash != null;
+    final TreeName cursor = deep ? new TreeName(slash) : null;
+    for (Storable kid : wad) {
+      if (kid.type != Wad) {
+        map.put(kid.name, kid.getImage());
+      } else if (deep) {
+        kid.addToMap(map, cursor);
+      }
+    }
+    return map;
+  }
 
   /**
    * only use this for root nodes.
