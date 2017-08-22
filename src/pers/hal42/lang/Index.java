@@ -83,11 +83,6 @@ public class Index {
    */
   public int postinc() {
     return raw++;
-//    try {
-//      return raw;
-//    } finally {
-//      ++raw;
-//    }
   }
 
   /**
@@ -104,5 +99,10 @@ public class Index {
     } else {
       return onBadIndex;
     }
+  }
+
+  @Override
+  public String toString() {
+    return Integer.toString(raw);
   }
 }
