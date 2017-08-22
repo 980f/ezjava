@@ -1,10 +1,10 @@
 package pers.hal42.lang;
-// includes stringbuffer stuff.  Maybe can create a StringBufferX to put that stuff in.
 
 import pers.hal42.math.MathX;
 
 import static pers.hal42.lang.Index.BadIndex;
 
+/** things the java standard library left our of string operations, especially tolerance for null arguments. */
 public class StringX {
   //todo:1 replace replacers with cppext's logic.
   protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
@@ -41,8 +41,8 @@ public class StringX {
     return replace(new StringBuffer(TrivialDefault(source, "")), TrivialDefault(toReplace, ""), TrivialDefault(with, ""));
   }
 
-  public static String replace(StringBuffer source, String toReplace, String with) {
-    boolean recurse = false;
+  public static String replace(StringBuffer source, String toReplace, String with, boolean recurse) {
+
     if (source == null) {
       return null;
     }
@@ -63,6 +63,10 @@ public class StringX {
       //would only be infinite if with contains toReplace. would exahust memory if so.
     }
     return String.valueOf(source);
+  }
+
+  public static String replace(StringBuffer source, String toReplace, String with) {
+    return replace(source, toReplace, with, false);
   }
 
   // Used by database stuff.  Don't change without testing on all databases!
@@ -557,6 +561,7 @@ public class StringX {
       return false;
     }
   }
+
   public static boolean isDouble(String s){
     try {
       //noinspection ResultOfMethodCallIgnored

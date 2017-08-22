@@ -25,10 +25,7 @@ public class QueryString {
     INSERTINTO,
     ON,
     IN,
-    OPENPAREN,
-    CLOSEPAREN,
 
-    EQUALS,
     ADD,
     NULL,
     JOIN,
@@ -93,6 +90,7 @@ public class QueryString {
 
   private static final String ORDERBY = "ORDER BY";
   private static final String GROUPBY = "GROUP BY";
+  private static final String EQUALS = "=";
 
 //  protected static final String NEXTVAL = " NEXTVAL ";
   //   EMPTY = "";
@@ -202,7 +200,8 @@ public class QueryString {
   }
 
   public QueryString Open() {
-    return cat(OPENPAREN);
+    guts.append('(');
+    return this;
   }
 
   public QueryString Open(ColumnProfile cp) {
@@ -210,7 +209,8 @@ public class QueryString {
   }
 
   public QueryString Close() {
-    return cat(CLOSEPAREN);
+    guts.append(')');
+    return this;
   }
 
   public QueryString dot(String prefix, String postfix) {
@@ -243,6 +243,23 @@ public class QueryString {
     } else {
       return where();
     }
+  }
+
+  public QueryString where(String columnish, Object valued) {
+    where();
+    nvPair(columnish, String.valueOf(valued));
+    return this;
+  }
+
+  public QueryString quoted(String value) {
+    if (value == null) {
+      cat("?");
+    } else {
+      cat("'");
+      guts.append(value);
+      cat("'");
+    }
+    return this;
   }
 
   protected QueryString in(String list) {
@@ -332,7 +349,7 @@ public class QueryString {
 
   /** @returns this after "VALUES (" */
   public QueryString Values() {
-    return cat(VALUES).cat(OPENPAREN);
+    return cat(VALUES).Open();
   }
 
   /**
@@ -688,7 +705,7 @@ public class QueryString {
     */
   public static String Quoted(String s) {
     String ret = StringX.singleQuoteEscape(s);
-    dbg.VERBOSE("Quoted():" + s + "->" + ret);
+//    dbg.VERBOSE("Quoted():" + s + "->" + ret);
     return ret;
   }
 
@@ -780,11 +797,13 @@ public class QueryString {
 
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
-
-    //todo:1 option for newline with each comma
     Lister(String prefix) {
+      this(prefix, ", ");
+    }
+
+    Lister(String prefix, String comma) {
       super(guts, prefix);
-      comma = ", ";
+      super.comma = comma;
     }
   }
 
