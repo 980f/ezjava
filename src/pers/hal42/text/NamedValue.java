@@ -34,6 +34,6 @@ public class NamedValue {
   }
 
   public void split(String pair, char cutter) {
-    splitAt(StringX.cutPoint(pair, '='), pair);
+    splitAt(StringX.cutPoint(pair, cutter), pair);
   }
 }
