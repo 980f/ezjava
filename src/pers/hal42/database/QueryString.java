@@ -532,6 +532,14 @@ public class QueryString {
     return word(field).cat(EQUALS).value(value);
   }
 
+  /** append  " field =?" */
+  public QueryString nvPairPrepared(String field) {
+    word(field);
+    cat(EQUALS);
+    guts.append('?');
+    return this;
+  }
+
   public QueryString nvPair(String field, int value) {
     return nvPair(field, (long) value);
   }
@@ -689,6 +697,10 @@ public class QueryString {
     return cat(CAST).Open().cat(what).as(datatype).Close();
   }
 
+  public Lister startSet() {
+    return new Lister("\nSET ", "");
+  }
+
   public static QueryString SelectAll() {
     QueryString noob = new QueryString();
     return noob.cat(SELECT).all();
@@ -704,9 +716,7 @@ public class QueryString {
        2) Wrap it in single quotes,
     */
   public static String Quoted(String s) {
-    String ret = StringX.singleQuoteEscape(s);
-//    dbg.VERBOSE("Quoted():" + s + "->" + ret);
-    return ret;
+    return StringX.singleQuoteEscape(s);
   }
 
   /**
@@ -801,8 +811,12 @@ public class QueryString {
       this(prefix, ", ");
     }
 
-    Lister(String prefix, String comma) {
-      super(guts, prefix);
+    Lister(String prefix, String closer) {
+      super(guts, prefix, closer);
+    }
+
+    Lister(String prefix, String closer, String comma) {
+      super(guts, prefix, closer);
       super.comma = comma;
     }
   }

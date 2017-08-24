@@ -317,7 +317,7 @@ public class LogFile extends Thread implements AtExit, Comparable<LogFile> {
   }
 
   /**
-   * Flush the log record queue.
+   * Flush the log recordType queue.
    */
   public void internalFlush() {
     StopWatch sw = new StopWatch();

@@ -5,7 +5,7 @@ import pers.hal42.math.MathX;
 /**
  * Created by andyh on 4/3/17.
  * <p>
- * record max or min of a series  pushed at it
+ * recordType max or min of a series  pushed at it
  * <p>
  * An example of one of the domains where C++ is vastly superior to java. Java engineers left out basic ordering functions from their Number classes.
  */

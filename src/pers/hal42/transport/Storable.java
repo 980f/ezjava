@@ -173,7 +173,7 @@ public class Storable {
     public T item;
     public Rules r;
 
-    /**  */
+    /** constructing one of these fills the obj with values from the node. */
     public Nodal(Storable node, T obj) {
       this.node = node;
       this.item = obj;

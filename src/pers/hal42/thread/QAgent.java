@@ -115,7 +115,7 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
               if (waitingForInput.run() == Waiter.State.Timedout) {//if we wait for a full idle period then
                 if (idleObject != null) {//indicate we have been idle
                   dbg.VERBOSE(format("{0} about to run idle object", myname));
-                  todo = idleObject;//record idleObject as active element for debug
+                  todo = idleObject;//recordType idleObject as active element for debug
                   actor.runone(todo);
                 }
               }

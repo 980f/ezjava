@@ -87,7 +87,7 @@ public class DbUpdater {
   /**
    * Execute this delete command on a specific connection.
    *
-   * @return The number of record affected.
+   * @return The number of recordType affected.
    * @throws Exception Description of Exception
    */
   public int execute() {

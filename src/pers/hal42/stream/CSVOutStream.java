@@ -7,6 +7,7 @@ import java.io.OutputStream;
 public class CSVOutStream extends FilterOutputStream {
 
   public int EOL = '\n'; //do NOT use system dependent info, use internet defaults.
+  public char comma = ',';   //overwrite with a tab if you prefer
   boolean linestarted = false;
 
   /**
@@ -28,7 +29,7 @@ public class CSVOutStream extends FilterOutputStream {
 
   CSVOutStream write(String processed, boolean quoteit) throws IOException {
     if (linestarted) {
-      write(',');
+      write(comma);
     } else {
       linestarted = true;
     }

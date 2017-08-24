@@ -283,7 +283,7 @@ public class DBMacros extends GenericDB {
     return str1;
   }
 
-  /** @returns the first field of the first record of @param query, null if anything goes wrong. */
+  /** @returns the first field of the first recordType of @param query, null if anything goes wrong. */
   public String getStringFromQuery(String query) {
     try (Statement stmt = makeStatement()) {
       if (stmt.execute(query)) {

@@ -9,7 +9,7 @@ import pers.hal42.text.TextList;
  */
 public class AsciiBufferParser extends BufferParser {
   /**
-   * get record as parsable buffer
+   * get recordType as parsable buffer
    * todo:1 make byte[] version of getUntil() to make this more efficient.
    */
   public AsciiBuffer getRecord() {

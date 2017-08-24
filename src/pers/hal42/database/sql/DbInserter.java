@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * A class used to insert records into SQL tables. The constructor is not
  * public. To obtain a DbInserter call DbTable.inserter(); Example: To insert a
- * record into the people table... <PRE>
+ * recordType into the people table... <PRE>
  * DbDatabase db = ...;
  * DbTable people = db.getTable("PEOPLE");
  * DbInserter inserter = people.inserter();
@@ -101,7 +101,7 @@ public class DbInserter {
   /**
    * Execute this command on a specific connection.
 
-   * @return The number of record affected.
+   * @return The number of recordType affected.
    * @throws Exception Description of Exception
    */
   public int execute() {

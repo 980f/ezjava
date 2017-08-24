@@ -152,7 +152,7 @@ public class PGQueryString extends DBMacros.Modeler {
 //    return Select().word(NEXTVAL).Open().value(field.table().name() + "_" + field.name() + "_" + SEQ).Close();
 //  }
 //
-//  // Note that you have to get a serial field's next value to use to insert the record
+//  // Note that you have to get a serial field's next value to use to insert the recordType
 //  static QueryString genSelectNextVal(ColumnProfile cp) {
 //    return QueryString.SelectNextVal(cp);
 //  }

@@ -40,7 +40,7 @@ public class PushedParser {
     EndTokenAndItem,  //seperator ended item.
 
     //no-one seems to care about these events, we'll keep them in case value must be extracted immediatley after the terminating character
-    BeginToken, //record cursor, it is first char of something.
+    BeginToken, //recordType cursor, it is first char of something.
     EndToken,  //just end the token
 
   }

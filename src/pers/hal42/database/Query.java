@@ -106,9 +106,9 @@ public abstract class Query {
   protected void fromResultSet(ResultSet rs) {
     if (rs != null) {
       Object record = this;
-      // create the object from a record in the resultset
+      // create the object from a recordType in the resultset
       StopWatch sw = new StopWatch();
-      Field[] field = getFieldsFor(record.getClass());//record.getClass().getFields();
+      Field[] field = getFieldsFor(record.getClass());//recordType.getClass().getFields();
       fromResultSetFields.add(sw.Stop());
       for (int i = field.length; i-- > 0; ) {
         Field f = field[i];
@@ -136,7 +136,7 @@ public abstract class Query {
   public EasyProperties toProperties() {
     // create a list of all of the PUBLIC STRING fields and their values from the object
     Object record = this;
-    Field[] field = getFieldsFor(record.getClass());//record.getClass().getFields(); // only gets publics
+    Field[] field = getFieldsFor(record.getClass());//recordType.getClass().getFields(); // only gets publics
     EasyProperties ezp = new EasyProperties();
     for (int i = field.length; i-- > 0; ) {
       Field f = field[i];
@@ -184,7 +184,7 @@ public abstract class Query {
    */
   public void setAllTo(String value) {
     Object record = this;
-    Field[] field = getFieldsFor(record.getClass());// record.getClass().getFields();
+    Field[] field = getFieldsFor(record.getClass());// recordType.getClass().getFields();
     for (Field f : field) {
 //      if(f.getType() == String.class) {
       String fName = f.getName();

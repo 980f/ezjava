@@ -2,7 +2,6 @@ package pers.hal42.lang;
 
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
-import pers.hal42.transport.EasyCursor;
 
 import java.lang.annotation.*;
 import java.lang.reflect.*;
@@ -162,23 +161,52 @@ public class ReflectX {
   }
 
   /**
+   * @return factory method for class @param claz with @param args. No arg may be null!
+   */
+  public static Method factoryFor(Class claz, Object... args) {
+    Method[] candidates = claz.getMethods();
+    for (Method m : candidates) {
+      int mods = m.getModifiers();
+      if (Modifier.isStatic(mods)) {
+        Class[] plist = m.getParameterTypes();
+        if (isArglist(plist, args)) {
+          return m;
+        }
+      }
+    }
+    return null;
+  }
+
+  public static boolean isArglist(Class[] plist, Object[] args) {
+    if (plist.length == args.length) {
+      for (int i = plist.length; i-- > 0; ) {
+        final Class<?> probate = args[i].getClass();
+        if (isImplementorOf(probate, plist[i])) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+
+  /**
    * @return constructor for class @param claz with single argument @param argclaz
    */
   public static Method factoryFor(Class claz, Class argclaz) {
-//    try {
-      Method[] candidates = claz.getMethods();
-      for (Method m : candidates) {
-        int mods = m.getModifiers();
-        if (Modifier.isStatic(mods)) {
-          Class[] plist = m.getParameterTypes();
-          if (plist.length == 1 && plist[0] == argclaz) {
-            return m;
-          }
+    Method[] candidates = claz.getMethods();
+    for (Method m : candidates) {
+      int mods = m.getModifiers();
+      if (Modifier.isStatic(mods)) {
+        Class[] plist = m.getParameterTypes();
+        if (plist.length == 1 && plist[0] == argclaz) {
+          return m;
         }
       }
-      return null;
-//    }
+    }
+    return null;
   }
+
 
   public static Object enumObject(Class fclaz, String string) {
     if (string == null) {
@@ -234,6 +262,11 @@ public class ReflectX {
     return skipper;
   }
 
+  public static boolean isNative(Field field) {
+    int modifiers = field.getModifiers();
+    return Modifier.isNative(modifiers);
+  }
+
   /**
    * @return string stripped of paymates package root IFF that root is present.
    */
@@ -269,6 +302,7 @@ public class ReflectX {
 
   /**
    * @return the class name without the application's root.
+   * @deprecated at 1.5 use Class.getSimpleName()
    */
   public static String shortClassName(Class classy) {
     return classy != null ? stripPackageRoot(classy.getName()) : "NULL";
@@ -320,6 +354,26 @@ public class ReflectX {
    * @return constructor for class @param claz with single argument @param argclaz
    */
   @SuppressWarnings("unchecked")
+  public static <T> Constructor<T> constructorFor(Class<? extends T> claz, Object... args) {
+    try {
+      Constructor[] ctors = claz.getConstructors();
+      for (int i = ctors.length; i-- > 0; ) {
+        Constructor ctor = ctors[i];
+        Class[] plist = ctor.getParameterTypes();
+        if (isArglist(plist, args)) {
+          return ctor;
+        }
+      }
+      return null;
+    } catch (Exception ex) {
+      return null;
+    }
+  }
+
+  /**
+   * @return constructor for class @param claz with single argument @param argclaz
+   */
+  @SuppressWarnings("unchecked")
   public static <T> Constructor<T> constructorFor(Class<? extends T> claz, Class argclaz) {
     try {
       Constructor[] ctors = claz.getConstructors();
@@ -352,6 +406,28 @@ public class ReflectX {
     }
   }
 
+  /** try to find a static constructor, if not then find a constructor. first one with matching args list wins. @returns new object or null if something fails */
+  @SuppressWarnings("unchecked")
+  public static <T> T newInstance(Class tclaz, Object... args) {
+    final Method cfactory = ReflectX.factoryFor(tclaz, args);
+    if (cfactory != null) {
+      try {
+        return (T) cfactory.invoke(args);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        return null;
+      }
+    }
+    final Constructor maker = constructorFor(tclaz, args);
+    if (maker != null) {
+      try {
+        return (T) maker.newInstance(args);
+      } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        return null;
+      }
+    }
+    return null;//no available factory
+  }
+
   /**
    * @returns name of @param child within object @param parent, null if not an accessible child
    */
@@ -380,37 +456,37 @@ public class ReflectX {
     }
     return null;
   }
-
-  /**
-   * make an object given an @param ezc EasyCursor description of it.
-   */
-  public static Object Create(EasyCursor ezc, ErrorLogStream dbg) {
-    try {
-      dbg = ErrorLogStream.NonNull(dbg);//ensure a bad debugger doesn't croak us.
-      Class[] creatorArgs = {EasyCursor.class};
-      Object[] arglist = {ezc};
-      String classname = ezc.getString("class");
-      dbg.VERBOSE(StringX.bracketed("Create:classname(", classname));
-      Class claz = classForName(classname);
-      if (claz != null) {
-        dbg.VERBOSE("Create:class:" + claz);
-        //noinspection unchecked
-        Method meth = claz.getMethod("Create", creatorArgs);
-        dbg.VERBOSE("Create:Method:" + meth);
-        Object obj = meth.invoke(null, arglist);
-        dbg.VERBOSE("Create:Object:" + obj);
-        return obj;
-      }
-      return null;
-    } catch (Exception any) {
-      dbg.WARNING(" Ezc.Create() got {0}, properties: {1}", any.getMessage(), ezc.asParagraph());
-      return null;
-    }
-  }
-
-  public static Object Create(EasyCursor ezc) {
-    return Create(ezc, ErrorLogStream.Global());
-  }
+//
+//  /**
+//   * make an object given an @param ezc EasyCursor description of it.
+//   */
+//  public static Object Create(EasyCursor ezc, ErrorLogStream dbg) {
+//    try {
+//      dbg = ErrorLogStream.NonNull(dbg);//ensure a bad debugger doesn't croak us.
+//      Class[] creatorArgs = {EasyCursor.class};
+//      Object[] arglist = {ezc};
+//      String classname = ezc.getString("class");
+//      dbg.VERBOSE(StringX.bracketed("Create:classname(", classname));
+//      Class claz = classForName(classname);
+//      if (claz != null) {
+//        dbg.VERBOSE("Create:class:" + claz);
+//        //noinspection unchecked
+//        Method meth = claz.getMethod("Create", creatorArgs);
+//        dbg.VERBOSE("Create:Method:" + meth);
+//        Object obj = meth.invoke(null, arglist);
+//        dbg.VERBOSE("Create:Object:" + obj);
+//        return obj;
+//      }
+//      return null;
+//    } catch (Exception any) {
+//      dbg.WARNING(" Ezc.Create() got {0}, properties: {1}", any.getMessage(), ezc.asParagraph());
+//      return null;
+//    }
+//  }
+//
+//  public static Object Create(EasyCursor ezc) {
+//    return Create(ezc, ErrorLogStream.Global());
+//  }
 
   //todo:2 move to ObjectX?
   public static String ObjectInfo(Object obj) {

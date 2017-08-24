@@ -196,6 +196,7 @@ public class ObjectRange<T extends Comparable<T>> {
   }
 
   public String toString() {
+    analyze();
     return broad ? (String.valueOf(one) + "-" + two.toString()) :
       (singular ? String.valueOf(one) : "empty");
   }

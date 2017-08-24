@@ -44,7 +44,7 @@ public class DbDeleter {
   /**
    * Execute this delete command on a specific connection.
 
-   * @return The number of record affected.
+   * @return The number of recordType affected.
 
    */
   public int execute() {

@@ -49,7 +49,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
   }
 
   /**
-   * random access by name, even works if hasNext() returns false.
+   * @returns first field that meets @param filter, null if none.
    */
   public Type find(Predicate<Type> filter) {
     for (Field f : fields) {

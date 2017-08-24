@@ -37,7 +37,7 @@ public class Ascii {
   public final static byte ESC = 0x1B;//  escape
   public final static byte FS = 0x1C;// field separator
   public final static byte GS = 0x1D;// group separator
-  public final static byte RS = 0x1E;// record separator
+  public final static byte RS = 0x1E;// recordType separator
   public final static byte US = 0x1F;// unit separator
   public final static byte SP = 0x20;// space
 

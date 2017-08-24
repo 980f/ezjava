@@ -25,6 +25,11 @@ public class MysqlConnectionInfo extends DBConnInfo {
     drivername = "com.mysql.jdbc.Driver";
   }
 
+  public MysqlConnectionInfo(Storable node) {
+    //crank up the report caching mechanism:
+    Storable.Nodal<MysqlConnectionInfo> loader = new Storable.Nodal<>(node, this);
+  }
+
   /** add options to login properties object */
   @Override
   public void addOptions(Properties props) {

@@ -134,7 +134,7 @@ public class JsonStorable extends PushedJSONParser {
   protected byte[] content;
   protected boolean cached;
   /**
-   * record name early, for debug, could wait until makeChild
+   * recordType name early, for debug, could wait until makeChild
    */
   private String name = "";
   private int illegalsCount = 0;
@@ -255,7 +255,7 @@ public class JsonStorable extends PushedJSONParser {
    * just read the file, don't parse
    */
   public boolean loadFile(String filename) {
-    this.filename = filename; //record for debug
+    this.filename = filename; //recordType for debug
     path = FileSystems.getDefault().getPath(filename);
     return cache();
   }

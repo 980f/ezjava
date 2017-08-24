@@ -84,7 +84,7 @@ public class Alarmum {
 
   /** reset the timer fuse (can shorten or prolong the time til next blowup) */
   Alarmum refuse(int fuse) {
-    ticks = fuse; //record f4debug
+    ticks = fuse; //recordType f4debug
     defused = ticks <= 0;
     blowtime = defused ? 0 : ticks + DateX.utcNow();
     return this;

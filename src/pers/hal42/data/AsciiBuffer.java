@@ -118,7 +118,7 @@ public class AsciiBuffer extends Buffer {
   }
 
   /**
-   * append a record separator
+   * append a recordType separator
    */
   public AsciiBuffer endRecord() {
     append(Ascii.RS);

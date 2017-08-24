@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * A class used to select tabular data from an SQL database. The constructor is
  * not public. To obtain a DbSelector call DbDatabase.selector(); Example: To
- * select FRED's record from the people table... <PRE>
+ * select FRED's recordType from the people table... <PRE>
  * DbDatabase db = ...;
  * DbTable people = db.getTable("PEOPLE");
  * DbSelector selector = db.selector();
