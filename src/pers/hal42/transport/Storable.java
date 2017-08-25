@@ -797,6 +797,9 @@ public class Storable {
               final Object nestedObject = field.get(obj);
               if (nestedObject == null) {
                 dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
+              } else if (ReflectX.isImplementorOf(fclaz, Map.class)) {
+                //then set children to map entries
+
               } else {
                 int subchanges = child.apply(nestedObject, r);
                 if (subchanges >= 0) {

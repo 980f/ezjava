@@ -2,6 +2,7 @@ package pers.hal42.transport;
 
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.stream.IOX;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -26,7 +27,7 @@ public class CsvTransport {
 
 
   /** constructor caches items needed by LineWriter to print efficiently */
-  public CsvTransport(Class recordType, String comma, Predicate<Class> transportable) {
+  public CsvTransport(Class recordType, Predicate<Class> transportable) {
     this.recordType = recordType;
 
     fieldCache = this.recordType.getFields();
@@ -39,7 +40,7 @@ public class CsvTransport {
         filter[i] = false;
         continue;
       }
-      if (ReflectX.isNative(field)) {
+      if (ReflectX.isNative(field)) {//note: String is not native
         filter[i] = true;
         continue;
       }
@@ -48,8 +49,8 @@ public class CsvTransport {
     }
   }
 
-  public CsvTransport(Class recordType, String comma) {
-    this(recordType, comma, CsvTransport::Common);
+  public CsvTransport(Class recordType) {
+    this(recordType, CsvTransport::Common);
   }
 
   /**
@@ -80,7 +81,7 @@ public class CsvTransport {
     return Modifier.isTransient(modifiers) || !Modifier.isPublic(modifiers);
   }
 
-  public class LineWriter {
+  public class LineWriter implements AutoCloseable {
     public int linecount = 0;
     final BufferedWriter writer;
     /** output header info every this many lines, 0 for once at start, ~0 for never */
@@ -158,6 +159,10 @@ public class CsvTransport {
         dbg.Caught(e);
         return false;
       }
+    }
+
+    public void close() {
+      IOX.Close(writer);
     }
   }
 }
