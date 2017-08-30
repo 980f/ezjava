@@ -234,13 +234,15 @@ public class ReflectX {
         return true; //frequent case
       }
       //if probate is an extension of claz
-      for (Class it : probate.getDeclaredClasses()) {
+      final Class[] dclasses = probate.getDeclaredClasses();
+      for (Class it :dclasses) {
         if (it.equals(claz)) {
           return true;
         }
       }
       //if probate implements an interface
-      for (Class it : probate.getInterfaces()) {
+      final Class[] ifaces = probate.getInterfaces();
+      for (Class it : ifaces) {
         if (it.equals(claz)) {
           return true;
         }
@@ -263,8 +265,39 @@ public class ReflectX {
   }
 
   public static boolean isNative(Field field) {
-    int modifiers = field.getModifiers();
-    return Modifier.isNative(modifiers);
+//    return Modifier.isNative(field.getModifiers()); //native only applies to methods.
+    Class type=field.getType();
+//    if(!isImplementorOf(type,Object.class)){
+//      return true;
+//    }
+    if(int.class==type){
+      return true;
+    }
+    if(boolean.class==type){
+      return true;
+    }
+    if(double.class==type){
+      return true;
+    }
+    if(float.class==type){
+      return true;
+    }
+    if(short.class==type){
+      return true;
+    }
+    if(long.class==type){
+      return true;
+    }
+    if(char.class==type){
+      return true;
+    }
+    if(byte.class==type){
+      return true;
+    }
+    if(String.class==type){
+      return true;//a cheat that we might regret
+    }
+    return false;
   }
 
   /**

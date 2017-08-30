@@ -217,6 +217,14 @@ public class GenericDB {
       }
     }
     connectOk = conn != null;
+    if (connectOk) {
+      try (Statement statement = makeStatement()) {//todo:1 abstract to a list of statements to execute upon making a connection.
+        statement.execute("SET GLOBAL max_allowed_packet=1024*1024*50");
+        statement.execute("SET SESSION group_concat_max_len = 1024*1024*50");
+      } catch (SQLException e) {
+        dbg.Caught(e);
+      }
+    }
     return conn;
   }
 

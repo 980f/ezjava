@@ -36,16 +36,7 @@ public class CsvTransport {
 
     for (int i = fieldCache.length; i-- > 0; ) {
       final Field field = fieldCache[i];
-      if (ignorable(field)) {
-        filter[i] = false;
-        continue;
-      }
-      if (ReflectX.isNative(field)) {//note: String is not native
-        filter[i] = true;
-        continue;
-      }
-      //else caller criterion
-      filter[i] = transportable.test(field.getType());
+      filter[i] = !ignorable(field) && (field.isEnumConstant() || field.getType().isPrimitive() || transportable.test(field.getType()));
     }
   }
 
@@ -109,15 +100,34 @@ public class CsvTransport {
       this(writer, "\t", ~0);
     }
 
+    /**
+     * overkill implementation of conditionally prefixing items with a comma, and remembering to output the end of line.
+     * Intended use is with try-with-resources
+     */
+    private class Commator implements AutoCloseable {
+
+      boolean startOfLine = true;
+
+      public void put() throws IOException {
+        if (!startOfLine) {
+          writer.write(comma);
+        } else {
+          startOfLine = false;
+        }
+      }
+
+      @Override
+      public void close() throws IOException {
+        writer.newLine();
+      }
+    }
+
     public void headerLine() {
-      try {
+      try (Commator c = new Commator()) {
         for (int i = 0; i < fieldCache.length; ++i) {
           if (filter[i]) {
-            String column = fieldCache[i].getName();
-            if (i != 0) {
-              writer.write(comma);
-            }
-            writer.write(column);
+            c.put();
+            writer.write(fieldCache[i].getName());
           }
         }
       } catch (IOException e) {
@@ -138,22 +148,21 @@ public class CsvTransport {
             headerLine();
           }
         }
-        for (int i = 0; i < fieldCache.length; ++i) {
-          if (filter[i]) {
-            try {
-              Object obj = fieldCache[i].get(record);
-              if (obj != null) {
-                if (i != 0) {
-                  writer.write(comma);
+        try (Commator c = new Commator()) {
+          for (int i = 0; i < fieldCache.length; ++i) {
+            if (filter[i]) {
+              try {
+                c.put();
+                Object obj = fieldCache[i].get(record);
+                if (obj != null) {//let's just output nothing between the commas instead of the text 'null'
+                  writer.write(String.valueOf(obj));
                 }
-                writer.write(String.valueOf(obj));
+              } catch (IllegalAccessException e) {
+                filter[i] = false;//note and continue, should fix filter function used in constructor
               }
-            } catch (IllegalAccessException e) {
-              filter[i] = false;//note and continue, should fix filter function used in constructor
             }
           }
         }
-        writer.newLine();
         return true;
       } catch (IOException e) {
         dbg.Caught(e);
@@ -162,7 +171,7 @@ public class CsvTransport {
     }
 
     public void close() {
-      IOX.Close(writer);
+      IOX.Close(writer); //includes a flush.
     }
   }
 }

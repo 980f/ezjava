@@ -521,6 +521,18 @@ public class Storable {
     image = java.lang.Boolean.toString(bit);
   }
 
+  public void setValue(Object obj) {
+    if (obj instanceof String) {
+      setValue((String) obj);
+    } else if (obj instanceof Integer) {
+      setValue(((Integer) obj).intValue());
+    } else if (obj instanceof Double) {
+      setValue(((Double) obj).intValue());
+    } else {
+      dbg.FATAL("implement setValue {0}", obj.getClass().getName());
+    }
+  }
+
   protected boolean parseBool(String image) {
     if (image.length() == 1) {
       char single = image.charAt(0);
@@ -799,7 +811,10 @@ public class Storable {
                 dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
               } else if (ReflectX.isImplementorOf(fclaz, Map.class)) {
                 //then set children to map entries
-
+                Map mobject = (Map) nestedObject;
+                mobject.forEach((k, v) -> {
+                  child(String.valueOf(k)).setValue(v);
+                });
               } else {
                 int subchanges = child.apply(nestedObject, r);
                 if (subchanges >= 0) {
