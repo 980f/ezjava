@@ -813,7 +813,7 @@ public class Storable {
                 //then set children to map entries
                 Map mobject = (Map) nestedObject;
                 mobject.forEach((k, v) -> {
-                  child(String.valueOf(k)).setValue(v);
+                  child.child(String.valueOf(k)).setValue(v);
                 });
               } else {
                 int subchanges = child.apply(nestedObject, r);
