@@ -527,7 +527,11 @@ public class Storable {
     } else if (obj instanceof Integer) {
       setValue(((Integer) obj).intValue());
     } else if (obj instanceof Double) {
-      setValue(((Double) obj).intValue());
+      setValue(((Double) obj).doubleValue());
+    } else if (obj instanceof Boolean) {
+      setValue(((Boolean) obj).booleanValue());
+    } else if (obj instanceof Map) {
+      setValue((Map) obj);
     } else {
       dbg.FATAL("implement setValue {0}", obj.getClass().getName());
     }
@@ -622,6 +626,16 @@ public class Storable {
       enumOnSetNumber();
     }
 //    image= unchanged, can't afford to render to text on every change
+  }
+
+
+  /** this will only work well when the Map's keys have a nice toString, and the values are object wrappers for the known types herein. */
+  @SuppressWarnings("unchecked")
+  public void setValue(Map mobject) {
+    setType(Type.Wad);
+    mobject.forEach((k, v) -> {
+      child(String.valueOf(k)).setValue(v);
+    });
   }
 
   public void setEnumerizer(Class<? extends Enum> enumer) {
@@ -811,10 +825,7 @@ public class Storable {
                 dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
               } else if (ReflectX.isImplementorOf(fclaz, Map.class)) {
                 //then set children to map entries
-                Map mobject = (Map) nestedObject;
-                mobject.forEach((k, v) -> {
-                  child.child(String.valueOf(k)).setValue(v);
-                });
+                child.setValue((Map) nestedObject);
               } else {
                 int subchanges = child.apply(nestedObject, r);
                 if (subchanges >= 0) {
@@ -834,6 +845,7 @@ public class Storable {
     }
     return changes;
   }
+
 
   /**
    * find or create child
