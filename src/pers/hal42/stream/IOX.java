@@ -1,17 +1,38 @@
 package pers.hal42.stream;
 
 import pers.hal42.lang.DateX;
+import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
 import pers.hal42.timer.UTC;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.nio.file.*;
 
 /** utilties related to files and stream.  Look in java.nio for newer equivalents */
 public class IOX {
   private IOX() {
     // don't construct me; I am for static functions
+  }
+
+  public static final ErrorLogStream dbg = ErrorLogStream.getForClass(IOX.class);
+
+  public static boolean makeBackup(String filename) {
+    try {
+      if (FileExists(filename)) {
+        final FileSystem system = FileSystems.getDefault();
+        Path path = system.getPath(filename);
+        Path bakdir = system.getPath(filename + ".bak");
+        createDir(bakdir);
+        Path bakfile=system.getPath(bakdir.toString(),Long.toString(System.currentTimeMillis()));
+        Files.move(path, bakfile);
+        return true;
+      } else {
+        return true;//no backup need if file does not exist.
+      }
+    } catch (IOException e) {
+      dbg.Caught(e);
+      return false;
+    }
   }
 
   /** @returns bytes from file, on any error null */
@@ -23,7 +44,7 @@ public class IOX {
     }
   }
 
-  public static Exception writeBlob(Path path,byte[]content){
+  public static Exception writeBlob(Path path, byte[] content) {
     IOX.createDir(path.getParent());
     try {
       Files.write(path, content);
@@ -33,8 +54,18 @@ public class IOX {
     }
   }
 
-  private static boolean createDir(Path parent) {
-    return createDir(parent.toString());//todo:1 find Path implementation for this.
+  public static boolean createDir(Path parent) {
+    try {
+      Files.createDirectories(parent);
+      return true;
+    }
+    catch(FileAlreadyExistsException feh){
+      return true;//JFC why do so many people think this is exceptional?
+    }
+    catch (IOException e) {
+      dbg.Caught(e);
+      return false;
+    }
   }
 
   public static File[] listFiles(File dir) {
@@ -124,6 +155,7 @@ public class IOX {
       return null;
     }
   }
+
   /**
    * close, stifle all errors. Flush first if object supports flushing
    *
