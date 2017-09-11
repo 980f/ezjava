@@ -30,6 +30,48 @@ public class ReflectX {
     String legacy() default "";
   }
 
+  /** if Object o has a String field named 'name' then set that field's value to the name of o in parent*/
+  public static void eponomize(Object o, Object parent) {
+    Class claz=o.getClass();
+    final Field[] fields = claz.getFields();
+    for (Field field : fields) {
+      if (field.getName().equals("name")) {  //object has a 'name' field
+        Field wrapper=fieldForChild(o,parent);
+        if(wrapper!=null){
+          try {
+            field.set(o,wrapper.getName());
+          } catch (IllegalAccessException e) {
+//            dbg.Caught(e);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  public static Field fieldForChild(Object child, Object parent){
+    final Field[] fields = parent.getClass().getFields();
+    for (final Field field : fields) {
+      try {
+        final Object o = field.get(parent);
+        if(o ==child){
+          return field;
+        }
+      } catch (IllegalAccessException e) {
+//        dbg.Caught(e);
+      }
+    }
+    return null;
+  }
+
+  public static String nameOfChild(Object child, Object parent){
+    Field field=fieldForChild(child,parent);
+    if(field!=null){
+      return field.getName();
+    }
+    return null;
+  }
+
   /**
    * iterate deeply through a class hierarchy.
    * Annoyingly java makes us choose between getting public hierarchy or only local for all member classes.

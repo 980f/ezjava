@@ -30,7 +30,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
     while (pointer < fields.length) {
       Field f = fields[pointer];
       if (belongs(f)) {
-        return true;
+        return true; //todo:1 this returns true even when the field is not accessible, in which case next() returns null
       }
       ++pointer;
     }
