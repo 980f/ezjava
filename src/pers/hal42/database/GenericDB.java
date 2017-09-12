@@ -228,19 +228,20 @@ public class GenericDB {
     return conn;
   }
 
+  /** @returns a usable statement else throws an exception */
   public Statement makeStatement() throws SQLException {
     if (haveConnection()) {
       try {
         return conn.createStatement();
       } catch (SQLException e1) {
         if (e1 instanceof MySQLNonTransientConnectionException) {
-          MySQLNonTransientConnectionException throwables = (MySQLNonTransientConnectionException) e1;
+          MySQLNonTransientConnectionException throwables = (MySQLNonTransientConnectionException) e1; //expose details for the debugger
           connectOk = false;
         }
         throw e1;
       }
     } else {
-      return null;
+      throw new SQLException("No connection");
     }
   }
 

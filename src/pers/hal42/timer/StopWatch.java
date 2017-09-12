@@ -27,6 +27,7 @@ public class StopWatch {
     }
   }
 
+  /** create a running timer. */
   public StopWatch() {
     this(true);
   }

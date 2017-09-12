@@ -316,16 +316,12 @@ public class DBMacros extends GenericDB {
    */
   public TextList getTextListFromQuery(String qs, int field) {
     try (Finally pop = dbg.Push("getTextListFromQuery"); Statement stmt = makeStatement()) {
-      if (stmt != null) {
-        ResultSet rs = stmt.executeQuery(qs);
-        TextList tl = new TextList(50, 50);
-        while (next(rs)) {
-          tl.add(getStringFromRS(field, rs));
-        }
-        return tl;
-      } else {
-        return null;
+      ResultSet rs = stmt.executeQuery(qs);
+      TextList tl = new TextList(50, 50);
+      while (next(rs)) {
+        tl.add(getStringFromRS(field, rs));
       }
+      return tl;
     } catch (SQLException e) {
       dbg.Caught(e);
       return null;
@@ -501,10 +497,14 @@ public class DBMacros extends GenericDB {
     return StringX.parseDouble(getStringFromRS(column, myrs));
   }
 
+
+  /** @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure */
   public Statement query(QueryString queryStr, boolean throwException) throws Exception {
     return query(queryStr, throwException, true /*canReattempt*/);
   }
 
+
+  /** @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure. @param canReattempt is whether to try to deal with exceptions not related to the query string */
   private Statement query(QueryString queryStr, boolean throwException, boolean canReattempt) throws SQLException {
 //    checkDBthreadSelect();
     Statement stmt = null;
@@ -518,12 +518,12 @@ public class DBMacros extends GenericDB {
       if (mycon != null) {
         dbg.VERBOSE("Calling Connection.createStatement() ...");
         // +++ deal with other possible parameters to this statement ...
-        stmt = mycon.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY /* +++ do we really want to say read only ? */);
+        stmt = mycon.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
         dbg.VERBOSE("Done calling Connection.createStatement().");
         String qs = String.valueOf(queryStr);
         dbg.VERBOSE("Calling Statement.executeQuery() ...");
 //        preLogQuery(DBFunctionType.QUERY, queryStr, true, qn);
-        if (stmt.executeQuery(qs) == null) { // +++ DOES THIS QUALIFY FOR GETTING A NEW CONNECTION?
+        if (stmt.executeQuery(qs) == null) {
           dbg.ERROR("queryStmt() generates a null statement!");
         }
         dbg.VERBOSE("Done calling Statement.executeQuery().");
@@ -585,6 +585,7 @@ public class DBMacros extends GenericDB {
     return true;
   }
 
+  /** @returns an executed statement for the sql in @param queryStr, null on failure */
   public Statement query(QueryString queryStr) {
     try {
       return query(queryStr, false);
@@ -694,11 +695,9 @@ public class DBMacros extends GenericDB {
         rs = getDatabaseMetadata().getTables(ti.catalog(), ti.schema(), ti.name(), types);
       } else {//mysql stuff, can't get a handle on what they want in the above query but they don't like it.
         Statement stmt = makeStatement();
-        if (stmt != null) {
-          String query = MessageFormat.format("SELECT * FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name WHERE t.table_schema = ''{0}'' and t.table_name LIKE ''{1}'';", ti.schema(), ti.name());
-          if (stmt.execute(query)) {
-            rs = stmt.getResultSet();
-          }
+        String query = MessageFormat.format("SELECT * FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name WHERE t.table_schema = ''{0}'' and t.table_name LIKE ''{1}'';", ti.schema(), ti.name());
+        if (stmt.execute(query)) {
+          rs = stmt.getResultSet();
         }
       }
       if (rs != null) {
@@ -1477,11 +1476,15 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  public static int doBatch(PreparedStatement pst) throws SQLException {
+  /** @returns sum of non-error-code int returns from executing a batch statement */
+  public static int doBatch(Statement pst) throws SQLException {
     int[] qty = pst.executeBatch();
     int batchsum = 0;
     for (int one : qty) {
-      batchsum += one;
+      if (one > 0) {
+        batchsum += one;
+      }
+      //else negatives are error codes, we could sum them up separately ...
     }
     return batchsum;
   }

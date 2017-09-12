@@ -13,26 +13,31 @@ public class FieldIterator<Type> implements Iterator<Type> {
   private final Class type;//must keep this ourselves as java generics are compile time.
   private final Object parent;
   private final Field[] fields;
-  private int pointer = 0;
+  /** cache fied test, for when we rewind frequently */
+  private final boolean[] isMember;
+  private int pointer;
 
   public FieldIterator(Class type, Object parent) {
     this.type = type;
     this.parent = parent;
     fields = parent.getClass().getFields();
+    isMember = new boolean[fields.length];
+    for (pointer = fields.length; pointer-- > 0; ) {
+      isMember[pointer] = belongs(fields[pointer]);
+    }
   }
 
+  /** while only used in one place this is hard enough to read to be worth its own method*/
   private boolean belongs(Field f) {
     return type == null || ReflectX.isImplementorOf(f.getType(), type);
   }
 
   @Override
   public boolean hasNext() {
-    while (pointer < fields.length) {
-      Field f = fields[pointer];
-      if (belongs(f)) {
-        return true; //todo:1 this returns true even when the field is not accessible, in which case next() returns null
+    for (; pointer < fields.length; ++pointer) {
+      if (isMember[pointer]) {
+        return true;
       }
-      ++pointer;
     }
     return false;
   }
@@ -48,20 +53,25 @@ public class FieldIterator<Type> implements Iterator<Type> {
     }
   }
 
+  public void rewind(){
+    pointer=0;
+  }
+
   /**
-   * @returns first field that meets @param filter, null if none.
+   * @returns some field that meets @param filter, null if none.
    */
   public Type find(Predicate<Type> filter) {
-    for (Field f : fields) {
-      if (belongs(f)) {
+    for (int fi = fields.length; fi-- > 0; ) {
+      if (isMember[fi]) {
         try {
           //noinspection unchecked
-          Type probate = (Type) f.get(parent);
+          Type probate = (Type) fields[fi].get(parent);
           if (filter.test(probate)) {
             return probate;
           }
         } catch (IllegalAccessException e) {
-          return null;
+          //noinspection UnnecessaryContinue
+          continue;//perhaps some other field will both match and be accessible.
         }
       }
     }
@@ -72,14 +82,15 @@ public class FieldIterator<Type> implements Iterator<Type> {
    * random access by name, even works if hasNext() returns false.
    */
   public Type find(String named) {
-    for (Field f : fields) {
-      if (f.getName().equals(named)) {//not using generic search as testing name is quite a bit faster.
-        if (belongs(f)) {
+    for (int fi = fields.length; fi-- > 0; ) {
+      if (isMember[fi]) {
+        Field f = fields[fi];
+        if (fields[fi].getName().equals(named)) {//not using generic search as testing name is quite a bit faster.
           try {
             //noinspection unchecked
             return (Type) f.get(parent);
           } catch (IllegalAccessException e) {
-            return null;
+            return null; //no point in looking further, names are unique.
           }
         }
       }

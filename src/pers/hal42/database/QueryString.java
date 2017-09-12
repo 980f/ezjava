@@ -186,7 +186,7 @@ public class QueryString {
     indent();
     cat(JOIN);
     cat(tablename);
-    alias(aliaser.nth());
+    alias(aliaser.peek());
     cat(ON);
     guts.append(aliaser.first());
     guts.append('.');
