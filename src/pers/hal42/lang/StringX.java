@@ -6,13 +6,40 @@ import static pers.hal42.lang.Index.BadIndex;
 
 /** things the java standard library left our of string operations, especially tolerance for null arguments. */
 public class StringX {
-  //todo:1 replace replacers with cppext's logic.
+  //todo:1 replace replacers with cppext's logic (a single string with odd/even pairings of escape with key).
   protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
   private static final String SINGLEQUOTE = "'";
   private static final char SINGLEQUOTECHAR = '\'';
 
   private StringX() {
     //#namespace
+  }
+
+  /** build a string which is the image of the @param numImage multiplied by the given power of 10 */
+  public StringBuilder decimalScale(String numImage, int powerof10) {
+    StringBuilder worker = new StringBuilder(numImage);
+    int dp = numImage.indexOf('.');
+    int end = numImage.length();
+    if(end<1){
+      return worker;
+    }
+    final char firstChar = numImage.charAt(0);
+    if (end == 1 && firstChar == '0') {
+      return worker;//0 in is 0 out
+    }
+    boolean signed= firstChar == '-' || firstChar=='+';
+    if (powerof10 > 0) {//move dp to the right or add zeroes
+      if (dp >= 0) {
+        throw new IllegalArgumentException("not yet implemented");
+      } else {
+        while (powerof10-- > 0) {
+          worker.append('0');
+        }
+      }
+    } else if(powerof10<0){ //move dp to left, might have to add 0.
+      throw new IllegalArgumentException("not yet implemented");
+    }
+    return worker;
   }
 
   public static boolean firstCharIs(String arg, char c) {
@@ -542,7 +569,7 @@ public class StringX {
     return parseInt(s, 10);
   }
 
-  public static boolean isInteger(String s){
+  public static boolean isInteger(String s) {
     try {
       //noinspection ResultOfMethodCallIgnored
       Integer.parseInt(s);
@@ -552,7 +579,7 @@ public class StringX {
     }
   }
 
-  public static boolean isLong(String s){
+  public static boolean isLong(String s) {
     try {
       //noinspection ResultOfMethodCallIgnored
       Long.parseLong(s);
@@ -562,7 +589,7 @@ public class StringX {
     }
   }
 
-  public static boolean isDouble(String s){
+  public static boolean isDouble(String s) {
     try {
       //noinspection ResultOfMethodCallIgnored
       Double.parseDouble(s);
