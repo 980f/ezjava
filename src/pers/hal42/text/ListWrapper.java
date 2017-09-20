@@ -20,13 +20,14 @@ public class ListWrapper implements AutoCloseable {
   }
 
   public ListWrapper(StringBuilder sb, String withOpenInit) {
-    this.s = sb;
+    this(sb);
     open(withOpenInit);
+    //maydo: reverse scan withOpenInit and autoset a matching end brace.
   }
 
   public ListWrapper(StringBuilder sb, String opener, String closer) {
-    this.s = sb;
-    wrapWith(opener, closer);
+    this(sb,opener);
+    this.closer =  closer;
   }
 
   public ListWrapper wrapWith(String opener, String closer) {
@@ -55,12 +56,15 @@ public class ListWrapper implements AutoCloseable {
   }
 
   /**
-   * append @param withCloseInIt after deleting the leading comma
-   * this will work ok with Autoclosing
+   * append @param withCloseInIt after deleting the leading comma.
+   * use this when you discover that the closer you recorded when you created this guy is part of something you later discover should end the list.
+   * this will work ok with Autoclosing as it disables the prerecorded closer and deals with that.
    */
   public void closeWith(String withCloseInIt) {
     if (excessCommaAt >= 0) {
-      s.deleteCharAt(excessCommaAt);
+      if (counter > 0) {//else we didn't actually stick a comma where we said we did.
+        s.deleteCharAt(excessCommaAt);
+      }
       excessCommaAt = -1;
       closer = null;
     }
@@ -75,9 +79,11 @@ public class ListWrapper implements AutoCloseable {
   @Override
   public void close() {
     if (excessCommaAt >= 0) {
-      s.deleteCharAt(excessCommaAt);
+      if (counter > 0) {//else we didn't actually stick a comma where we said we did.
+        s.deleteCharAt(excessCommaAt);
+      }
       excessCommaAt = ~0;
-      s.append(closer != null ? closer : ")");
+      s.append(closer != null ? closer : ")"); //set closer to an empty string, not null, to get an 'invisible' list termination.
       closer = null;
     }
   }
