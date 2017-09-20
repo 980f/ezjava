@@ -236,7 +236,7 @@ public class JsonStorable extends PushedJSONParser {
         content = Files.readAllBytes(path);
         cached = content.length > 0;
       } catch (IOException e) {
-        dbg.ERROR("reading json as bytes threw {0}", e.getMessage());
+        dbg.ERROR("reading json as bytes threw {0}", e);
       }
     }
     return cached;

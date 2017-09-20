@@ -7,6 +7,7 @@ import pers.hal42.text.AsciiIterator;
 import pers.hal42.text.ListWrapper;
 import pers.hal42.text.TextList;
 
+import static java.text.MessageFormat.format;
 import static pers.hal42.database.QueryString.SqlKeyword.*;
 
 /**
@@ -366,6 +367,14 @@ public class QueryString {
 
         break;
       }
+    }
+    return this;
+  }
+
+  /** @returns this after appending set value=? [,value=?] for each item in @param colnames */
+  public QueryString prepareToSet(Iterable<String> colnames) {
+    try (QueryString.Lister lister = startSet()) {
+      colnames.forEach(lister::prepareSet);
     }
     return this;
   }
@@ -807,17 +816,21 @@ public class QueryString {
 
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
-    Lister(String prefix) {
+    public Lister(String prefix) {
       this(prefix, ", ");
     }
 
-    Lister(String prefix, String closer) {
+    public Lister(String prefix, String closer) {
       super(guts, prefix, closer);
     }
 
-    Lister(String prefix, String closer, String comma) {
+    public Lister(String prefix, String closer, String comma) {
       super(guts, prefix, closer);
       super.comma = comma;
+    }
+
+    public void prepareSet(String columnname){
+      append(format("{0}=?", columnname));
     }
   }
 

@@ -1,5 +1,7 @@
 package pers.hal42.text;
 
+import pers.hal42.lang.StringX;
+
 /**
  * Created by Andy on 6/27/2017.
  * <p>
@@ -38,7 +40,9 @@ public class ListWrapper implements AutoCloseable {
    * This method can be called in a try-with-resources since it @returns this.
    */
   public ListWrapper open(String withOpenInit) {
-    s.append(withOpenInit);
+    if (StringX.NonTrivial(withOpenInit)) {
+      s.append(withOpenInit);
+    }
     excessCommaAt = s.length();
     return this;
   }
@@ -60,7 +64,9 @@ public class ListWrapper implements AutoCloseable {
       excessCommaAt = -1;
       closer = null;
     }
-    s.append(withCloseInIt);
+    if (StringX.NonTrivial(withCloseInIt)) {
+      s.append(withCloseInIt);
+    }
   }
 
   /**
