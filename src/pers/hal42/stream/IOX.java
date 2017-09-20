@@ -163,10 +163,12 @@ public class IOX {
    */
   public static <T extends AutoCloseable> boolean Close(T closeable) {
     try {
-      if (closeable instanceof Flushable) {
-        ((Flushable) closeable).flush();
+      if(closeable!=null) {
+        if (closeable instanceof Flushable) {
+          ((Flushable) closeable).flush();
+        }
+        closeable.close();
       }
-      closeable.close();
       return true;
     } catch (Exception e) {
       return false;
