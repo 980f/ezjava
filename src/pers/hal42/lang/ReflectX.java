@@ -336,10 +336,7 @@ public class ReflectX {
     if(byte.class==type){
       return true;
     }
-    if(String.class==type){
-      return true;//a cheat that we might regret
-    }
-    return false;
+    return String.class == type;
   }
 
   /**

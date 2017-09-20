@@ -35,7 +35,7 @@ public class ByteArrayFIFO extends ObjectFifo {
     return putSplit(bfifo.getInputStream(), maxlength);
   }
 
-  // +++ get rid of this function and instead use full byte[].
+
   private synchronized int putSplit(InputStream is, int maxlength) {
     // --- potential for infinite loop
     while (true) {
@@ -56,8 +56,10 @@ public class ByteArrayFIFO extends ObjectFifo {
         bytes = new byte[maxlength];
       }
       try {
-        is.read(bytes);
-        put(bytes);
+        if (is.read(bytes) > 0) {
+          //noinspection unchecked
+          put(bytes);
+        }
       } catch (Exception e) {
         // +++ bitch
       }

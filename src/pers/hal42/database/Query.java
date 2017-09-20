@@ -243,7 +243,7 @@ public abstract class Query {
       }
     } catch (Exception e) {
       dbg.Caught(e);
-      return null;
+      return new Field[0];
     }
   }
 }

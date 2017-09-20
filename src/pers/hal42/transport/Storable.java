@@ -76,6 +76,10 @@ public class Storable {
 
   private final char splitchar = '/';
 
+  private void accept(Object k, Object v) {
+    child(String.valueOf(k)).setValue(v);
+  }
+
   /**
    * used to create objects from Storable's
    */
@@ -633,9 +637,7 @@ public class Storable {
   @SuppressWarnings("unchecked")
   public void setValue(Map mobject) {
     setType(Type.Wad);
-    mobject.forEach((k, v) -> {
-      child(String.valueOf(k)).setValue(v);
-    });
+    mobject.forEach(this::accept);
   }
 
   public void setEnumerizer(Class<? extends Enum> enumer) {

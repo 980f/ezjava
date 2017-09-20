@@ -31,8 +31,7 @@ public class FileTextSnooper {
     }
     if (file != null) {
       StringBuffer sb = new StringBuffer();
-      boolean cont = true;
-      while (cont) {
+      while (true) {
         // read from the file, one character at a time
         int i = -1;
         try {
@@ -40,14 +39,11 @@ public class FileTextSnooper {
             break;
           }
           i = file.read();
-        } catch (Exception e) {
-          dbg.Caught(e);
-        } finally {
           if (i == -1) {
-            //cont = false;
-            //continue;
             break;
           }
+        } catch (Exception e) {
+          dbg.Caught(e);
         }
         byte b = (byte) i;
         // check to see if it is TEXT (no control characters except CRLF & TAB (printable)).
