@@ -17,7 +17,7 @@ public class MathX {
     if (value == other) {
       return true;//expeditious and a zero after this point is a denorm
     }
-    if (value == 0) {
+    if (value == 0.0) {
       return false;
     }
     double diff = value - other;

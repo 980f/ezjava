@@ -19,6 +19,20 @@ public class ObjectX {
     }
   }
 
+  /** try to guess a value for a scalar object. @returns NaN on failures. */
+  public static double numericalValue(Object obj){
+    if(obj instanceof Number){
+      Number numb=(Number)obj;
+      return numb.doubleValue();
+    } else {
+      try {
+        return Double.parseDouble(String.valueOf(obj));
+      } catch (Exception any){
+        return Double.NaN;
+      }
+    }
+  }
+
   /**
    * @return true if @param arf is an instanceof @param filter. will get fancier over time.
    * if filter is null then returns true if object exists.
