@@ -226,12 +226,12 @@ public class TextList {
 
   /**
    * assure that this string is in list, by content not object match!
-   *
+   * nulls are treated as being present.
    * @return true if string was already present
    * String.equals
    */
   public boolean assurePresent(String s) {
-    if (this.contains(s)) {
+    if (s == null || contains(s)) {
       return true;
     }
     Add(s);

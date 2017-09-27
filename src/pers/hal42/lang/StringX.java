@@ -666,4 +666,25 @@ public class StringX {
   public static int parseInt(String s, int radix) {
     return (int) parseLong(s, radix);
   }
+
+  /** with imputeDashes converts names into acceptable enum token */
+  public static String removeDashes(String dashed) {
+    //todo:1 StringBuilder implemenation
+    String purified = replace(dashed, "-", "_");
+    if (!Character.isJavaIdentifierStart(purified.charAt(0))) {
+      return "_" + purified;
+    } else {
+      return purified;
+    }
+  }
+
+
+  /** with removeDashes converts names into acceptable enum token */
+  public static String imputeDashes(String purified) {
+    //todo:1 StringBuilder implemenation
+    if (purified.charAt(0) == '_') {
+      purified = purified.substring(1);
+    }
+    return replace(purified, "_", "-");
+  }
 }

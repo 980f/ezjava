@@ -36,4 +36,12 @@ public class NamedValue {
   public void split(String pair, char cutter) {
     splitAt(StringX.cutPoint(pair, cutter), pair);
   }
+
+  public int getValue(int def) {
+    return StringX.NonTrivial(value) ? StringX.parseInt(value) : def;
+  }
+
+  public double getReal(double def) {
+    return StringX.parseDouble(value, def);
+  }
 }

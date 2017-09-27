@@ -23,7 +23,7 @@ public class QueryString {
     FROM,
     UPDATE,
     SET,
-    INSERTINTO,
+    INSERT,
     ON,
     IN,
 
@@ -710,6 +710,24 @@ public class QueryString {
     return new Lister("\nSET ", "");
   }
 
+  /**
+   * mysql quirk: while inserting fields into an insert statement record the names of non-pk fields in a TextList.
+   * pass that TextList to this method and those fields will be updated with what otherwise was inserted
+   *
+   * @returns this
+   */
+  public QueryString OnDupUpdate(TextList nonPks) {
+    try (ListWrapper lister = new Lister(" ON DUPLICATE KEY UPDATE ", "")) {//strange but true, a list with invisible parens
+      nonPks.iterator().forEachRemaining(col -> lister.append(format("{0}=VALUES({0})", col)));
+    }
+    return this;
+  }
+
+  public static QueryString Insert() {
+    QueryString noob = new QueryString();
+    return noob.cat(INSERT);
+  }
+
   public static QueryString SelectAll() {
     QueryString noob = new QueryString();
     return noob.cat(SELECT).all();
@@ -755,6 +773,7 @@ public class QueryString {
     return Quoted(String.valueOf(ell));
   }
 
+  /** @returns new {@link QueryString} starting with Select */
   public static QueryString Select() {
     return new QueryString(SELECT);
   }
@@ -766,23 +785,31 @@ public class QueryString {
 //    return new QueryString(fullquery);
 //  }
 
+
+  /** @returns new {@link QueryString} starting with "Select " then @param first */
   public static QueryString Select(QueryString first) {
     return Select().cat(first);
   }
 
+
+  /** @returns new {@link QueryString} starting with "Select fullColumnName" */
   public static QueryString Select(ColumnProfile cp) {
     return Select().cat(cp.fullName());
   }
 
+
+  /** @returns new {@link QueryString} starting with "Select distinct(columname)" */
   public static QueryString SelectDistinct(ColumnProfile cp) {
     return Select().cat(DISTINCT).cat(cp.fullName());
   }
 
+
+  /** @returns new empty {@link QueryString} */
   public static QueryString Clause() {
     return new QueryString();
   }
 
-//   /** @returns wehter query modifies the database, records or schema*/
+//   /** @returns wheter query modifies the database, records or schema*/
 //  public static boolean isReadOnly(String qss) {
 //    if (qss != null) {
 //      qss = qss.trim(); // get rid of leading spaces
@@ -816,19 +843,23 @@ public class QueryString {
 
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
+    /** begin a list with a comma as the closer */
     public Lister(String prefix) {
       this(prefix, ", ");
     }
 
+    /** begin a list */
     public Lister(String prefix, String closer) {
       super(guts, prefix, closer);
     }
 
+    /** begin a list with strange separator */
     public Lister(String prefix, String closer, String comma) {
       super(guts, prefix, closer);
       super.comma = comma;
     }
 
+    /** add a preparedStatement clause: "name=?"*/
     public void prepareSet(String columnname){
       append(format("{0}=?", columnname));
     }
