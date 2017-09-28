@@ -18,6 +18,7 @@ public class TableInfo implements Comparable<TableInfo> {
   //don't want to depend upon db connection features for these:
   public static String SharedCatalog;
   public static String SharedSchema;
+
   public TableInfo(String catalog, String schema, String name, String type, String remark) {
     this.catalog = StringX.TrivialDefault(catalog, SharedCatalog);
     this.schema = StringX.TrivialDefault(schema, SharedSchema);
@@ -26,10 +27,12 @@ public class TableInfo implements Comparable<TableInfo> {
     this.remark = StringX.TrivialDefault(remark, "");
   }
 
+  /** know name and schema */
   public TableInfo(String schema, String name) {
     this(null, schema, name, null, null);
   }
 
+  /** just know table name */
   public TableInfo(String name) {
     this(null, null, name, null, null);
   }
@@ -54,6 +57,7 @@ public class TableInfo implements Comparable<TableInfo> {
     return name;
   }
 
+  /** @returns schema.name, unchecked for nulls */
   public String fullName() {
     return format("{0}.{1}", schema, name);
   }

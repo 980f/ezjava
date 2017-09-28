@@ -1,5 +1,6 @@
 package pers.hal42.database;
 
+import com.fedfis.db.ColumnAttributes;
 import pers.hal42.data.ObjectRange;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
@@ -549,6 +550,14 @@ public class QueryString {
     return this;
   }
 
+  /** append "field.name=?" */
+  public QueryString prepared(ColumnAttributes field) {
+    word(field.name);
+    cat(EQUALS);
+    guts.append('?');
+    return this;
+  }
+
   public QueryString nvPair(String field, int value) {
     return nvPair(field, (long) value);
   }
@@ -723,25 +732,49 @@ public class QueryString {
     return this;
   }
 
+  public QueryString from(TableInfo ti) {
+    return cat(FROM).cat(ti.fullName());
+  }
+
+  /** where clause for prepared statement */
+  public QueryString whereColumns(ColumnAttributes... cols) {
+    for (ColumnAttributes col : cols) {
+      where().prepared(col);
+    }
+    return this;
+  }
+
+  public QueryString prepareToSet(ColumnAttributes... cols) {
+    try (QueryString.Lister lister = startSet()) {
+      for (ColumnAttributes col : cols) {
+        lister.prepareSet(col.name);
+      }
+    }
+    return this;
+  }
+
+  /** create new query starting "insert  table sch.tab" */
+  public static QueryString Insert(TableInfo ti) {
+    return Insert().cat(ti.fullName());
+  }
+
+  /** create new query starting "insert " */
   public static QueryString Insert() {
     QueryString noob = new QueryString();
     return noob.cat(INSERT);
   }
 
+  /** create new query starting "select *" */
   public static QueryString SelectAll() {
     QueryString noob = new QueryString();
     return noob.cat(SELECT).all();
   }
-//
-//  public final boolean isReadOnly() {
-//    return isReadOnly(toString());
-//  }
 
-  /*
-       Rules:
-       1) If it contains any single quotes, escape them with another single quote
-       2) Wrap it in single quotes,
-    */
+  /**
+   * Rules:
+   * 1) If it contains any single quotes, escape them with another single quote
+   * 2) Wrap it in single quotes
+   */
   public static String Quoted(String s) {
     return StringX.singleQuoteEscape(s);
   }
@@ -763,8 +796,6 @@ public class QueryString {
    * And this one:
    * 'this '' is a single quote'
    */
-
-
   public static String Quoted(char c) {
     return Quoted(String.valueOf(c));
   }
@@ -792,11 +823,15 @@ public class QueryString {
   }
 
 
-  /** @returns new {@link QueryString} starting with "Select fullColumnName" */
+  /** @returns new {@link QueryString} starting with "Select table.name " */
   public static QueryString Select(ColumnProfile cp) {
     return Select().cat(cp.fullName());
   }
 
+  /** @returns new {@link QueryString} starting with "Select justnameNoTable." */
+  public static QueryString Select(ColumnAttributes col) {
+    return Select().cat(col.name);
+  }
 
   /** @returns new {@link QueryString} starting with "Select distinct(columname)" */
   public static QueryString SelectDistinct(ColumnProfile cp) {
@@ -841,6 +876,14 @@ public class QueryString {
 //    }
 //  }
 
+  public static QueryString WhereNot(ColumnProfile column) {
+    return QueryString.Clause().where().isFalse(column);
+  }
+
+  public static QueryString WhereIsTrue(ColumnProfile column) {
+    return QueryString.Clause().where().isTrue(column);
+  }
+
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
     /** begin a list with a comma as the closer */
@@ -859,17 +902,9 @@ public class QueryString {
       super.comma = comma;
     }
 
-    /** add a preparedStatement clause: "name=?"*/
-    public void prepareSet(String columnname){
+    /** add a preparedStatement clause: "name=?" */
+    public void prepareSet(String columnname) {
       append(format("{0}=?", columnname));
     }
-  }
-
-  public static QueryString whereNot(ColumnProfile column) {
-    return QueryString.Clause().where().isFalse(column);
-  }
-
-  public static QueryString whereIsTrue(ColumnProfile column) {
-    return QueryString.Clause().where().isTrue(column);
   }
 }
