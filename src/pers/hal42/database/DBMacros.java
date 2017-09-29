@@ -1365,6 +1365,20 @@ public class DBMacros extends GenericDB {
     }
   }
 
+  /** insert value[s] and run a query that of a nature that never generates a resultset. @returns whether operation executed, any results or updatecount are lost. */
+  public boolean doPreparedDML(String query, Consumer<PreparedStatement> preparer) {
+    try (PreparedStatement pst = makePreparedStatement(query)) {
+      if (preparer != null) {
+        preparer.accept(pst);
+      }
+      pst.execute();
+      return true;
+    } catch (SQLException e) {
+      dbg.Caught(e, query);
+      return false;
+    }
+  }
+
   public ResultSet getColumns(TableInfo ti) throws SQLException {
     //noinspection ConstantConditions
     return getDatabaseMetadata().getColumns(null, ti.schema(), ti.name(), null);

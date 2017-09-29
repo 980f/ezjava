@@ -20,7 +20,11 @@ public class PreparedStatementInserter {
 
   /** @returns index of item just applied to statement */
   public int setNext(Object item) throws SQLException {
-    st.setObject(++sti, item);
+    if (item instanceof Enum) {
+      st.setObject(++sti, item.toString());//mysql indicated these were ** STREAM DATA **, also we want to ensure any interceptions of ours are invoked.
+    } else {
+      st.setObject(++sti, item);
+    }
     return sti;
   }
 

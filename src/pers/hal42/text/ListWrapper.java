@@ -82,7 +82,7 @@ public class ListWrapper implements AutoCloseable {
           if (useWhiteout) {
             s.setCharAt(excessCommaAt, ' ');
           } else {
-            s.delete(excessCommaAt, comma.length());
+            s.delete(excessCommaAt, excessCommaAt + comma.length());
           }
         }
       }
