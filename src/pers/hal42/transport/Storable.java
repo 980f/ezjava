@@ -24,6 +24,8 @@ import static pers.hal42.transport.Storable.Origin.Ether;
 import static pers.hal42.transport.Storable.Type.Boolean;
 import static pers.hal42.transport.Storable.Type.*;
 
+import java.lang.Boolean;
+
 /**
  * Created by Andy on 5/8/2017.
  * <p>
@@ -525,7 +527,26 @@ public class Storable {
     image = java.lang.Boolean.toString(bit);
   }
 
+  /**
+   * somewhat expensive function that recurses up the nesting hierarchy appending name pieces.
+   *
+   * @returns list of path names, to make a string use TextList.
+   */
+  public TextList fullName() {
+    if (parent != null) {
+      return parent.fullName().add(name);
+    } else {
+      TextList namer = new TextList(3);
+      return namer.add(name);
+    }
+  }
+
   public void setValue(Object obj) {
+    if (obj == null) {
+      TextList path = fullName();
+      dbg.WARNING("Ignoring setting {0} to null via setValue(Object)", path.join(String.valueOf(splitchar)));
+      return;//todo:1 should we kill this?
+    }
     if (obj instanceof String) {
       setValue((String) obj);
     } else if (obj instanceof Integer) {
@@ -809,7 +830,12 @@ public class Storable {
               field.setAccessible(true);
             }
             if (fclaz == String.class) {
-              child.setValue(field.get(obj).toString());//this is our only exception to recursing on non-natives.
+              final Object thing = field.get(obj);
+              if (thing != null) {
+                child.setValue(thing.toString());//this is our only exception to recursing on non-natives.
+              } else {
+                killChild(child.ordinal());
+              }
             } else if (fclaz == boolean.class) {
               child.setValue(field.getBoolean(obj));
             } else if (fclaz == double.class) {

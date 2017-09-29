@@ -227,6 +227,7 @@ public class TextList {
   /**
    * assure that this string is in list, by content not object match!
    * nulls are treated as being present.
+   *
    * @return true if string was already present
    * String.equals
    */
@@ -550,6 +551,26 @@ public class TextList {
 
   public String asParagraph() {//tl
     return asParagraph(null, null);//tl
+  }
+
+  /** creates and @returns a stringbuilder and fills it with concatenated members of this list. */
+  public StringBuilder join(String pathsep) {
+    StringBuilder sb = new StringBuilder(size() * 10);
+    final StringIterator list = iterator();
+    try (ListWrapper lister = new ListWrapper(sb)) {
+      lister.comma = pathsep;
+      list.forEachRemaining(lister::append);
+    }
+    return sb;
+  }
+
+  /** appends to existing builder, @param sb , and @returns that builder. */
+  public StringBuilder joinTo(StringBuilder sb, String pathsep) {
+    iterator().forEachRemaining(item -> {
+      sb.append(pathsep);
+      sb.append(item);
+    });
+    return sb;
   }
 
   public String toString() {
