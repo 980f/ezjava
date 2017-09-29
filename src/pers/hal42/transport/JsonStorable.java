@@ -24,106 +24,15 @@ import java.util.Vector;
  * mate JSON object persistance stuff to a file.
  */
 public class JsonStorable extends PushedJSONParser {
-  public static class Printer {
-    PrintStream ps;
-    int tablevel;
-
-    public Printer(final PrintStream ps, int tablevel) {
-      this.ps = ps;
-      this.tablevel = tablevel;
+  /**
+   * writes pretty-printed json formatted data on @param ps. @param tablevel is the number of tabs to put at the start of each line of text, must be >=0.
+   * before calling this you probably need to node.apply(Object obj) to update your storable from its related live object.
+   */
+  public static void SaveOptions(Storable node, PrintStream ps, int tablevel) {
+    if (node != null && ps != null && tablevel >= 0) {
+      Printer print = new Printer(ps, tablevel);
+      print.printValue(node, false);
     }
-
-    void indent() {
-      for (int tabs = tablevel; tabs-- > 0; ) {
-        ps.append('\t'); //or we could use spaces
-      }
-    }
-
-    void printText(String p, boolean forceQuote) {
-      if (forceQuote) {//todo:1 or if string contains any of the parse separators or a space or ...
-        ps.append('"');
-      }
-      ps.append(p);
-      if (forceQuote) {
-        ps.append('"');
-      }
-    } // printText
-
-    boolean printName(Storable node) {
-      indent();
-      if (StringX.NonTrivial(node.name)) {
-        printText(node.name, true); //forcing quotes here, may not need to
-        ps.append(':');
-        return true;
-      } else {
-        return false;
-      }
-    }
-
-    boolean printValue(Storable node) {
-      if (node == null) { //COA
-        return false;
-      }
-      if (node.isTrivial()) { //drop autocreated but unused nodes.
-        return false;
-      }
-
-      switch (node.type) {
-      case Null:
-        printName(node);
-        ps.print("null"); //fix code whenever you see one of these
-        break;
-      case Boolean:
-        printName(node);
-        ps.print(java.lang.Boolean.toString(node.getTruth()));//todo:0 these are getting quoted, perhaps not recognized in a timely fashion as booleans.
-        break;
-      case WholeNumber:
-        printName(node);
-        int number = node.getIntValue();
-        ps.print(number);//print nicely
-        break;
-
-      case Unclassified:
-        printName(node);
-        printText(node.getImage(), true); //always quote
-        break;
-      case Floating: {
-        printName(node);
-        double dvalue = node.getValue();
-        //todo:1 output nans as keyword
-        if ((long) dvalue == dvalue) {//if is an integer value
-          ps.print((long) dvalue);//print nicely
-        } else {
-          ps.print(dvalue);
-        }
-      }
-      break;
-      case Enummy:
-      case Textual:
-        printName(node);
-        printText(node.getImage(), true); //always quote
-        break;
-      case Wad:
-        printName(node);
-        printWad(node.wad);
-        break;
-      } /* switch */
-      int which = node.ordinal();
-      if (which >= 0 && node.parent != null && node.parent.numChildren() > which + 1) {//not the last child of a wad, not the top level node.
-        ps.println(',');
-      }
-      return true;
-    } /* printValue */
-
-    void printWad(Vector<Storable> wad) {
-      ps.println('{');
-      ++tablevel;
-      int last = wad.size() - 1;
-      wad.forEach(this::printValue);
-      --tablevel;
-      indent();
-      ps.print('}');
-    } /* printWad */
   }
 
   public Storable root;
@@ -316,15 +225,115 @@ public class JsonStorable extends PushedJSONParser {
     return new Storable(optsfile);//#JsonOptions expects the node name to be the filename.
   }
 
-  /**
-   * writes pretty-printed json formatted data on @param ps. @param tablevel is the number of tabs to put at the start of each line of text, must be >=0.
-   * before calling this you probably need to node.apply(Object obj) to update your storable from its related live object.
-   */
-  public static void SaveOptions(Storable node, PrintStream ps, int tablevel) {
-    if (node != null && ps != null && tablevel >= 0) {
-      Printer print = new Printer(ps, tablevel);
-      print.printValue(node);
+  public static class Printer {
+    PrintStream ps;
+    int tablevel;
+
+    public Printer(final PrintStream ps, int tablevel) {
+      this.ps = ps;
+      this.tablevel = tablevel;
     }
+
+    void indent() {
+      for (int tabs = tablevel; tabs-- > 0; ) {
+        ps.append('\t'); //or we could use spaces
+      }
+    }
+
+    void printText(String p, boolean forceQuote) {
+      if (forceQuote) {//todo:1 or if string contains any of the parse separators or a space or ...
+        ps.append('"');
+      }
+      ps.append(p);
+      if (forceQuote) {
+        ps.append('"');
+      }
+    } // printText
+
+    boolean printName(Storable node) {
+      indent();
+      if (StringX.NonTrivial(node.name)) {
+        printText(node.name, true); //forcing quotes here, may not need to
+        ps.append(':');
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    /** @param prune is whether to omit trivial nodes from the printout */
+    boolean printValue(Storable node, boolean prune) {
+      if (node == null) { //COA
+        return false;
+      }
+      if (prune && node.isTrivial()) { //drop autocreated but unused nodes.
+        return false;
+      }
+
+      switch (node.type) {
+      case Null:
+        printName(node);
+        ps.print("null"); //fix code whenever you see one of these
+        break;
+      case Boolean:
+        printName(node);
+        ps.print(java.lang.Boolean.toString(node.getTruth()));//todo:0 these are getting quoted, perhaps not recognized in a timely fashion as booleans.
+        break;
+      case WholeNumber:
+        printName(node);
+        int number = node.getIntValue();
+        ps.print(number);//print nicely
+        break;
+
+      case Unclassified:
+        printName(node);
+        printText(node.getImage(), true); //always quote
+        break;
+      case Floating: {
+        printName(node);
+        double dvalue = node.getValue();
+        //todo:1 output nans as keyword
+        if ((long) dvalue == dvalue) {//if is an integer value
+          ps.print((long) dvalue);//print nicely
+        } else {
+          ps.print(dvalue);
+        }
+      }
+      break;
+      case Enummy:
+        if (node.token != null) {
+          printName(node);
+          printText(node.token.toString(), true); //always quote
+          break;
+        }
+        //else #join
+      case Textual:
+        printName(node);
+        printText(node.getImage(), true); //always quote
+        break;
+      case Wad:
+        printName(node);
+        printWad(node.wad, prune);
+        break;
+      } /* switch */
+      int which = node.ordinal();
+      if (which >= 0 && node.parent != null && node.parent.numChildren() > which + 1) {//not the last child of a wad, not the top level node.
+        ps.println(',');
+      }
+      return true;
+    } /* printValue */
+
+    void printWad(Vector<Storable> wad, boolean prune) {
+      ps.println('{');
+      ++tablevel;
+      int last = wad.size() - 1;
+      for (Storable storable : wad) {
+        printValue(storable, prune);
+      }
+      --tablevel;
+      indent();
+      ps.print('}');
+    } /* printWad */
   }
 
   /** @returns canonical filename for options file for @param claz */

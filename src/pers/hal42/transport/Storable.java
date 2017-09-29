@@ -9,6 +9,7 @@ import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.TextList;
 
+import java.lang.Boolean;
 import java.lang.annotation.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -23,8 +24,6 @@ import static pers.hal42.transport.Storable.Origin.Defawlted;
 import static pers.hal42.transport.Storable.Origin.Ether;
 import static pers.hal42.transport.Storable.Type.Boolean;
 import static pers.hal42.transport.Storable.Type.*;
-
-import java.lang.Boolean;
 
 /**
  * Created by Andy on 5/8/2017.
@@ -212,6 +211,8 @@ public class Storable {
   protected int ivalue;
   protected double dvalue;
   protected boolean bit;
+  //adding 5th value, at first just for debug
+  protected Enum token = null;
   /**
    * linear storage since we rarely have more than 5 children, hashmap ain't worth the overhead.
    * for really big nodes create a nodeIndexer outside of this class and access members herein by index.
@@ -258,8 +259,11 @@ public class Storable {
   }
 
   /** do NOT genericize this class just for this guy, who probably shouldn't be public. */
-  public Object getEnum() {
+  public Enum getEnum() {
     if (enumerizer != null) {
+      if (token != null) {
+        return token;
+      }
       try {
         return enumerizer.getEnumConstants()[ivalue];
       } catch (Exception any) {
@@ -319,9 +323,11 @@ public class Storable {
             } else if (fclaz.isEnum()) {
               //noinspection unchecked
               child.setEnumerizer(fclaz);
-              final Object childEnum = child.getEnum();
+              final Enum childEnum = child.getEnum();
               if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
                 field.set(obj, childEnum);
+              } else {
+                dbg.VERBOSE("Improper or null enum {0}", child.fullName());
               }
             } else if (fclaz == Storable.class) {//member is a reference to a child herein
               field.set(obj, child);
@@ -405,7 +411,11 @@ public class Storable {
         ++count;
         break;
       case Enummy:
-        cursor.putProperty(child.name, cursor.enumsAsSymbol ? child.getImage() : child.getIntValue());
+        if (child.token != null) {
+          cursor.putProperty(child.name, cursor.enumsAsSymbol ? child.token.toString() : child.token.ordinal());
+        } else {
+          cursor.putProperty(child.name, cursor.enumsAsSymbol ? child.getImage() : child.getIntValue());
+        }
         ++count;
         break;
       case WholeNumber:
@@ -494,6 +504,7 @@ public class Storable {
       break;
     case Enummy:
       enumOnSetImage();
+      break;
     case Textual:
       break;
     case Wad:
@@ -792,8 +803,8 @@ public class Storable {
 
   private void enumOnSetImage() {
     try {
-      //noinspection unchecked
-      ivalue = Enum.valueOf(enumerizer, image).ordinal();
+      token = ReflectX.parseEnum(enumerizer, image);
+      ivalue = token.ordinal();
     } catch (NullPointerException | IllegalArgumentException e) {
       dbg.Caught(e); //not our job to enforce validity
     }

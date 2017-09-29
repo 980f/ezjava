@@ -202,6 +202,33 @@ public class ReflectX {
     }
   }
 
+  /** marker for a method that can parse an enum. Used by parseEnum for when the default enum parser faults. */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.METHOD})
+  public @interface Parser {
+
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T extends Enum> T parseEnum(Class<T> Tclaz, String image) {
+    try {
+      return (T) Enum.valueOf(Tclaz, image);
+    } catch (IllegalArgumentException e) {
+      final Method parser = methodFor(Tclaz, Parser.class, null);
+      if (parser != null) {
+        parser.setAccessible(true);
+        try {
+          return (T) parser.invoke(null, new Object[]{image});
+        } catch (IllegalAccessException | InvocationTargetException e1) {
+          return null;
+        }
+      }
+      return null;
+    } catch (NullPointerException e) {
+      return null;
+    }
+  }
+
   /**
    * @return factory method for class @param claz with @param args. No arg may be null!
    */
