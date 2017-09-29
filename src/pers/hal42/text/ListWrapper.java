@@ -9,9 +9,15 @@ import pers.hal42.lang.StringX;
  * Made to work with try-with-resources.
  */
 public class ListWrapper implements AutoCloseable {
+  /** item that this class inserts list elements into. public so that one can use new Stringbuilder in the constructor */
   public StringBuilder s;
+  /** what separates items */
   public String comma = ",";
-  public int counter = 0;// a courtesy, counts number of times append has been called
+  /** how to deal with the temporary excess leading seperator, if true use a space (fast) else delete it after the fact (clean) */
+  public boolean useWhiteout = false;
+  /** a courtesy, counts number of times append has been called */
+  public int counter = 0;
+  /** */
   protected int excessCommaAt = -1;
   protected String closer = null;
 
@@ -26,8 +32,8 @@ public class ListWrapper implements AutoCloseable {
   }
 
   public ListWrapper(StringBuilder sb, String opener, String closer) {
-    this(sb,opener);
-    this.closer =  closer;
+    this(sb, opener);
+    this.closer = closer;
   }
 
   public ListWrapper wrapWith(String opener, String closer) {
@@ -61,16 +67,8 @@ public class ListWrapper implements AutoCloseable {
    * this will work ok with Autoclosing as it disables the prerecorded closer and deals with that.
    */
   public void closeWith(String withCloseInIt) {
-    if (excessCommaAt >= 0) {
-      if (counter > 0) {//else we didn't actually stick a comma where we said we did.
-        s.deleteCharAt(excessCommaAt);
-      }
-      excessCommaAt = -1;
-      closer = null;
-    }
-    if (StringX.NonTrivial(withCloseInIt)) {
-      s.append(withCloseInIt);
-    }
+    closer = withCloseInIt;
+    close();
   }
 
   /**
@@ -78,14 +76,20 @@ public class ListWrapper implements AutoCloseable {
    */
   @Override
   public void close() {
-    if (excessCommaAt >= 0) {
-      if (counter > 0) {//else we didn't actually stick a comma where we said we did.
-        s.deleteCharAt(excessCommaAt);
+    if (StringX.NonTrivial(comma)) {
+      if (excessCommaAt >= 0) {
+        if (counter > 0) {//else we didn't actually stick a comma where we said we did.
+          if (useWhiteout) {
+            s.setCharAt(excessCommaAt, ' ');
+          } else {
+            s.delete(excessCommaAt, comma.length());
+          }
+        }
       }
-      excessCommaAt = ~0;
-      s.append(closer != null ? closer : ")"); //set closer to an empty string, not null, to get an 'invisible' list termination.
-      closer = null;
     }
+    excessCommaAt = ~0;//unconditionally forget that a close was pending
+    s.append(closer != null ? closer : ")"); //set closer to an empty string, not null, to get an 'invisible' list termination.
+    closer = null;
   }
 
   /** you usually don't call this. */

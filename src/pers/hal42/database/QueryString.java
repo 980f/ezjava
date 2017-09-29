@@ -25,6 +25,7 @@ public class QueryString {
     UPDATE,
     SET,
     INSERT,
+    DELETE,
     ON,
     IN,
 
@@ -744,6 +745,7 @@ public class QueryString {
     return this;
   }
 
+  /** "Set [name=?]*" */
   public QueryString prepareToSet(ColumnAttributes... cols) {
     try (QueryString.Lister lister = startSet()) {
       for (ColumnAttributes col : cols) {
@@ -751,6 +753,11 @@ public class QueryString {
       }
     }
     return this;
+  }
+
+  /** @returns new query starting "delete from sch.tab" */
+  public static QueryString DeleteFrom(TableInfo ti) {
+    return new QueryString().cat(DELETE).cat(FROM).cat(ti.fullName());
   }
 
   /** create new query starting "insert  table sch.tab" */

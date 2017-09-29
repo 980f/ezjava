@@ -20,23 +20,26 @@ public class FieldIterator<Type> implements Iterator<Type> {
   public FieldIterator(Class type, Object parent) {
     this.type = type;
     this.parent = parent;
-    fields = parent.getClass().getFields();
+    fields = parent.getClass().getFields(); //this gets public fields only, //todo:1 option to forcibly access declared fields.
     isMember = new boolean[fields.length];
     for (pointer = fields.length; pointer-- > 0; ) {
       isMember[pointer] = belongs(fields[pointer]);
     }
+    rewind();
   }
 
-  /** while only used in one place this is hard enough to read to be worth its own method*/
+  /** while only used in one place this is hard enough to read to be worth its own method */
   private boolean belongs(Field f) {
     return type == null || ReflectX.isImplementorOf(f.getType(), type);
   }
 
   @Override
   public boolean hasNext() {
-    for (; pointer < fields.length; ++pointer) {
-      if (isMember[pointer]) {
-        return true;
+    if (pointer >= 0) {//will be -1 if their are no fields and as such isMember has zero length.
+      for (; pointer < fields.length; ++pointer) {
+        if (isMember[pointer]) {
+          return true;
+        }
       }
     }
     return false;
@@ -44,17 +47,21 @@ public class FieldIterator<Type> implements Iterator<Type> {
 
   @Override
   public Type next() {
-    try {
-      Field f = fields[pointer++];//hasNext has qualified this
-      //noinspection unchecked
-      return (Type) f.get(parent);
-    } catch (Exception e) {//guard against user failing to call hasNext.
+    if (pointer >= 0) {
+      try {
+        Field f = fields[pointer++];//hasNext has qualified this
+        //noinspection unchecked
+        return (Type) f.get(parent);
+      } catch (Exception e) {//guard against user failing to call hasNext.
+        return null;
+      }
+    } else {
       return null;
     }
   }
 
-  public void rewind(){
-    pointer=0;
+  public void rewind() {
+    pointer = 0;
   }
 
   /**
