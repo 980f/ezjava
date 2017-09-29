@@ -110,6 +110,8 @@ public class QueryString {
   public StringBuilder guts = new StringBuilder(200);//most queries are big
   /** state for deciding whether to use 'where' or 'and' when adding a filter term */
   protected boolean whered = false;
+  /** whether to put line breaks in many places */
+  public boolean wrappy = true;
 
   public QueryString(SqlKeyword starter) {
     guts.append(starter);
@@ -717,7 +719,8 @@ public class QueryString {
   }
 
   public Lister startSet() {
-    return new Lister("\nSET ", "");
+    lineBreak();
+    return new Lister("SET ", "");
   }
 
   /**
@@ -727,6 +730,7 @@ public class QueryString {
    * @returns this
    */
   public QueryString OnDupUpdate(TextList nonPks) {
+    lineBreak();
     try (ListWrapper lister = new Lister(" ON DUPLICATE KEY UPDATE ", "")) {//strange but true, a list with invisible parens
       nonPks.iterator().forEachRemaining(col -> lister.append(format("{0}=VALUES({0})", col)));
     }
@@ -734,7 +738,15 @@ public class QueryString {
   }
 
   public QueryString from(TableInfo ti) {
+    lineBreak();
     return cat(FROM).cat(ti.fullName());
+  }
+
+  /** suggested linebreak, @see indent for forceful one */
+  public void lineBreak() {
+    if (wrappy) {
+      indent();
+    }
   }
 
   /** where clause for prepared statement */
@@ -760,7 +772,7 @@ public class QueryString {
     return new QueryString().cat(DELETE).cat(FROM).cat(ti.fullName());
   }
 
-  /** create new query starting "insert  table sch.tab" */
+  /** @returns new query starting "insert  table sch.tab" */
   public static QueryString Insert(TableInfo ti) {
     return Insert().cat(ti.fullName());
   }
@@ -769,6 +781,11 @@ public class QueryString {
   public static QueryString Insert() {
     QueryString noob = new QueryString();
     return noob.cat(INSERT);
+  }
+
+  /** @returns new query starting with: "update schema.tablename " */
+  public static QueryString Update(TableInfo ti) {
+    return Clause().cat(QueryString.SqlKeyword.UPDATE).cat(ti.fullName());
   }
 
   /** create new query starting "select *" */
