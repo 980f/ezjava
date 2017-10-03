@@ -757,6 +757,16 @@ public class QueryString {
     return this;
   }
 
+  public QueryString whereList(ColumnAttributes col,int listSize){
+    where();
+    word(col.name);
+    cat(IN);
+    try(Lister simple=new Lister("(")) {
+      simple.append("?");
+    }
+    return this;
+  }
+
   /** "Set [name=?]*" */
   public QueryString prepareToSet(ColumnAttributes... cols) {
     try (QueryString.Lister lister = startSet()) {
@@ -868,38 +878,7 @@ public class QueryString {
     return new QueryString();
   }
 
-//   /** @returns wheter query modifies the database, records or schema*/
-//  public static boolean isReadOnly(String qss) {
-//    if (qss != null) {
-//      qss = qss.trim(); // get rid of leading spaces
-//      if (qss.length() > 6) {
-//        String sqlop = StringX.TrivialDefault(StringX.subString(qss, 0, 6), "");
-//        dbg.VERBOSE("SQL op: " + sqlop);
-//        boolean isSelect;
-//        isSelect = SLIMUPPERSELECT.equalsIgnoreCase(sqlop);
-//        if (!isSelect) { // let's be sure ... [+++ we can make this better!]
-//          if ((qss.contains(SLIMUPPERSELECT)) || (qss.contains(SLIMLOWERSELECT))) { // then it really might be a select, so look further
-//            // so, there is a select somewhere in there, but not as the first word
-//            // if the first word is "EXPLAIN" (special PG function), then it is probably a select
-//            if (LEFTOFEXPLAIN.equalsIgnoreCase(sqlop)) {
-//              // then this is a SELECT since both SELECT and EXPLAIN exist here
-//              isSelect = true;
-//            } // else if ... +++
-//          }
-//          if (!isSelect && (sqlop.startsWith(SLIMLOWERSHOW) || sqlop.startsWith(SLIMUPPERSHOW))) {
-//            return true;
-//          }
-//        }
-//        return isSelect;
-//      } else {
-//        dbg.VERBOSE("SQLOP too short to know if it is a select!");
-//        return false; // don't know, basically
-//      }
-//    } else {
-//      return true; // read only since it cannot change the database if it is null!
-//    }
-//  }
-
+  /** @returns New clause starting with Where column=false */
   public static QueryString WhereNot(ColumnProfile column) {
     return QueryString.Clause().where().isFalse(column);
   }
@@ -912,7 +891,7 @@ public class QueryString {
   public class Lister extends ListWrapper {
     /** begin a list with a comma as the closer */
     public Lister(String prefix) {
-      this(prefix, ", ");
+      this(prefix, ") ");
     }
 
     /** begin a list */

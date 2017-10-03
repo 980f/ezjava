@@ -54,6 +54,7 @@ public class ListWrapper implements AutoCloseable {
     return this;
   }
 
+  /** add comma and @param field */
   public ListWrapper append(String field) {
     ++counter;
     addComma();
@@ -80,7 +81,9 @@ public class ListWrapper implements AutoCloseable {
       if (excessCommaAt >= 0) {
         if (counter > 0) {//else we didn't actually stick a comma where we said we did.
           if (useWhiteout) {
-            s.setCharAt(excessCommaAt, ' ');
+            for (int quantity = comma.length(); quantity-- > 0; ) {//todo:1 does stringbuilder have this method? replace() wasn't quite right.
+              s.setCharAt(excessCommaAt + quantity, ' ');
+            }
           } else {
             s.delete(excessCommaAt, excessCommaAt + comma.length());
           }
