@@ -24,6 +24,7 @@ public class JsonOptions {
   protected JsonOptions() {
     node = JsonStorable.StandardRoot(getClass());
     rules = Storable.Rules.Master;
+    //#while it might seem like a nice idea to invoke load() here, the derived objects don't yet exist and as such cannot therefore set defaults like they are supposed to.
   }
 
   /**
@@ -32,7 +33,7 @@ public class JsonOptions {
   public JsonOptions(String altfilename) {//public for test access, normal use is to derive from this class.
     node = new Storable(altfilename);
     rules = Storable.Rules.Master;
-    load(altfilename);
+//--violates contract to let construction set defaults    load(altfilename);
   }
 
   /** apply DOM to object */
