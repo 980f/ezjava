@@ -95,6 +95,7 @@ public class Char {
     return Character.isDigit(raw) || isPresent("aAbBcCdDeEfF", raw);
   }
 
+  /** @returns value presuming raw is actually a hexadecimal character */
   public int hexDigit() {
     int trusting = (raw | 0x20) - '0';//tolowerthen subtract char for zero.
     if ((trusting > 9)) {
@@ -103,9 +104,15 @@ public class Char {
     return trusting; //'A'-'0' = 17, want 10 for that
   }
 
+  /** @returns char for hex value sb=0 is lsnibble*/
   public char hexNibble(int sb) {
     int nib = 15 & (raw >> (sb * 4)); //push to low nib
     return (char) ((nib > 9) ? ('A' + nib - 10) : '0' + nib);
+  }
+
+  /** @returns cast as char */
+  public char asChar() {
+    return (char) raw;
   }
 
   public static boolean isPresent(String flags, byte flag) {

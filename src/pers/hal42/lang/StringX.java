@@ -338,7 +338,7 @@ public class StringX {
       int cutat = s.indexOf(cutter);
       return cutat < 0 ? s.length() : cutat;
     } catch (Exception any) {
-      return 0;
+      return -1;//what indexOf returns when it doesn't find something.
     }
   }
 

@@ -757,7 +757,8 @@ public class QueryString {
     return this;
   }
 
-  public QueryString whereList(ColumnAttributes col,int listSize){
+  /** append prepared statement with a field for each member of list. */
+  public QueryString whereList(ColumnAttributes col, int listSize){
     where();
     word(col.name);
     cat(IN);
