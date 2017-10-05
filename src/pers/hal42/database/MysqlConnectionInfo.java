@@ -26,7 +26,7 @@ public class MysqlConnectionInfo extends DBConnInfo {
   }
 
   public MysqlConnectionInfo(Storable node) {
-    //crank up the report caching mechanism:
+
     Storable.Nodal<MysqlConnectionInfo> loader = new Storable.Nodal<>(node, this);
   }
 

@@ -355,6 +355,7 @@ public class Storable {
                 }
               }
               if (nestedObject != null) {
+                field.set(obj, nestedObject); //prior to adding this line the objects were created, then discarded!
                 child.setType(Type.Wad);//should already be true
                 if (nestedObject instanceof Properties) { //must precede map and collections since it is one.
                   changes += child.applyTo((Properties) nestedObject, false);//todo:1 review choice of stringify, or find a means to configure it.

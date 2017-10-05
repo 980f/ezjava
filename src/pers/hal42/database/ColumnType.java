@@ -28,7 +28,8 @@ public enum ColumnType {
   VARBINARY(Types.VARBINARY, true), //
   LONGVARBINARY(Types.LONGVARBINARY, true),//
   //
-  NULL(Types.NULL, false), REF(Types.REF, false)
+  NULL(Types.NULL, false), //
+  REF(Types.REF, false)
   //end of list
   ;
   /**

@@ -8,18 +8,24 @@ import java.util.function.Predicate;
  * Created by Andy on 6/8/2017.
  * <p>
  * To return fields of an object that are of a given type.
+ *
+ * It is optimized for shallow scans, but supports deep ones.
  */
 public class FieldIterator<Type> implements Iterator<Type> {
   private final Class type;//must keep this ourselves as java generics are compile time.
   private final Object parent;
   private final Field[] fields;
-  /** cache fied test, for when we rewind frequently */
+  /** cache field test, for when we rewind frequently */
   private final boolean[] isMember;
   private int pointer;
+  private final boolean deeply;
+  //tree walk
+  private FieldIterator<Type> nested = null;
 
-  public FieldIterator(Class type, Object parent) {
+  public FieldIterator(Class type, Object parent, boolean deeply) {
     this.type = type;
     this.parent = parent;
+    this.deeply = deeply;
     fields = parent.getClass().getFields(); //this gets public fields only, //todo:1 option to forcibly access declared fields.
     isMember = new boolean[fields.length];
     for (pointer = fields.length; pointer-- > 0; ) {
@@ -35,10 +41,27 @@ public class FieldIterator<Type> implements Iterator<Type> {
 
   @Override
   public boolean hasNext() {
+    if (nested != null) {
+      if (nested.hasNext()) {
+        return true;
+      } else {
+        nested = null;
+      }
+    }
     if (pointer >= 0) {//will be -1 if their are no fields and as such isMember has zero length.
       for (; pointer < fields.length; ++pointer) {
         if (isMember[pointer]) {
           return true;
+        }
+        //todo:1 optimize by testing if not scalar
+        if (deeply) {
+          final Field field = fields[pointer];
+          nested = new FieldIterator<>(type, field, true);
+          if (nested.hasNext()) {
+            return true;
+          } else {
+            nested = null;
+          }
         }
       }
     }
@@ -47,6 +70,9 @@ public class FieldIterator<Type> implements Iterator<Type> {
 
   @Override
   public Type next() {
+    if (nested != null) {
+      return nested.next();
+    }
     if (pointer >= 0) {
       try {
         Field f = fields[pointer++];//hasNext has qualified this
@@ -61,11 +87,13 @@ public class FieldIterator<Type> implements Iterator<Type> {
   }
 
   public void rewind() {
+    nested = null;
     pointer = 0;
   }
 
   /**
    * @returns some field that meets @param filter, null if none.
+   * @apiNote presently ignores 'deeply' as that is very expensive
    */
   public Type find(Predicate<Type> filter) {
     for (int fi = fields.length; fi-- > 0; ) {
@@ -76,6 +104,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
           if (filter.test(probate)) {
             return probate;
           }
+          //todo:1 look deeply
         } catch (IllegalAccessException e) {
           //noinspection UnnecessaryContinue
           continue;//perhaps some other field will both match and be accessible.
