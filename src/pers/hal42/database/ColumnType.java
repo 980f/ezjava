@@ -50,6 +50,9 @@ public enum ColumnType {
     if (requiresLength) {
       return MessageFormat.format("{0}({1})", toString(), size);
     } else {
+      if (this == REF) {//mysql doesn't admit this part of the java specification
+        return "INT UNSIGNED";
+      }
       return toString();//will work for most, add exceptions for the few.
     }
   }

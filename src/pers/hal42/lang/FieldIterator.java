@@ -1,6 +1,7 @@
 package pers.hal42.lang;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
@@ -8,7 +9,10 @@ import java.util.function.Predicate;
  * Created by Andy on 6/8/2017.
  * <p>
  * To return fields of an object that are of a given type.
+ * Ignores null members on recursion but not on top level scan (an optimisation you will have to live with)
  *
+ * One could craft a similar class that ignores existence and can find fields deeply at the expense of not handing out objects related to the field.
+ * <p>
  * It is optimized for shallow scans, but supports deep ones.
  */
 public class FieldIterator<Type> implements Iterator<Type> {
@@ -17,6 +21,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
   private final Field[] fields;
   /** cache field test, for when we rewind frequently */
   private final boolean[] isMember;
+
   private int pointer;
   private final boolean deeply;
   //tree walk
@@ -29,7 +34,8 @@ public class FieldIterator<Type> implements Iterator<Type> {
     fields = parent.getClass().getFields(); //this gets public fields only, //todo:1 option to forcibly access declared fields.
     isMember = new boolean[fields.length];
     for (pointer = fields.length; pointer-- > 0; ) {
-      isMember[pointer] = belongs(fields[pointer]);
+      final Field field = fields[pointer];
+      isMember[pointer] = belongs(field);
     }
     rewind();
   }
@@ -48,19 +54,28 @@ public class FieldIterator<Type> implements Iterator<Type> {
         nested = null;
       }
     }
-    if (pointer >= 0) {//will be -1 if their are no fields and as such isMember has zero length.
+    if (pointer >= 0) {//will be -1 if there are no fields and as such isMember has zero length.
       for (; pointer < fields.length; ++pointer) {
         if (isMember[pointer]) {
           return true;
         }
-        //todo:1 optimize by testing if not scalar
         if (deeply) {
           final Field field = fields[pointer];
-          nested = new FieldIterator<>(type, field, true);
-          if (nested.hasNext()) {
-            return true;
-          } else {
-            nested = null;
+          if (!Modifier.isNative(field.getModifiers())) {//todo:1 see if isNative also covers class not having a classLoader
+            try {
+              final Object child = field.get(this.parent);
+              if (child != null) {
+                nested = new FieldIterator<>(type, child, true);
+                if (nested.hasNext()) {
+                  ++pointer;//we have consumed the field
+                  return true;
+                } else {
+                  nested = null;
+                }
+              }
+            } catch (IllegalAccessException e) {
+              continue;//try next field, this one was inaccessible.
+            }
           }
         }
       }
