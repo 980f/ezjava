@@ -333,12 +333,9 @@ public class ReflectX {
     return skipper;
   }
 
-  public static boolean isNative(Field field) {
-//    return Modifier.isNative(field.getModifiers()); //native only applies to methods.
+  /** @returns in essence whether field's class has fields. The internals of this method are occasionally reordered for performance of particular users. */
+  public static boolean isScalar(Field field) {
     Class type=field.getType();
-//    if(!isImplementorOf(type,Object.class)){
-//      return true;
-//    }
     if(int.class==type){
       return true;
     }
@@ -348,13 +345,16 @@ public class ReflectX {
     if(double.class==type){
       return true;
     }
-    if(float.class==type){
-      return true;
-    }
-    if(short.class==type){
-      return true;
-    }
     if(long.class==type){
+      return true;
+    }
+    if (String.class == type) {
+      return true;
+    }
+    if (float.class == type) {
+      return true;
+    }
+    if (short.class == type) {
       return true;
     }
     if(char.class==type){
@@ -363,7 +363,7 @@ public class ReflectX {
     if(byte.class==type){
       return true;
     }
-    return String.class == type;
+    return false;
   }
 
   /**

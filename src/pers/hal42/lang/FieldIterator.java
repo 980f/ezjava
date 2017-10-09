@@ -1,7 +1,6 @@
 package pers.hal42.lang;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
@@ -61,7 +60,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
         }
         if (deeply) {
           final Field field = fields[pointer];
-          if (!Modifier.isNative(field.getModifiers())) {//todo:1 see if isNative also covers class not having a classLoader
+          if (!ReflectX.isScalar(field)) {//todo:1 see if isNative also covers class not having a classLoader
             try {
               final Object child = field.get(this.parent);
               if (child != null) {
