@@ -69,6 +69,11 @@ public enum ColumnType {
       return true;
     }
     switch (this) {
+    case NUMERIC: //mysql: numeric in , decimal out.
+      if (other == DECIMAL) {
+        return true;
+      }
+      break;
     case INTEGER:
       return other == DECIMAL;
     }

@@ -1286,25 +1286,22 @@ public class DBMacros extends GenericDB {
   /**
    * make and execute a statement, call the actor if the resultset has something in it.
    *
-   * @returns whether a non-empty results set was actually acquired, and if so actor has been invoked. (it won't be if there is an sql exception)
+   * @returns whether a non-empty results set was actually acquired, and if so actor has been invoked. (it won't have been if there is an sql exception)
    */
   public boolean doSimpleQuery(String query, Consumer<ResultSet> actor) {
     try (Statement stmt = makeStatement()) {
       StopWatch timer = new StopWatch(true);
       stmt.setFetchSize(Integer.MIN_VALUE);//hint that we want row at a time fetching from the server, necessary for large sets and irrelevangt for small.
-      ResultSet rs = stmt.executeQuery(query);//allow null strings to throw an exception, so that the log tells the user how they screwed up
-      dbg.WARNING("Simplequery took {0} seconds, {1}", timer.seconds(), query);
-      if (rs.next()) {
-        if (actor != null) {
-          actor.accept(rs);
+      try (ResultSet rs = stmt.executeQuery(query)) {//allow null strings to throw an exception, so that the log tells the user how they screwed up
+        dbg.WARNING("Simplequery took {0} seconds, {1}", timer.seconds(), query);
+        if (rs.next()) {
+          if (actor != null) {
+            actor.accept(rs);
+          }
+          return true;//#don't conditionalize upon actor being invoked.
+        } else {
+          return false;
         }
-        //noinspection StatementWithEmptyBody
-        while (rs.next()) {
-          //statement won't close if we don't exhaust results set.
-        }
-        return true;
-      } else {
-        return false;
       }
     } catch (SQLException e) {
       dbg.Caught(e, query);

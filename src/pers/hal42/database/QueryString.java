@@ -267,7 +267,8 @@ public class QueryString {
     return this;
   }
 
-  protected QueryString in(String list) {
+  /** @returns this after appending "IN( @param list )" */
+  public QueryString in(String list) {
     return cat(IN).Open().cat(list).Close();
   }
 
@@ -279,10 +280,13 @@ public class QueryString {
     return cat(NOT);
   }
 
-  protected QueryString sum(String str) {
+  /** @returns this after appending "sum( @param str )" */
+  public QueryString sum(String str) {
     return cat(SUM).Open().cat(str).Close();
   }
 
+
+  /** @returns this after appending "in ( @param list )" adding commas as needed between list elements which are each quoted */
   public QueryString inQuoted(TextList list) {
     // have to do this list manually, as quoting has some special rules ...
     // create a new list with the quoted strings in it, then cat them into a StringBuffer and output as a string.
@@ -294,6 +298,7 @@ public class QueryString {
     return inUnquoted(list2);
   }
 
+  /** @returns this after appending "in ( @param list )" adding commas as needed between list elements */
   public QueryString inUnquoted(TextList list) {
     return in(list.asParagraph(","));
   }
@@ -482,29 +487,40 @@ public class QueryString {
     return cat(ORDERBY).cat(columnName);
   }
 
-  public QueryString commaAsc(ColumnProfile next) {
-    return comma().cat(next.fullName()).cat(ASC); // --- possible cause of bugs
+  /** @returns this after conditionally adding an orderby clause: ascending of @param orderly is positive, descending if negative */
+  public QueryString orderby(String columnName, int orderly) {
+    if (orderly > 0) {
+      return orderby(columnName).cat(ASC);
+    }
+    if (orderly < 0) {
+      return orderby(columnName).cat(DESC);
+    }
+    return this;
   }
 
+//  public QueryString commaAsc(ColumnProfile next) {
+//    return comma().cat(next.fullName()).cat(ASC);
+//  }
+
   public QueryString orderbyasc(ColumnProfile first) {
-    return cat(ORDERBY).cat(first.fullName()).cat(ASC); // --- possible cause of bugs
+    return orderby(first.fullName(), 1);
   }
 
   public QueryString orderbydesc(ColumnProfile first) {
-    return cat(ORDERBY).cat(first.fullName()).cat(DESC); // --- possible cause of bugs
+    return orderby(first.fullName(), -1);
   }
 
   public QueryString orderbydesc(int columnFirst) {
-    return cat(ORDERBY).cat(String.valueOf(columnFirst)).cat(DESC);
+    return orderby(String.valueOf(columnFirst), -1);
   }
 
   public QueryString orderbyasc(int columnFirst) {
-    return cat(ORDERBY).cat(String.valueOf(columnFirst)).cat(ASC);
+    return orderby(String.valueOf(columnFirst), 1);
   }
 
-  public QueryString commaDesc(ColumnProfile next) {
-    return comma().cat(next.fullName()).cat(DESC); // --- possible cause of bugs
-  }
+//  public QueryString commaDesc(ColumnProfile next) {
+//    return comma().cat(next.fullName()).cat(DESC);
+//  }
 
   public QueryString having() {
     return cat(HAVING);
@@ -758,11 +774,11 @@ public class QueryString {
   }
 
   /** append prepared statement with a field for each member of list. */
-  public QueryString whereList(ColumnAttributes col, int listSize){
+  public QueryString whereList(ColumnAttributes col, int listSize) {
     where();
     word(col.name);
     cat(IN);
-    try(Lister simple=new Lister("(")) {
+    try (Lister simple = new Lister("(")) {
       simple.append("?");
     }
     return this;
@@ -777,6 +793,7 @@ public class QueryString {
     }
     return this;
   }
+
 
   /** @returns new query starting "delete from sch.tab" */
   public static QueryString DeleteFrom(TableInfo ti) {
