@@ -19,12 +19,13 @@ public class JsonOptions {
   /** how forcefully to map the DOM to the object */
   transient  //don't save, and especially don't load, the rules.
   public Storable.Rules rules;
+
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(JsonOptions.class);//use base here, not the extension
 
   protected JsonOptions() {
     node = JsonStorable.StandardRoot(getClass());
     rules = Storable.Rules.Master;
-    //#while it might seem like a nice idea to invoke load() here, the derived objects don't yet exist and as such cannot therefore set defaults like they are supposed to.
+    //#_# while it might seem like a nice idea to invoke load() here, the derived objects don't yet exist and as such cannot therefore set defaults like they are supposed to.
   }
 
   /**
@@ -33,7 +34,7 @@ public class JsonOptions {
   public JsonOptions(String altfilename) {//public for test access, normal use is to derive from this class.
     node = new Storable(altfilename);
     rules = Storable.Rules.Master;
-//--violates contract to let construction set defaults    load(altfilename);
+//#_# violates contract to let construction set defaults    load(altfilename);
   }
 
   /** apply DOM to object */
@@ -46,6 +47,7 @@ public class JsonOptions {
     applyNode();
   }
 
+  /** loads=parses file and applies it to the data members of extension classes */
   public void load(String filename) {
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(JsonStorable.Filenamer(node, filename))) {
@@ -70,6 +72,7 @@ public class JsonOptions {
     }
   }
 
+  /** applies fields of extended class to the text represenation, especially useful when saving data. */
   public void updateDOM() {
     node.apply(this, rules);
   }
@@ -95,10 +98,12 @@ public class JsonOptions {
     return child.getValue() != 0.0;
   }
 
+  /** iteroperate with legacy properties representations */
   public void putInto(PropertyCursor pc) {
     node.applyTo(pc);
   }
 
+  /** iteroperate with legacy properties representations */
   public void putInto(Properties props, boolean stringify) {
     node.applyTo(props, stringify);
   }

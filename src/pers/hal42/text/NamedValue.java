@@ -1,5 +1,6 @@
 package pers.hal42.text;
 
+import pers.hal42.lang.Bool;
 import pers.hal42.lang.StringX;
 
 import static pers.hal42.lang.Index.BadIndex;
@@ -37,7 +38,7 @@ public class NamedValue {
     if (pair == null) {
       key = null;
       value = null;
-    } else if (splitter == BadIndex || splitter > pair.length()) {
+    } else if (splitter == BadIndex || splitter >= pair.length()) {
       key = pair;
       value = null;
     } else {
@@ -52,5 +53,9 @@ public class NamedValue {
 
   public double getReal(double def) {
     return StringX.parseDouble(value, def);
+  }
+
+  public boolean getValue(boolean b) {
+    return StringX.NonTrivial(value) ? Bool.For(value) : b;
   }
 }

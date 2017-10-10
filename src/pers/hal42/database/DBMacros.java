@@ -53,6 +53,22 @@ public class DBMacros extends GenericDB {
     }
   }
 
+  /**
+   * create a schema. @returns whether the operation was exception-free.
+   * if @param picky then insist on this being a fresh creation, else ignore whether it already exists.
+   */
+  public boolean createSchema(String schemaName, boolean picky) {
+    QueryString query = QueryString.Clause();
+    query.cat("CREATE SCHEMA");
+    if (!picky) {
+      query.cat("IF NOT EXISTS");
+    }
+    query.cat(schemaName);
+//todo:    query.cat("CHARACTER SET = utf8");//maydo: param
+//todo:    query.cat("COLLATE = utf8");//maydo: param
+    return this.doSimpleAction(query.toString(), null);
+  }
+
 
   class NamedStatementList extends Vector<NamedStatement> {
     private ErrorLogStream dbg = null;
