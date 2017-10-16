@@ -1378,8 +1378,25 @@ public class DBMacros extends GenericDB {
     }
   }
 
+  /**
+   * @param <T> the type of the input to the operation
+   * @since 1.8
+   */
+  @FunctionalInterface
+  public interface SqlConsumer<T> {
+
+    /**
+     * Performs this operation on the given argument.
+     *
+     * @param t the input argument
+     */
+    void accept(T t) throws SQLException;
+
+    //add more Consumer features as needed
+  }
+
   /** insert value[s] and run a query that of a nature that never generates a resultset. @returns whether operation executed, any results or updatecount are lost. */
-  public boolean doPreparedDML(String query, Consumer<PreparedStatement> preparer) {
+  public boolean doPreparedDML(String query, SqlConsumer<PreparedStatement> preparer) {
     try (PreparedStatement pst = makePreparedStatement(query)) {
       if (preparer != null) {
         preparer.accept(pst);

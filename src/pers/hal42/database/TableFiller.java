@@ -2,6 +2,7 @@ package pers.hal42.database;
 
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.Packable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,6 +20,7 @@ public class TableFiller {
 
   /**
    * parse result set row into a new object and append to @param list. @param ref is the class of the type and reflection looks for @DbColumn annotations to decide what to match. At the moment ref must have a no-args constructor.
+   * @param refinclude if not null determines whether the newly constructed-from-rs object should be added to the list. This is useful when such a decision is beyond implementing via a 'where' clause on the query that sourced the resultSet.
    *
    * @returns the number of added fields. If the value is negative then it is the complement of how many were added before an exception halted the process.
    */
@@ -54,6 +56,9 @@ public class TableFiller {
                     //want a static method that takes a string and gives an fclaz.
                     field.set(obj, ReflectX.enumObject(fclaz, rs.getString(name)));
                   }
+                } else if (ReflectX.isImplementorOf(fclaz, Packable.class)) {
+                  Packable packer = (Packable) field.get(obj);
+                  packer.parse(rs.getString(name));
                 } else {
                   dbg.ERROR("Not yet parsing type {0} from result set (field named {1})", fclaz.getName(), name);
                 }
