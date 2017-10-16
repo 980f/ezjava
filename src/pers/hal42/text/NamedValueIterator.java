@@ -7,13 +7,20 @@ import java.util.Iterator;
 /** extract steam of name:value pairs, skipping blanks and items starting with '#' */
 public class NamedValueIterator implements Iterator<NamedValue> {
   protected StringIterator source;
+  protected char cutter;
+  protected transient String lookahead;
+  NamedValue shared;
+  private final boolean sharedReturn;
 
-  public NamedValueIterator(StringIterator source) {
+  public NamedValueIterator(StringIterator source, char cutter, boolean sharedReturn) {
     this.source = source;
-    preview();
+    this.cutter = cutter;
+    this.sharedReturn = sharedReturn;
   }
 
-  protected String lookahead;
+  public NamedValueIterator(StringIterator source) {
+    this(source, '=', false);
+  }
 
   private void preview() {
     while (source.hasNext()) {
@@ -33,8 +40,8 @@ public class NamedValueIterator implements Iterator<NamedValue> {
   @Override
   public NamedValue next() {
     try {
-      NamedValue wrapper = new NamedValue();
-      wrapper.split(lookahead, '=');
+      NamedValue wrapper = sharedReturn ? shared : new NamedValue();
+      wrapper.split(lookahead, cutter);
       return wrapper;
     } finally {
       preview();
