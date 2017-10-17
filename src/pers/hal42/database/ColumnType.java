@@ -76,6 +76,8 @@ public enum ColumnType {
       break;
     case INTEGER:
       return other == DECIMAL;
+    case REF: //keys are integers, perhaps need to allow 64 bit or any size integers as well as 32
+      return other == INTEGER;
     }
     return false;
   }

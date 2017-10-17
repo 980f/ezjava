@@ -18,7 +18,7 @@ public class ObjectRange<T extends Comparable<T>> {
   private boolean broad;
   private boolean isDirty = true; //defer analyze
 
-//  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ObjectRange.class);
+//way too noisy:  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ObjectRange.class);
 
   /** @param sorted whether to swap ends as needed to keep range ascending */
   public ObjectRange(T one, T two, boolean sorted) {
@@ -199,6 +199,11 @@ public class ObjectRange<T extends Comparable<T>> {
     analyze();
     return broad ? (String.valueOf(one) + "-" + two.toString()) :
       (singular ? String.valueOf(one) : "empty");
+  }
+
+  /** mark as potentially altered outside the scope of this class. */
+  public void smudge() {
+    isDirty = true;
   }
 
   public static <T extends Comparable<T>> boolean NonTrivial(ObjectRange<T> pair) {

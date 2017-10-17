@@ -4,28 +4,34 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
+import static pers.hal42.lang.Index.BadIndex;
+
 /**
  * Created by Andy on 6/8/2017.
  * <p>
- * To return fields of an object that are of a given type.
- * Ignores null members on recursion but not on top level scan (an optimisation you will have to live with)
- *
+ * To return non-null fields of an object that are of a given type.
+ * There is a little bit of caching so members created between instantiation of the Iterator and using it might be skipped.
+ * <p>
  * One could craft a similar class that ignores existence and can find fields deeply at the expense of not handing out objects related to the field.
  * <p>
- * It is optimized for shallow scans, but supports deep ones.
+ * There is a flag to optimize via a shallow scan.
  */
 public class FieldIterator<Type> implements Iterator<Type> {
   private final Class type;//must keep this ourselves as java generics are compile time.
   private final Object parent;
+  private final boolean deeply;
+
   private final Field[] fields;
   /** cache field test, for when we rewind frequently */
   private final boolean[] isMember;
 
   private int pointer;
-  private final boolean deeply;
+  private Type prefetched = null;
+
   //tree walk
   private FieldIterator<Type> nested = null;
 
+  /** @param type is used for RTTI, @param parent gives us actual content, @param deeply is whether to recursively inspect objects for the given type, usually you should say 'true', 'false' is faster but can leave things out except for very flat classes. */
   public FieldIterator(Class type, Object parent, boolean deeply) {
     this.type = type;
     this.parent = parent;
@@ -37,6 +43,11 @@ public class FieldIterator<Type> implements Iterator<Type> {
       isMember[pointer] = belongs(field);
     }
     rewind();
+  }
+
+  /** @returns a reasonable though not definitive estimate of how many iterations will occur. If @see deeply is true this can be grossly too low. */
+  public int estimatedCount() {
+    return fields.length;
   }
 
   /** while only used in one place this is hard enough to read to be worth its own method */
@@ -53,13 +64,24 @@ public class FieldIterator<Type> implements Iterator<Type> {
         nested = null;
       }
     }
-    if (pointer >= 0) {//will be -1 if there are no fields and as such isMember has zero length.
+    if (pointer >= 0 && prefetched == null) {//pointer will be -1 if there are no fields and as such isMember has zero length.
       for (; pointer < fields.length; ++pointer) {
         if (isMember[pointer]) {
-          return true;
+          try {
+            //noinspection unchecked
+            prefetched = (Type) fields[pointer].get(parent);
+            if (prefetched != null) {
+              return true;
+            } else {
+              continue;
+            }
+          } catch (IllegalAccessException e) {
+            //ignore inaccessible members of the type
+            continue;
+          }
         }
         if (deeply) {
-          final Field field = fields[pointer];
+          final Field field = fields[pointer]; //maydo: exclude static members?
           if (!ReflectX.isScalar(field)) {//todo:1 see if isNative also covers class not having a classLoader
             try {
               final Object child = field.get(this.parent);
@@ -78,6 +100,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
           }
         }
       }
+      pointer = BadIndex;//save time when we repeatedly check after exhaustion.
     }
     return false;
   }
@@ -89,11 +112,12 @@ public class FieldIterator<Type> implements Iterator<Type> {
     }
     if (pointer >= 0) {
       try {
-        Field f = fields[pointer++];//hasNext has qualified this
-        //noinspection unchecked
-        return (Type) f.get(parent);
+        return prefetched;
       } catch (Exception e) {//guard against user failing to call hasNext.
-        return null;
+        return null;  //note the enclosing class of the field must be public else we get an exception
+      } finally {
+        ++pointer;
+        prefetched = null;
       }
     } else {
       return null;
@@ -102,7 +126,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
 
   public void rewind() {
     nested = null;
-    pointer = 0;
+    pointer = isMember.length > 0 ? 0 : BadIndex;
   }
 
   /**
