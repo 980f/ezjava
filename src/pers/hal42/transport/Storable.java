@@ -7,6 +7,7 @@ import pers.hal42.lang.LinearMap;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.Packable;
 import pers.hal42.text.TextList;
 
 import java.lang.Boolean;
@@ -329,6 +330,10 @@ public class Storable {
               } else {
                 dbg.VERBOSE("Improper or null enum {0}", child.fullName());
               }
+            } else if (ReflectX.isImplementorOf(fclaz, Packable.class)) {
+              Object raw = field.get(obj);
+              //todo:1 autocreate if class has string constructor option.
+              ((Packable) raw).parse(child.getImage());//object must exist as we need its concrete class.
             } else if (fclaz == Storable.class) {//member is a reference to a child herein
               field.set(obj, child);
             }

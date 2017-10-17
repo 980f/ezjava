@@ -12,7 +12,7 @@ package pers.hal42.database;
 
 public class IsNullIndexProfile extends IndexProfile {
   public IsNullIndexProfile(String name, TableProfile table, ColumnProfile column) {
-    super(name, table, column, QueryString.Clause().where().isNull(column));
+    super(name, table, column, QueryString.Clause("").where().isNull(column));
   }
 
 }

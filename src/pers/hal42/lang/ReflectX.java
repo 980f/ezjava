@@ -212,7 +212,7 @@ public class ReflectX {
   @SuppressWarnings("unchecked")
   public static <T extends Enum> T parseEnum(Class<T> Tclaz, String image) {
     try {
-      return (T) Enum.valueOf(Tclaz, image);
+      return (T) Enum.valueOf(Tclaz, image); //best case is perfect match
     } catch (IllegalArgumentException e) {
       final Method parser = methodFor(Tclaz, Parser.class, null);
       if (parser != null) {

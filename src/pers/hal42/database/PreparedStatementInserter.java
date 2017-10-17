@@ -1,11 +1,13 @@
 package pers.hal42.database;
 
+import com.fedfis.db.ColumnAttributes;
+import org.jetbrains.annotations.NotNull;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 /** to simplify sequential setting of prepared statement values */
 public class PreparedStatementInserter implements AutoCloseable {
@@ -16,7 +18,7 @@ public class PreparedStatementInserter implements AutoCloseable {
   public int grandSum = 0;
 
   /** how much batch to accumulate before sending. defaults to send all right away. */
-  public int batchSize=0;
+  public int batchSize = 0;
 
   private PreparedStatement st;
   private int sti;
@@ -47,6 +49,13 @@ public class PreparedStatementInserter implements AutoCloseable {
     return sti;
   }
 
+  /** random access setter */
+  public <T> void set(ColumnAttributes col, T value) throws SQLException {
+    if (legit) {
+      st.setObject(col.ordinal, value);
+    }
+  }
+
   /** setNext on each value from a list, with optional (when not null) mapping function e.g. Iterator<Quarter> it, Quarter.toymd() */
   public <T> int setList(Iterator<T> it, Function<T, Object> transformer) throws SQLException {
     while (it.hasNext()) {//#forEach stifles exceptions
@@ -57,14 +66,14 @@ public class PreparedStatementInserter implements AutoCloseable {
   }
 
   /** call @see setNext on each item in order */
-  public int setMany(Object ... objs) throws SQLException {
-    for(Object item:objs){
+  public int setMany(Object... objs) throws SQLException {
+    for (Object item : objs) {
       setNext(item);
     }
     return sti;
   }
 
-   /** add to batch, run the batch if batchSize entries have been added */
+  /** add to batch, run the batch if batchSize entries have been added */
   public void batch() throws SQLException {
     if (legit) {
       st.addBatch();
@@ -96,6 +105,7 @@ public class PreparedStatementInserter implements AutoCloseable {
     flush();
   }
 
+  @NotNull
   public ResultSet execute() throws SQLException {
     return st.executeQuery();
   }

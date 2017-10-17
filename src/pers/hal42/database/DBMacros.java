@@ -58,8 +58,7 @@ public class DBMacros extends GenericDB {
    * if @param picky then insist on this being a fresh creation, else ignore whether it already exists.
    */
   public boolean createSchema(String schemaName, boolean picky) {
-    QueryString query = QueryString.Clause();
-    query.cat("CREATE SCHEMA");
+    QueryString query = QueryString.Clause("CREATE SCHEMA");
     if (!picky) {
       query.cat("IF NOT EXISTS");
     }

@@ -8,6 +8,8 @@ import pers.hal42.text.AsciiIterator;
 import pers.hal42.text.ListWrapper;
 import pers.hal42.text.TextList;
 
+import java.util.Iterator;
+
 import static java.text.MessageFormat.format;
 import static pers.hal42.database.QueryString.SqlKeyword.*;
 
@@ -228,8 +230,34 @@ public class QueryString {
   }
 
   public Lister startList(String prefix) {
-    return new Lister(prefix);
+    Lister noob = new Lister(prefix);
+    noob.q = this;
+    return noob;
   }
+
+  public Lister startList(String prefix, String closer) {
+    Lister noob = new Lister(prefix, closer);
+    noob.q = this;
+    return noob;
+  }
+
+  /** append parenthesized list of columns */
+  public QueryString catList(String prefix, Iterator<ColumnAttributes> cols, String closer) {
+    try (QueryString.Lister pklister = startList(prefix, closer)) {
+      cols.forEachRemaining(col -> pklister.append(col.name));
+    }
+    return this;
+  }
+
+  public QueryString catList(String prefix, String closer, ColumnAttributes... cols) {
+    try (QueryString.Lister pklister = startList(prefix, closer)) {
+      for (ColumnAttributes col : cols) {
+        pklister.append(col.name);
+      }
+    }
+    return this;
+  }
+
 
   /** you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state */
   public QueryString where() {
@@ -773,6 +801,12 @@ public class QueryString {
     return this;
   }
 
+  /** where clause for prepared statement */
+  public QueryString whereColumns(Iterator<ColumnAttributes> cols) {
+    cols.forEachRemaining(where()::prepared);
+    return this;
+  }
+
   /** append prepared statement with a field for each member of list. */
   public QueryString whereList(ColumnAttributes col, int listSize) {
     where();
@@ -794,6 +828,19 @@ public class QueryString {
     return this;
   }
 
+  public QueryString prepareValues(Iterator<ColumnAttributes> cols) {
+    int marks;
+    try (QueryString.Lister lister = startList("(")) {
+      cols.forEachRemaining(col -> lister.append(col.name));
+      marks = lister.counter;
+    }
+    try (QueryString.Lister lister = startList(" VALUES (")) {
+      while (marks-- > 0) {
+        lister.append("?");
+      }
+    }
+    return this;
+  }
 
   /** @returns new query starting "delete from sch.tab" */
   public static QueryString DeleteFrom(TableInfo ti) {
@@ -813,7 +860,7 @@ public class QueryString {
 
   /** @returns new query starting with: "update schema.tablename " */
   public static QueryString Update(TableInfo ti) {
-    return Clause().cat(QueryString.SqlKeyword.UPDATE).cat(ti.fullName());
+    return Clause(SqlKeyword.UPDATE.toString()).cat(ti.fullName());
   }
 
   /** create new query starting "select *" */
@@ -892,21 +939,24 @@ public class QueryString {
 
 
   /** @returns new empty {@link QueryString} */
-  public static QueryString Clause() {
-    return new QueryString();
+  public static QueryString Clause(String message, Object... clump) {
+    QueryString clause = new QueryString();
+    clause.cat(format(message, clump));
+    return clause;
   }
 
   /** @returns New clause starting with Where column=false */
   public static QueryString WhereNot(ColumnProfile column) {
-    return QueryString.Clause().where().isFalse(column);
+    return QueryString.Clause("").where().isFalse(column);
   }
 
   public static QueryString WhereIsTrue(ColumnProfile column) {
-    return QueryString.Clause().where().isTrue(column);
+    return QueryString.Clause("").where().isTrue(column);
   }
 
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
+    public QueryString q;
     /** begin a list with a comma as the closer */
     public Lister(String prefix) {
       this(prefix, ") ");

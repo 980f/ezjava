@@ -30,6 +30,11 @@ public class QuarterRangeDbitem {
     target.two().parse(end);
   }
 
+  public void insert(PreparedStatementInserter psi, QuarterRange q) throws SQLException {
+    psi.set(start, q.oneImage());
+    psi.set(end, q.twoImage());
+  }
+
   /** for incrementally scanned row */
   public static class QuarterRangeResultParser {
     QuarterRange target;
