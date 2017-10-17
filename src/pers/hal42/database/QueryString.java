@@ -30,6 +30,7 @@ public class QueryString {
     DELETE,
     ON,
     IN,
+    BETWEEN, //beware this is inclusive of both ends.
 
     ADD,
     NULL,
@@ -173,6 +174,14 @@ public class QueryString {
     return this;
   }
 
+  public QueryString dot(String name) {
+    guts.append('.');
+    guts.append(name);
+    space();
+    return this;
+  }
+
+
   /** append AS clause, with generous spaces */
   public QueryString alias(String aliaser) {
     return cat(AS).word(aliaser);
@@ -200,9 +209,7 @@ public class QueryString {
     guts.append(joincolumnname);
     cat("=");
     guts.append(aliaser.next());
-    guts.append('.');
-    guts.append(joincolumnname);
-    space();
+    dot(joincolumnname);
     return this;
   }
 
@@ -223,8 +230,7 @@ public class QueryString {
   public QueryString dot(String prefix, String postfix) {
     space();
     guts.append(prefix);
-    guts.append('.');
-    guts.append(postfix);
+    dot(postfix);
     space();
     return this;
   }
@@ -286,13 +292,17 @@ public class QueryString {
 
   public QueryString quoted(String value) {
     if (value == null) {
-      cat("?");
+      qMark();
     } else {
       cat("'");
       guts.append(value);
       cat("'");
     }
     return this;
+  }
+
+  public QueryString qMark() {
+    return cat("?");
   }
 
   /** @returns this after appending "IN( @param list )" */
@@ -593,16 +603,13 @@ public class QueryString {
   public QueryString nvPairPrepared(String field) {
     word(field);
     cat(EQUALS);
-    guts.append('?');
+    qMark();
     return this;
   }
 
   /** append "field.name=?" */
   public QueryString prepared(ColumnAttributes field) {
-    word(field.name);
-    cat(EQUALS);
-    guts.append('?');
-    return this;
+    return nvPairPrepared(field.name);
   }
 
   public QueryString nvPair(String field, int value) {
@@ -840,6 +847,14 @@ public class QueryString {
       }
     }
     return this;
+  }
+
+  /**
+   * {where|and} colname between ? and ? .
+   * As always beware that BETWEEN is inclusive, and as such not suitable for a sliding window
+   */
+  public QueryString whereBetween(ColumnAttributes col) {
+    return where().cat(col.name).cat(SqlKeyword.BETWEEN).qMark().cat(AND).qMark();
   }
 
   /** @returns new query starting "delete from sch.tab" */
