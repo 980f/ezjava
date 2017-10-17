@@ -20,8 +20,10 @@ public class PreparedStatementInserter implements AutoCloseable {
   /** how much batch to accumulate before sending. defaults to send all right away. */
   public int batchSize = 0;
 
-  private PreparedStatement st;
-  private int sti;
+  //feel free to subvert this class, it is an assistant not a manager
+  public PreparedStatement st;
+  //feel free to subvert this class, it is an assistant not a manager
+  public int sti;
 
   public PreparedStatementInserter(PreparedStatement st) {
     legit = st != null;

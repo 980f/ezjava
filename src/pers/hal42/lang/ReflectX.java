@@ -30,6 +30,10 @@ public class ReflectX {
     String legacy() default "";
   }
 
+  public static int Choices(Class<? extends Enum> eClass) {
+    return eClass.getEnumConstants().length;
+  }
+
   /** if Object o has a String field named 'name' then set that field's value to the name of o in parent*/
   public static void eponomize(Object o, Object parent) {
     Class claz=o.getClass();
@@ -546,13 +550,20 @@ public class ReflectX {
 
   /** @returns a method of @param claz that has an annotation of @param noted which matches the optional argument @param matches. The compiler chooses which if there are more than one. */
   public static <A extends Annotation> Method methodFor(Class claz, Class<A> noted, Predicate<A> matches) {
-    final Method[] methods = claz.getDeclaredMethods();
-    for (Method method : methods) {
+    for (Method method : claz.getDeclaredMethods()) {
       A annotation = method.getAnnotation(noted);
       if (annotation != null && (matches == null || matches.test(annotation))) {
+        method.setAccessible(true);
         return method;
       }
     }
+//    for (Method method : claz.getMethods()) {
+//      A annotation = method.getAnnotation(noted);
+//      if (annotation != null && (matches == null || matches.test(annotation))) {
+//         return method;
+//      }
+//    }
+
     return null;
   }
 //
