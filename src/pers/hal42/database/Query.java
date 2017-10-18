@@ -81,26 +81,23 @@ public abstract class Query {
   }
 
   public boolean hasMoreRows() {
-    boolean ret = false;
+
     try {
       if (rs != null) {
-        if (rs.getType() != ResultSet.TYPE_FORWARD_ONLY) {
-          ret = /*rs.isLast() ||*/ rs.isAfterLast();
-        } else {
-          ret = false; // need a MAYBE! (this shouldn't work, but does)
-        }
+        return rs.getType() == ResultSet.TYPE_FORWARD_ONLY || !rs.isAfterLast();
       } else {
         if (loadedone) {
-          ret = false;//!showedone;
+          return true;
         } else {
           dbg.ERROR("hasMoreRows() rs is NULL!");
+          return false;
         }
       }
     } catch (Exception t) {
       dbg.ERROR("hasMoreRows() Exception checking for more records!");
       dbg.Caught(t);
+      return false;
     }
-    return !ret;
   }
 
   protected void fromResultSet(ResultSet rs) {

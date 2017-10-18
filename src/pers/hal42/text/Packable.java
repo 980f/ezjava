@@ -10,6 +10,4 @@ public interface Packable {
   default void canonicize() {
     parse(packed());
   }
-
-  ;
 }

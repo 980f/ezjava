@@ -5,17 +5,13 @@ import pers.hal42.text.StringIterator;
 import java.lang.annotation.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Iterator;
 
 public class EnumerationFilter<E extends Enum> {
-  /**
-   * marker annotation for use by applyTo and apply()
-   * if class is annotated with @Stored then process all fields, not just those annotated with Stored.
-   */
+  /** marks a static method that either takes a char and returns an Enum or vice versa */
   @Documented
-  @Inherited
   @Retention(RetentionPolicy.RUNTIME)
   @Target({ElementType.METHOD})
-  /** marks a static method that either takes a char and returns an Enum or vice versa*/
   public @interface Xform {
     //public static Enum whatever(char ch)
     boolean parser();
@@ -44,10 +40,6 @@ public class EnumerationFilter<E extends Enum> {
     return it != null && present[it.ordinal()];
   }
 
-  public Iterator<E> iterator() {
-    return new Iterator<>();
-  }
-
   public EnumerationFilter<E> clear() {
 //todo:2    Arrays.setAll(present,false);
     for (int i = present.length; i-- > 0; ) {
@@ -67,7 +59,7 @@ public class EnumerationFilter<E extends Enum> {
     return this;
   }
 
-  public void parse(String packed) {
+  public boolean parse(String packed) {
     if (packed != null) {
       final byte[] bytes = packed.getBytes();
 
@@ -83,9 +75,13 @@ public class EnumerationFilter<E extends Enum> {
             //ignored input
           }
         }
+        return true;
       } else {
         //class not suitable for automatic packing.
+        return false;
       }
+    } else {
+      return true;//we parse 'nothing' just fine, even if we can't parse at all ;)
     }
   }
 
@@ -116,26 +112,28 @@ public class EnumerationFilter<E extends Enum> {
     }
   }
 
-  public class Iterator<E> implements java.util.Iterator<E> {
-    protected int pointer = 0;
+  public Iterator<E> iterator() {
+    return new Iterator<E>() {
+      protected int pointer = 0;
 
-    @Override
-    public boolean hasNext() {
-      for (; pointer < present.length; ++pointer) {
-        if (present[pointer]) {
-          return true;
+      @Override
+      public boolean hasNext() {
+        for (; pointer < present.length; ++pointer) {
+          if (present[pointer]) {
+            return true;
+          }
         }
+        return false;
       }
-      return false;
-    }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public E next() {
-      if (pointer < present.length) {
-        return (E) value[pointer++];
+      @SuppressWarnings("unchecked")
+      @Override
+      public E next() {
+        if (pointer < present.length) {
+          return value[pointer++];
+        }
+        return null;
       }
-      return null;
-    }
+    };
   }
 }

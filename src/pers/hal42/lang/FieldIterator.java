@@ -95,6 +95,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
                 }
               }
             } catch (IllegalAccessException e) {
+              //noinspection UnnecessaryContinue
               continue;//try next field, this one was inaccessible.
             }
           }

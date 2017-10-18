@@ -45,6 +45,7 @@ public class TimeFilter {
     }
     if (DateInput.nonTrivial(date1) && !DateInput.nonTrivial(date2)) {     // if only one is set
       dbg.VERBOSE("settimeRange sees that date1 nontrivial and date2 trivial");
+      //noinspection StatementWithEmptyBody
       if (!date1.nonTrivialTime()) {
         dbg.VERBOSE("settimeRange setting date2 based on date1 values");
         // if only the date is set, but not the time, create a range for the day

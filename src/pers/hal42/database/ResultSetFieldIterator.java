@@ -10,7 +10,7 @@ public class ResultSetFieldIterator {
   public ResultSet rs;
   public final int columnCount;
   int ordinator = 0;//we don't count auto's
-  private final ResultSetMetaData metaData;
+  private final ResultSetMetaData metaData; //retain for debug
 
   public ResultSetFieldIterator(ResultSet rs) throws SQLException {
     this.rs = rs;

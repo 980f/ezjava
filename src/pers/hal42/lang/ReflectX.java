@@ -364,6 +364,7 @@ public class ReflectX {
     if(char.class==type){
       return true;
     }
+    //noinspection RedundantIfStatement
     if(byte.class==type){
       return true;
     }
