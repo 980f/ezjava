@@ -4,8 +4,10 @@ import java.util.Iterator;
 
 /** Iterate Strings from some other iterator */
 public class StringifyingIterator implements StringIterator {
+  /** what to convert null into. */
+  public String forNull = "";
 
-  Iterator wrapped;
+  public Iterator wrapped;
 
   public StringifyingIterator(Iterator wrapped) {
     this.wrapped = wrapped;
@@ -19,7 +21,13 @@ public class StringifyingIterator implements StringIterator {
    * @returns null if hasNext() returned false;
    */
   public String next() {
-    return String.valueOf(wrapped.next());
+
+    final Object item = wrapped.next();
+    if (item == null) {
+      return forNull;
+    } else {
+      return String.valueOf(item);
+    }
   }
 }
 

@@ -30,20 +30,61 @@ public class ReflectX {
     String legacy() default "";
   }
 
+  /** @returns whether method was invoked */
+  public static boolean doMethodNamed(Object o, String methodName, Object... args) {
+    try {
+      Class[] arglist = new Class[args.length];
+      for (int i = args.length; i-- > 0; ) {
+        arglist[i] = args[i].getClass();
+      }
+      Method method = o.getClass().getMethod(methodName, arglist);
+      method.invoke(o, args);
+      return true;
+    } catch (NoSuchMethodException | NullPointerException | InvocationTargetException | IllegalAccessException e) {
+      return false;
+    }
+  }
+
+  /** run a method, @returns null if the method invocation faulted, which can't be distinguished from a method which might return a null. */
+  @SuppressWarnings("unchecked")
+  public static <R> R doMethodWithReturn(Object obj, Method method, Object... args) {
+    if (method != null) {
+      try {
+        return (R) method.invoke(obj, args);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /** @returns whether method @param parser was invoked. */
+  public static boolean doMethod(Object obj, Method method, Object... args) {
+    if (method != null) {
+      try {
+        method.invoke(obj, args);
+        return true;
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        return false;
+      }
+    }
+    return false;
+  }
+
   public static int Choices(Class<? extends Enum> eClass) {
     return eClass.getEnumConstants().length;
   }
 
-  /** if Object o has a String field named 'name' then set that field's value to the name of o in parent*/
+  /** if Object o has a String field named 'name' then set that field's value to the name of o in parent */
   public static void eponomize(Object o, Object parent) {
-    Class claz=o.getClass();
+    Class claz = o.getClass();
     final Field[] fields = claz.getFields();
     for (Field field : fields) {
       if (field.getName().equals("name")) {  //object has a 'name' field
-        Field wrapper=fieldForChild(o,parent);
-        if(wrapper!=null){
+        Field wrapper = fieldForChild(o, parent);
+        if (wrapper != null) {
           try {
-            field.set(o,wrapper.getName());
+            field.set(o, wrapper.getName());
           } catch (IllegalAccessException e) {
 //            dbg.Caught(e);
           }
@@ -53,12 +94,12 @@ public class ReflectX {
     }
   }
 
-  public static Field fieldForChild(Object child, Object parent){
+  public static Field fieldForChild(Object child, Object parent) {
     final Field[] fields = parent.getClass().getFields();
     for (final Field field : fields) {
       try {
         final Object o = field.get(parent);
-        if(o ==child){
+        if (o == child) {
           return field;
         }
       } catch (IllegalAccessException e) {
@@ -68,9 +109,9 @@ public class ReflectX {
     return null;
   }
 
-  public static String nameOfChild(Object child, Object parent){
-    Field field=fieldForChild(child,parent);
-    if(field!=null){
+  public static String nameOfChild(Object child, Object parent) {
+    Field field = fieldForChild(child, parent);
+    if (field != null) {
       return field.getName();
     }
     return null;
@@ -308,7 +349,7 @@ public class ReflectX {
       }
       //if probate is an extension of claz
       final Class[] dclasses = probate.getDeclaredClasses();
-      for (Class it :dclasses) {
+      for (Class it : dclasses) {
         if (it.equals(claz)) {
           return true;
         }
@@ -339,17 +380,17 @@ public class ReflectX {
 
   /** @returns in essence whether field's class has fields. The internals of this method are occasionally reordered for performance of particular users. */
   public static boolean isScalar(Field field) {
-    Class type=field.getType();
-    if(int.class==type){
+    Class type = field.getType();
+    if (int.class == type) {
       return true;
     }
-    if(boolean.class==type){
+    if (boolean.class == type) {
       return true;
     }
-    if(double.class==type){
+    if (double.class == type) {
       return true;
     }
-    if(long.class==type){
+    if (long.class == type) {
       return true;
     }
     if (String.class == type) {
@@ -361,11 +402,11 @@ public class ReflectX {
     if (short.class == type) {
       return true;
     }
-    if(char.class==type){
+    if (char.class == type) {
       return true;
     }
     //noinspection RedundantIfStatement
-    if(byte.class==type){
+    if (byte.class == type) {
       return true;
     }
     return false;

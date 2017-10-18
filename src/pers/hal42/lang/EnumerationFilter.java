@@ -1,26 +1,23 @@
 package pers.hal42.lang;
 
 import pers.hal42.text.StringIterator;
+import pers.hal42.transport.Storable;
+import pers.hal42.transport.Xform;
 
-import java.lang.annotation.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 
+@Storable.Stored(parseList = "parseList") //marks this as having a method for parsing from StringItreator
 public class EnumerationFilter<E extends Enum> {
-  /** marks a static method that either takes a char and returns an Enum or vice versa */
-  @Documented
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target({ElementType.METHOD})
-  public @interface Xform {
-    //public static Enum whatever(char ch)
-    boolean parser();
-
-    //public static char whatever(Enum item)
-    boolean packer();
-  }
 
   protected Class<? extends E> claz;
+  /**
+   * for the convenience of manual editing setting this guy makes the others moot
+   */
+  @Storable.Stored
+  public boolean all = true;
+
   protected boolean[] present;
   protected E[] value;
   private Method packer;
@@ -37,10 +34,11 @@ public class EnumerationFilter<E extends Enum> {
 
   /** named for use as a Predicate<InstitutionType> */
   public boolean test(E it) {
-    return it != null && present[it.ordinal()];
+    return all || (it != null && present[it.ordinal()]);
   }
 
   public EnumerationFilter<E> clear() {
+    all = false;
 //todo:2    Arrays.setAll(present,false);
     for (int i = present.length; i-- > 0; ) {
       present[i] = false;
@@ -48,13 +46,19 @@ public class EnumerationFilter<E extends Enum> {
     return this;
   }
 
+  /** try to set permission. @returns whether @param item was valid */
+  public boolean allow(E item) {
+    if (item != null) {
+      present[item.ordinal()] = true;
+      return true;
+    }
+    return false;
+  }
+
+
   public EnumerationFilter<E> parseList(StringIterator list) {
     while (list.hasNext()) {
-      String next = list.next();
-      Enum item = ReflectX.parseEnum(claz, next);
-      if (item != null) {
-        present[item.ordinal()] = true;
-      }
+      allow(ReflectX.parseEnum(claz, list.next()));
     }
     return this;
   }
@@ -66,11 +70,8 @@ public class EnumerationFilter<E extends Enum> {
       if (parser != null) {
         for (byte ch : bytes) {
           try {
-            @SuppressWarnings("unchecked")
-            E it = (E) parser.invoke(null, ch);
-            if (it != null) {
-              present[it.ordinal()] = true;
-            }
+            //noinspection unchecked
+            allow((E) parser.invoke(null, ch));
           } catch (IllegalAccessException | InvocationTargetException e) {
             //ignored input
           }
@@ -135,5 +136,14 @@ public class EnumerationFilter<E extends Enum> {
         return null;
       }
     };
+  }
+
+  public boolean hasNone() {
+    for (boolean one : present) {
+      if (one) {
+        return false;
+      }
+    }
+    return true;
   }
 }

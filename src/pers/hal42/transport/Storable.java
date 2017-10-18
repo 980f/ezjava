@@ -7,7 +7,7 @@ import pers.hal42.lang.LinearMap;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.text.Packable;
+import pers.hal42.text.StringifyingIterator;
 import pers.hal42.text.TextList;
 
 import java.lang.Boolean;
@@ -63,10 +63,16 @@ public class Storable {
   public @interface Stored {
     /** if nontrivial AND child is not found by the field name then it is sought by this name. */
     String legacy() default "";
+
+    /** If not trivial then is name of method that parses from an array of child images. */
+    String parseList() default "";
+
+    /** If not trivial then is name of method that returns a textiterator for creating nameless children. */
+    String packList() default "";
   }
 
   /**
-   * marker annotation for use by applyTo and apply()
+   * marker annotation for use by applyTo and apply() to create child objects for null fields.
    */
   @Documented
   @Retention(RetentionPolicy.RUNTIME)
@@ -309,6 +315,12 @@ public class Storable {
         }
         if (child != null) {//then we have init data for the field
           try {
+            String hasParser = (stored != null) ? stored.parseList() : null;
+            if (StringX.NonTrivial(hasParser)) {
+              //delegate field setting to parser function
+              ReflectX.doMethodNamed(field.get(obj), hasParser, new StringifyingIterator(children()));
+              continue;//next field.
+            }
             Class fclaz = field.getType();//parent class: getDeclaringClass();
             if (r.aggressive) {
               field.setAccessible(true);
@@ -330,12 +342,10 @@ public class Storable {
               } else {
                 dbg.VERBOSE("Improper or null enum {0}", child.fullName());
               }
-            } else if (ReflectX.isImplementorOf(fclaz, Packable.class)) {
-              Object raw = field.get(obj);
-              //todo:1 autocreate if class has string constructor option.
-              ((Packable) raw).parse(child.getImage());//object must exist as we need its concrete class.
             } else if (fclaz == Storable.class) {//member is a reference to a child herein
               field.set(obj, child);
+            } else if (fclaz.getAnnotation(Xform.class) != null) {//on type just means that it is worth looking for a method
+              ReflectX.doMethod(field.get(obj), ReflectX.methodFor(claz, Xform.class, Xform::parser), child.getImage());
             }
             //todo:1 add clauses for the remaining field.setXXX methods.
             else {
@@ -810,7 +820,7 @@ public class Storable {
   private void enumOnSetImage() {
     try {
       token = ReflectX.parseEnum(enumerizer, image);
-      ivalue = token.ordinal();
+      ivalue = token != null ? token.ordinal() : BadIndex;
     } catch (NullPointerException | IllegalArgumentException e) {
       dbg.Caught(e); //not our job to enforce validity
     }
@@ -861,6 +871,8 @@ public class Storable {
               child.setValue(field.getInt(obj));
             } else if (fclaz.isEnum()) {
               child.setValue(field.get(obj).toString());
+            } else if (fclaz.getAnnotation(Xform.class) != null) {//on type just means that it is worth looking for a method
+              child.setValue((String) ReflectX.doMethodWithReturn(field.get(obj), ReflectX.methodFor(claz, Xform.class, Xform::packer)));
             }
             //todo:1 add clauses for the remaining field.getXXX methods.
             else {
@@ -992,6 +1004,23 @@ public class Storable {
 
   public int numChildren() {
     return wad.size();
+  }
+
+  /** shallow child iterator */
+  public Iterator<Storable> children() {
+    return new Iterator<Storable>() {
+      private int ordinal = 0;
+
+      @Override
+      public boolean hasNext() {
+        return ordinal < wad.size();
+      }
+
+      @Override
+      public Storable next() {
+        return wad.elementAt(ordinal++);
+      }
+    };
   }
 
   /** try to divine type from appearance, recursively */
