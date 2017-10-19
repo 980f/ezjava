@@ -75,7 +75,7 @@ public enum ColumnType {
       }
       break;
     case INTEGER:
-      return other == DECIMAL;
+      return other == DECIMAL || other == TINYINT;//adding cases for fedfis optimization of column widths
     case REF: //keys are integers, perhaps need to allow 64 bit or any size integers as well as 32
       return other == INTEGER;
     }

@@ -1359,6 +1359,12 @@ public class DBMacros extends GenericDB {
     }
   }
 
+
+  public int getIntFrom(PreparedStatement selector, int whichcolumn) throws SQLException {
+    final ResultSet rs = selector.executeQuery();
+    return getIntFromRS(whichcolumn, rs);
+  }
+
   public boolean doPreparedStatement(String query, Consumer<PreparedStatement> preparer, Consumer<ResultSet> actor) {
     try (PreparedStatement pst = makePreparedStatement(query)) {
       if (preparer != null) {

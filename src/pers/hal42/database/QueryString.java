@@ -222,6 +222,7 @@ public class QueryString {
     return Open().cat(cp.fullName());
   }
 
+  /** @returns this after appending just a close paren, no added spaces. */
   public QueryString Close() {
     guts.append(')');
     return this;
@@ -485,6 +486,7 @@ public class QueryString {
     return this;
   }
 
+  /** append '(' @param s ')' with appropriate spaces */
   public QueryString parenth(String s) {
 //    space();
     Open().cat(s).Close();
@@ -855,6 +857,19 @@ public class QueryString {
    */
   public QueryString whereBetween(ColumnAttributes col) {
     return where().cat(col.name).cat(SqlKeyword.BETWEEN).qMark().cat(AND).qMark();
+  }
+
+  /**
+   * @returns this after appending 'functioname('.
+   * <br> mysql doesn't tolerate space between function name and opening paren
+   */
+  public QueryString function(SqlKeyword keyword) {
+    guts.append(keyword.toString().trim());
+    return Open();
+  }
+
+  public static QueryString Count(ColumnAttributes col) {
+    return Select().function(COUNT).cat(col.name).Close();
   }
 
   /** @returns new query starting "delete from sch.tab" */

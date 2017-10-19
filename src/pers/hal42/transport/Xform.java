@@ -14,3 +14,4 @@ public @interface Xform {
   //public static char whatever(Enum item)
   boolean packer() default false;
 }
+

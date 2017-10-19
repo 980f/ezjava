@@ -16,6 +16,7 @@ public class NamedValueIterator implements Iterator<NamedValue> {
     this.source = source;
     this.cutter = cutter;
     this.sharedReturn = sharedReturn;
+    preview();
   }
 
   public NamedValueIterator(StringIterator source) {
@@ -25,7 +26,7 @@ public class NamedValueIterator implements Iterator<NamedValue> {
   private void preview() {
     while (source.hasNext()) {
       lookahead = source.next();
-      if (StringX.NonTrivial(lookahead) && !lookahead.startsWith("#")) { //vacuous or commented out item
+      if (StringX.NonTrivial(lookahead)) {
         return;
       }
     }

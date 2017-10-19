@@ -17,6 +17,7 @@ public class IncludeFileIterator extends FancyArgIterator {
     this.filterPounds = filterPounds;
   }
 
+  //todo:1 prefetch to get rid of spurious blank lines.
   @Override
   public String next() {
     String arg = super.next();

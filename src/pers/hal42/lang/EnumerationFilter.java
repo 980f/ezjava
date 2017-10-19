@@ -2,34 +2,30 @@ package pers.hal42.lang;
 
 import pers.hal42.text.StringIterator;
 import pers.hal42.transport.Storable;
-import pers.hal42.transport.Xform;
+import pers.hal42.transport.Xformer;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.Iterator;
 
-@Storable.Stored(parseList = "parseList") //marks this as having a method for parsing from StringItreator
+@Storable.Stored(parseList = "parseList") //marks this as having a method for parsing from StringIterator
 public class EnumerationFilter<E extends Enum> {
 
   protected Class<? extends E> claz;
   /**
-   * for the convenience of manual editing setting this guy makes the others moot
+   * for the convenience of manual editing setting this guy makes the others moot.
    */
   @Storable.Stored
   public boolean all = true;
 
   protected boolean[] present;
   protected E[] value;
-  private Method packer;
-  private Method parser;
-
+  Xformer xf;
   @SuppressWarnings("unchecked")
   public EnumerationFilter(Class claz) {
     this.claz = claz;
     value = (E[]) claz.getEnumConstants();
     present = new boolean[value.length];
-    packer = ReflectX.methodFor(claz, Xform.class, Xform::packer);
-    parser = ReflectX.methodFor(claz, Xform.class, Xform::parser);
+    xf = new Xformer(claz);
   }
 
   /** named for use as a Predicate<InstitutionType> */
@@ -37,6 +33,36 @@ public class EnumerationFilter<E extends Enum> {
     return all || (it != null && present[it.ordinal()]);
   }
 
+  /** @returns whether any of the items are 'present' */
+  @SafeVarargs
+  public final boolean any(E... items) {
+    if (all) {
+      return true;
+    }
+    for (E item : items) {
+      if (test(item)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** @returns whether ALL of the items are 'present' */
+  @SafeVarargs
+  public final boolean all(E... items) {
+    if (all) {
+      return true;
+    }
+    for (E item : items) {
+      if (!test(item)) {
+        return false;
+      }
+    }
+    all = true;//
+    return true;
+  }
+
+  /** forget that any itmes were 'present' */
   public EnumerationFilter<E> clear() {
     all = false;
 //todo:2    Arrays.setAll(present,false);
@@ -46,7 +72,7 @@ public class EnumerationFilter<E extends Enum> {
     return this;
   }
 
-  /** try to set permission. @returns whether @param item was valid */
+  /** try to set a permission. @returns whether @param item was valid */
   public boolean allow(E item) {
     if (item != null) {
       present[item.ordinal()] = true;
@@ -55,23 +81,31 @@ public class EnumerationFilter<E extends Enum> {
     return false;
   }
 
+  /** a convenience for testing */
+  public void doOnly(E item) {
+    clear();
+    allow(item);
+  }
 
+  /** set permissions according to a list of fullsized tags */
   public EnumerationFilter<E> parseList(StringIterator list) {
+    clear();//all usages at one point did this so I brought it into this method.
     while (list.hasNext()) {
       allow(ReflectX.parseEnum(claz, list.next()));
     }
     return this;
   }
 
+  /** set permissions from single letter abbreviations */
   public boolean parse(String packed) {
     if (packed != null) {
       final byte[] bytes = packed.getBytes();
 
-      if (parser != null) {
+      if (xf.parser != null) {
         for (byte ch : bytes) {
           try {
             //noinspection unchecked
-            allow((E) parser.invoke(null, ch));
+            allow((E) xf.parser.invoke(null, ch));
           } catch (IllegalAccessException | InvocationTargetException e) {
             //ignored input
           }
@@ -88,7 +122,7 @@ public class EnumerationFilter<E extends Enum> {
 
   @Override
   public String toString() {
-    if (packer != null) {
+    if (xf.packer != null) {
       return packed();
     } else {
       return super.toString();
@@ -96,13 +130,12 @@ public class EnumerationFilter<E extends Enum> {
   }
 
   public String packed() {
-
-    if (packer != null) {
+    if (xf.packer != null) {
       StringBuilder packed = new StringBuilder(present.length);
       Iterator<E> inefficient = this.iterator();
       while (inefficient.hasNext()) {
         try {
-          packed.append(packer.invoke(null, inefficient.next()));
+          packed.append(xf.packer.invoke(null, inefficient.next()));
         } catch (IllegalAccessException | InvocationTargetException e) {
           return null;//method improperly declared
         }

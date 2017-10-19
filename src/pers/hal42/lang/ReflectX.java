@@ -340,27 +340,31 @@ public class ReflectX {
   }
 
   /**
-   * @returns whether @param claz implements @param probate
+   * @returns whether @param probate can be cast to @param claz
    */
   public static boolean isImplementorOf(Class probate, Class claz) {
     if (claz != null && probate != null) {
       if (claz.equals(probate)) {
         return true; //frequent case
       }
-      //if probate is an extension of claz
-      final Class[] dclasses = probate.getDeclaredClasses();
-      for (Class it : dclasses) {
-        if (it.equals(claz)) {
-          return true;
-        }
+      //noinspection unchecked
+      if (claz.isAssignableFrom(probate)) {
+        return true;
       }
-      //if probate implements an interface
-      final Class[] ifaces = probate.getInterfaces();
-      for (Class it : ifaces) {
-        if (it.equals(claz)) {
-          return true;
-        }
-      }
+      //swapped operands on tnhe above isAssignableFrom, replaced the following (feeling dumb).
+//      Class reprobate=probate;//retain original for debug
+//      do {
+//        final Class[] ifaces = reprobate.getInterfaces();//if probate implements an interface
+//        for (Class it : ifaces) {
+//          if (it.equals(claz)) {
+//            return true;
+//          }
+//        }
+//        reprobate=reprobate.getSuperclass();
+//        if(reprobate==claz){
+//          return true;
+//        }
+//      } while(reprobate!=Object.class);
     }
     return false;
   }
@@ -378,38 +382,10 @@ public class ReflectX {
     return skipper;
   }
 
-  /** @returns in essence whether field's class has fields. The internals of this method are occasionally reordered for performance of particular users. */
+  /** @returns in essence (negative of) whether field's class has fields. */
   public static boolean isScalar(Field field) {
     Class type = field.getType();
-    if (int.class == type) {
-      return true;
-    }
-    if (boolean.class == type) {
-      return true;
-    }
-    if (double.class == type) {
-      return true;
-    }
-    if (long.class == type) {
-      return true;
-    }
-    if (String.class == type) {
-      return true;
-    }
-    if (float.class == type) {
-      return true;
-    }
-    if (short.class == type) {
-      return true;
-    }
-    if (char.class == type) {
-      return true;
-    }
-    //noinspection RedundantIfStatement
-    if (byte.class == type) {
-      return true;
-    }
-    return false;
+    return type != Void.class && (type.isPrimitive() || type == String.class || type.isEnum());
   }
 
   /**

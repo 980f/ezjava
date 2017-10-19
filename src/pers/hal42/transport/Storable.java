@@ -344,8 +344,8 @@ public class Storable {
               }
             } else if (fclaz == Storable.class) {//member is a reference to a child herein
               field.set(obj, child);
-            } else if (fclaz.getAnnotation(Xform.class) != null) {//on type just means that it is worth looking for a method
-              ReflectX.doMethod(field.get(obj), ReflectX.methodFor(claz, Xform.class, Xform::parser), child.getImage());
+            } else if (Xformer.IsPacker(fclaz)) {//on type just means that it is worth looking for a method
+              Xformer.UnpackInto(field.get(obj), claz, child.getImage());
             }
             //todo:1 add clauses for the remaining field.setXXX methods.
             else {
@@ -871,8 +871,8 @@ public class Storable {
               child.setValue(field.getInt(obj));
             } else if (fclaz.isEnum()) {
               child.setValue(field.get(obj).toString());
-            } else if (fclaz.getAnnotation(Xform.class) != null) {//on type just means that it is worth looking for a method
-              child.setValue((String) ReflectX.doMethodWithReturn(field.get(obj), ReflectX.methodFor(claz, Xform.class, Xform::packer)));
+            } else if (Xformer.IsPacker(fclaz)) {
+              child.setValue(Xformer.Packed(field.get(obj), claz));
             }
             //todo:1 add clauses for the remaining field.getXXX methods.
             else {

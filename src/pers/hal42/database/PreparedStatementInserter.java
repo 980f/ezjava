@@ -1,7 +1,6 @@
 package pers.hal42.database;
 
 import com.fedfis.db.ColumnAttributes;
-import org.jetbrains.annotations.NotNull;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -107,8 +106,20 @@ public class PreparedStatementInserter implements AutoCloseable {
     flush();
   }
 
-  @NotNull
+  /** run an insert, @return new keys */
+  public ResultSet executeInsert(int[] autokeys) throws SQLException {
+    if (st.execute()) {
+      return st.getGeneratedKeys();
+    } else {
+      return null;
+    }
+  }
+
   public ResultSet execute() throws SQLException {
-    return st.executeQuery();
+    if (st.execute()) {//executeQuery() got "Can not issue data manipulation statements with executeQUery();
+      return st.getResultSet();
+    } else {
+      return null;
+    }
   }
 }
