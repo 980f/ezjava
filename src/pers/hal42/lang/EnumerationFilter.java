@@ -1,5 +1,6 @@
 package pers.hal42.lang;
 
+import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.StringIterator;
 import pers.hal42.transport.Storable;
 import pers.hal42.transport.Xformer;
@@ -99,15 +100,14 @@ public class EnumerationFilter<E extends Enum> {
   /** set permissions from single letter abbreviations */
   public boolean parse(String packed) {
     if (packed != null) {
-      final byte[] bytes = packed.getBytes();
-
       if (xf.parser != null) {
-        for (byte ch : bytes) {
+        for (char ch : packed.toCharArray()) {
           try {
             //noinspection unchecked
             allow((E) xf.parser.invoke(null, ch));
-          } catch (IllegalAccessException | InvocationTargetException e) {
+          } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
             //ignored input
+            ErrorLogStream.Global().Caught(e, "invoking an enum parser");
           }
         }
         return true;

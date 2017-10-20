@@ -262,7 +262,7 @@ public class Storable {
       dbg.VERBOSE("null name");
     }
     this.name = StringX.TrivialDefault(name, "");//normalize all trivialities, we don't want one space to be different name than two spaces ...
-    this.parent = null;//in yur face.
+    this.parent = null;
   }
 
   /** do NOT genericize this class just for this guy, who probably shouldn't be public. */

@@ -1,5 +1,6 @@
 package pers.hal42.transport;
 
+import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
 import java.io.FileNotFoundException;
@@ -23,18 +24,25 @@ public class JsonOptions {
   protected static final ErrorLogStream dbg = ErrorLogStream.getForClass(JsonOptions.class);//use base here, not the extension
 
   protected JsonOptions() {
-    node = JsonStorable.StandardRoot(getClass());
-    rules = Storable.Rules.Master;
-    //#_# while it might seem like a nice idea to invoke load() here, the derived objects don't yet exist and as such cannot therefore set defaults like they are supposed to.
+    this("");
   }
 
   /**
    * create and initialize from random file @param altfilename
    */
   public JsonOptions(String altfilename) {//public for test access, normal use is to derive from this class.
-    node = new Storable(altfilename);
+    if (StringX.NonTrivial(altfilename)) {
+      node = new Storable(altfilename);
+    } else {
+      node = JsonStorable.StandardRoot(getClass());
+    }
     rules = Storable.Rules.Master;
-//#_# violates contract to let construction set defaults    load(altfilename);
+    //#_# while it might seem like a nice idea to invoke load() here, the derived object's own fields don't yet exist and as such cannot therefore set defaults like they are supposed to. so no "load(altfilename)";
+  }
+
+  public JsonOptions(Storable existing) {
+    node = existing;
+    rules = Storable.Rules.Master;
   }
 
   /** apply DOM to object */
