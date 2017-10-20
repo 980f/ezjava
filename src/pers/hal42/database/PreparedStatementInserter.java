@@ -106,7 +106,7 @@ public class PreparedStatementInserter implements AutoCloseable {
     flush();
   }
 
-  /** run an insert, @return new keys */
+  /** @returns new keys from running what is presumed to be an insert. */
   public ResultSet executeInsert(int[] autokeys) throws SQLException {
     if (st.execute()) {
       return st.getGeneratedKeys();

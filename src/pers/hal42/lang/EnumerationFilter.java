@@ -135,8 +135,8 @@ public class EnumerationFilter<E extends Enum> {
       Iterator<E> inefficient = this.iterator();
       while (inefficient.hasNext()) {
         try {
-          packed.append(xf.packer.invoke(null, inefficient.next()));
-        } catch (IllegalAccessException | InvocationTargetException e) {
+          packed.append(xf.pack(inefficient.next()));
+        } catch (Throwable e) {
           return null;//method improperly declared
         }
       }

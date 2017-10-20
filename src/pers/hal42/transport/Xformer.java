@@ -13,6 +13,14 @@ public class Xformer {
     parser = getParser(claz);
   }
 
+  public Object pack(Object next) {
+    try {
+      return packer.invoke(next);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
   /** @returns whether @param fclaz suppoers packing */
   public static boolean IsPacker(Class fclaz) {
     return fclaz.getAnnotation(Xform.class) != null;

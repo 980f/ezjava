@@ -17,11 +17,14 @@ public class FilteringNonNullIterator<ColumnAttributes> implements Iterator<Colu
 
   @Override
   public boolean hasNext() {
-    while (prefetched == null && wrapped.hasNext()) {
-      prefetched = wrapped.next();
-      if (((prefetched != null) && (acceptor == null)) || acceptor.test(prefetched)) {
-        return true;
+    if (prefetched == null) {
+      while (wrapped.hasNext()) {
+        prefetched = wrapped.next();
+        if (((prefetched != null) && (acceptor == null)) || acceptor.test(prefetched)) {
+          return true;
+        }
       }
+      prefetched = null;
     }
     return false;
   }
