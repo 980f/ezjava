@@ -802,17 +802,25 @@ public class QueryString {
     }
   }
 
+  public void wherePrepared(ColumnAttributes col) {
+    where().prepared(col);
+  }
+
   /** where clause for prepared statement */
   public QueryString whereColumns(ColumnAttributes... cols) {
     for (ColumnAttributes col : cols) {
-      where().prepared(col);
+      wherePrepared(col);
     }
     return this;
   }
 
+
   /** where clause for prepared statement */
   public QueryString whereColumns(Iterator<ColumnAttributes> cols) {
-    cols.forEachRemaining(where()::prepared);
+//only called 'where' once, then prepared many    cols.forEachRemaining(where()::prepared);
+    while (cols.hasNext()) {
+      wherePrepared(cols.next());
+    }
     return this;
   }
 
@@ -938,19 +946,10 @@ public class QueryString {
     return new QueryString(SELECT);
   }
 
-//  /**
-//   * bridge for using old stuff with new builder technique
-//   */
-//  public static QueryString Wrap(String fullquery) {
-//    return new QueryString(fullquery);
-//  }
-
-
   /** @returns new {@link QueryString} starting with "Select " then @param first */
   public static QueryString Select(QueryString first) {
     return Select().cat(first);
   }
-
 
   /** @returns new {@link QueryString} starting with "Select table.name " */
   public static QueryString Select(ColumnProfile cp) {
@@ -966,7 +965,6 @@ public class QueryString {
   public static QueryString SelectDistinct(ColumnProfile cp) {
     return Select().cat(DISTINCT).cat(cp.fullName());
   }
-
 
   /** @returns new empty {@link QueryString} */
   public static QueryString Clause(String message, Object... clump) {
@@ -987,6 +985,7 @@ public class QueryString {
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
     public QueryString q;
+
     /** begin a list with a comma as the closer */
     public Lister(String prefix) {
       this(prefix, ") ");
