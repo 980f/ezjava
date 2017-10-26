@@ -68,6 +68,12 @@ public class DBMacros extends GenericDB {
     return this.doSimpleAction(query.toString(), null);
   }
 
+  /** @returns last automatically generated value, such as for an auto primary key */
+  public int getLastAuto() {
+    //mysql version:
+    return getIntFromQuery(QueryString.Select().cat("LAST_INSERT_ID()"));
+  }
+
 
   class NamedStatementList extends Vector<NamedStatement> {
     private ErrorLogStream dbg = null;
@@ -1359,10 +1365,10 @@ public class DBMacros extends GenericDB {
     }
   }
 
-
+  /** @returns integer from executing @param selector, -1 on some of the faults. If -1 is a legitimate response and not acceptible on error then don't use this convenience method.*/
   public int getIntFrom(PreparedStatement selector, int whichcolumn) throws SQLException {
     final ResultSet rs = selector.executeQuery();
-    return getIntFromRS(whichcolumn, rs);
+    return rs.next() ? getIntFromRS(whichcolumn, rs) : BadIndex;
   }
 
   public boolean doPreparedStatement(String query, Consumer<PreparedStatement> preparer, Consumer<ResultSet> actor) {
