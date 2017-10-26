@@ -7,6 +7,7 @@ import pers.hal42.transport.Xformer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.Iterator;
+import java.util.function.Consumer;
 
 @Storable.Stored(parseList = "parseList") //marks this as having a method for parsing from StringIterator
 public class EnumerationFilter<E extends Enum> {
@@ -17,19 +18,21 @@ public class EnumerationFilter<E extends Enum> {
    */
   @Storable.Stored
   public boolean all = true;
-
+  /** a boolean for each enum value */
   protected boolean[] present;
+  /** cache of enum constants */
   protected E[] value;
-  Xformer xf;
-  @SuppressWarnings("unchecked")
-  public EnumerationFilter(Class claz) {
+  /** cached method lookups for string<->array of booleans transformations */
+  protected Xformer xf;
+
+  public EnumerationFilter(Class<? extends E> claz) {
     this.claz = claz;
-    value = (E[]) claz.getEnumConstants();
+    value = claz.getEnumConstants();
     present = new boolean[value.length];
     xf = new Xformer(claz);
   }
 
-  /** named for use as a Predicate<InstitutionType> */
+  /** named for use as a Predicate<E> */
   public boolean test(E it) {
     return all || (it != null && present[it.ordinal()]);
   }
@@ -63,7 +66,20 @@ public class EnumerationFilter<E extends Enum> {
     return true;
   }
 
-  /** forget that any itmes were 'present' */
+  /** @returns whether no items are permitted/present */
+  public boolean hasNone() {
+    if (all) {
+      return false;
+    }
+    for (boolean one : present) {
+      if (one) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** forget that any items were 'permitted/present' */
   public EnumerationFilter<E> clear() {
     all = false;
 //todo:2    Arrays.setAll(present,false);
@@ -73,7 +89,7 @@ public class EnumerationFilter<E extends Enum> {
     return this;
   }
 
-  /** try to set a permission. @returns whether @param item was valid */
+  /** try to set a permission. @returns whether @param item was valid (not null) */
   public boolean allow(E item) {
     if (item != null) {
       present[item.ordinal()] = true;
@@ -82,7 +98,7 @@ public class EnumerationFilter<E extends Enum> {
     return false;
   }
 
-  /** a convenience for testing */
+  /** a convenience for testing: only permit the given @param item */
   public void doOnly(E item) {
     clear();
     allow(item);
@@ -97,7 +113,7 @@ public class EnumerationFilter<E extends Enum> {
     return this;
   }
 
-  /** set permissions from single letter abbreviations */
+  /** set permissions from single letter abbreviations packed into a string */
   public boolean parse(String packed) {
     if (packed != null) {
       if (xf.parser != null) {
@@ -132,14 +148,7 @@ public class EnumerationFilter<E extends Enum> {
   public String packed() {
     if (xf.packer != null) {
       StringBuilder packed = new StringBuilder(present.length);
-      Iterator<E> inefficient = this.iterator();
-      while (inefficient.hasNext()) {
-        try {
-          packed.append(xf.pack(inefficient.next()));
-        } catch (Throwable e) {
-          return null;//method improperly declared
-        }
-      }
+      forEach(item -> packed.append(xf.pack(item)));//throws stuff when class involved is not compliant
       return packed.toString();
     } else {
       return null;
@@ -147,7 +156,7 @@ public class EnumerationFilter<E extends Enum> {
   }
 
   public Iterator<E> iterator() {
-    return new Iterator<E>() {
+    return new Iterator<E>() {//yet another lookahead iterator.
       protected int pointer = 0;
 
       @Override
@@ -171,12 +180,8 @@ public class EnumerationFilter<E extends Enum> {
     };
   }
 
-  public boolean hasNone() {
-    for (boolean one : present) {
-      if (one) {
-        return false;
-      }
-    }
-    return true;
+  public void forEach(Consumer<? super E> action) {
+    iterator().forEachRemaining(action);
   }
+
 }
