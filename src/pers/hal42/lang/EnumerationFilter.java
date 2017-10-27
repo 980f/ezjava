@@ -11,19 +11,18 @@ import java.util.function.Consumer;
 
 @Storable.Stored(parseList = "parseList") //marks this as having a method for parsing from StringIterator
 public class EnumerationFilter<E extends Enum> {
-
-  protected Class<? extends E> claz;
+  public final Class<? extends E> claz;
   /**
    * for the convenience of manual editing setting this guy makes the others moot.
    */
   @Storable.Stored
   public boolean all = true;
-  /** a boolean for each enum value */
-  protected boolean[] present;
   /** cache of enum constants */
-  protected E[] value;
+  public final E[] value;
   /** cached method lookups for string<->array of booleans transformations */
-  protected Xformer xf;
+  public final Xformer xf;
+  /** a boolean for each enum value */
+  protected final boolean[] present;
 
   public EnumerationFilter(Class<? extends E> claz) {
     this.claz = claz;

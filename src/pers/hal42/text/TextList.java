@@ -503,7 +503,7 @@ public class TextList {
   }
 
   /***
-   * @return this after appending strings cut at splitchar
+   * @return this after appending strings cut at splitchar, each substring is .trim()'ed before being checked for triviality. If trivial then @param keepEmpties is whether the trivial item is add'ed to the list.
    */
   @NotNull
   public TextList simpleParse(String csv, char splitchar, boolean keepEmpties) {
