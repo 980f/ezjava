@@ -2,6 +2,7 @@ package pers.hal42.database;
 
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.transport.Xformer;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -55,6 +56,8 @@ public class TableFiller {
                     //want a static method that takes a string and gives an fclaz.
                     field.set(obj, ReflectX.enumObject(fclaz, rs.getString(name)));
                   }
+                } else if (Xformer.IsPacker(fclaz)) {//on type just means that it is worth looking for a method
+                  Xformer.UnpackInto(field.get(obj), null, rs.getString(name));
                 } else {
                   dbg.ERROR("Not yet parsing type {0} from result set (field named {1})", fclaz.getName(), name);
                 }

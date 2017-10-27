@@ -1,0 +1,400 @@
+package pers.hal42.database;
+
+import com.fedfis.db.MysqlQuirks;
+import pers.hal42.ext.Extremer;
+import pers.hal42.lang.ReflectX;
+import pers.hal42.lang.StringX;
+import pers.hal42.logging.ErrorLogStream;
+import pers.hal42.text.CsvIterator;
+import pers.hal42.text.StringIterator;
+
+import static com.fedfis.db.MysqlQuirks.isTicked;
+import static java.text.MessageFormat.format;
+import static pers.hal42.lang.Index.BadIndex;
+
+/**
+ * see ColumnProfile, which has too much legacy cruft
+ */
+public class ColumnAttributes {
+  private static final ErrorLogStream dbg = ErrorLogStream.getForClass(ColumnAttributes.class);
+  //DDL phrase
+  private final static String AUTOSTAMP = " ON UPDATE CURRENT_TIMESTAMP";
+  //DDL phrase
+  private final static String BENOTNULL = " NOT NULL";
+  private final static String EmptyString = "''";
+  public boolean nullable = true;
+  public ColumnType dataType = ColumnType.VARCHAR;
+  public int size = BadIndex;//
+  /** position in 'insert or update' statements, skips over automatic columns */
+  public int ordinal = BadIndex; //sql bad index
+  /** which slot of pk this column is, if 0 it is provisionally part of the pk, if BadIndex then not part of pk */
+  public int pkordinal = BadIndex;//0== part of pk but not assigned position yet
+  public String name;//local name, exclusive of table and schema
+  public String defawlt;
+  /** for foreign keys this is the foreign table name */
+  public String more;
+  public boolean autoIncrement = false;
+
+
+  public ColumnAttributes(boolean nullable, ColumnType dataType, int size, String name, String defawlt, boolean autoIncrement) {
+    this.nullable = nullable;
+    this.dataType = dataType;
+    this.size = size;
+    this.name = name;
+    this.defawlt = defawlt;
+    this.autoIncrement = autoIncrement;
+  }
+
+  private ColumnAttributes() {
+  }
+
+  public ColumnAttributes(String column_name, String data_type) {
+    this.name = column_name;
+    this.dataType = ColumnType.forName(data_type);
+  }
+
+  public ColumnAttributes(String column_name, ColumnType data_type) {
+    this.name = column_name;
+    this.dataType = data_type;
+  }
+
+  /**
+   * @returns pkordinal or ordinal, with no validation
+   */
+  public int ord(boolean pk) {
+    if (pk) {
+      return pkordinal;
+    } else {
+      return ordinal;
+    }
+  }
+
+  /**
+   * if this is true it should be left out of inserts and updates, it will be automatically filled in by database engine
+   */
+  public boolean isAuto() {
+    return autoIncrement;
+  }
+
+  public ColumnAttributes setAuto(boolean autoIncrement) {
+    this.autoIncrement = autoIncrement;
+    return this;
+  }
+
+  public boolean isPkish() {
+    return pkordinal >= 0;
+  }
+
+  public boolean isUpdateable() {
+    return !isAuto() && !isPkish();
+  }
+
+  public boolean isInsertable() {
+    return !isAuto();
+  }
+
+  public ColumnAttributes setDefawlt(String defawlt) {
+    this.defawlt = defawlt;
+    return this;
+  }
+
+  /**
+   * only use for finding items, not for comparing them
+   */
+  @Override
+  public int hashCode() {
+    return name.hashCode();
+  }
+
+  /**
+   * for comparing desired and actual attribugtes, ignore ordinal
+   */
+  @SuppressWarnings("SimplifiableIfStatement") //leave it stretched out so we can breakpoint on particular miscompares.
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null) {
+      return false;
+    }
+    if (!ColumnAttributes.class.isAssignableFrom(o.getClass())) {
+      return false;
+    }
+    ColumnAttributes that = (ColumnAttributes) o;
+
+    if (!nullable && that.nullable) {
+      dbg.ERROR("Column {0} should be not null but existing is nullable", name);
+      //mysql apparently ignores our request for nullable if there is a default
+    }
+    if (size >= 0 && that.size >= 0 && size > that.size) {
+      return false;
+    }
+    if (autoIncrement != that.autoIncrement) {
+      return false;
+    }
+    if (!dataType.isLike(that.dataType)) {
+      return false;
+    }
+    if (!name.equals(that.name)) {
+      return false;
+    }
+    //don't compare null defaults, allow null to match anything
+    //noinspection RedundantIfStatement
+    if (defawlt == null || that.defawlt == null || defawlt.equals(that.defawlt)) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  @Override
+  public String toString() {
+    return String.valueOf(name);
+  }
+
+  /**
+   * @returns sql fragment for create table
+   */
+  public StringBuilder declaration() {
+    StringBuilder piece = new StringBuilder(100);
+    piece.append(format("{0} {1}", name, dataType.DeclarationText(size)));
+    if (!nullable) {
+      piece.append(BENOTNULL);
+    }
+    if (dataType == ColumnType.TIMESTAMP) {//enforce it being a true timestamp
+      if (autoIncrement) {//abuse of this flag
+        piece.append(AUTOSTAMP);
+      }
+    } else {
+      if (autoIncrement) {
+        piece.append(" AUTO_INCREMENT");
+      }
+    }
+    if (defawlt != null) {//#trivial strings are a useful default
+      piece.append(" DEFAULT ");
+      piece.append(defawlt.length() == 0 ? EmptyString : defawlt);//caller must put in quotes when needed.
+    }
+    return piece;
+  }
+
+  /**
+   * if not already set then set name from fieldname of this within @param parent
+   *
+   * @returns whether name is nonTrivial, not whether it was altered herein.
+   */
+  public boolean eponomize(Object parent) {
+    if (StringX.NonTrivial(name)) {
+      return true;
+    }
+    String myName = ReflectX.fieldName(parent, this);
+    if (StringX.NonTrivial(myName)) {
+      name = myName;
+      return true;
+    }
+    return false;
+  }
+
+  /** @deprecated use an Index object instead of this. will delete soon. */
+  public String makeIndex() {
+    return format("INDEX {0}_idx ({0})", name);//INDEX optindexname opttype (namelist)
+  }
+
+  public ColumnAttributes bePk() {
+    if (pkordinal < 0) {//guard against setting it again after ordination.
+      pkordinal = 0;
+    }
+    return this;
+  }
+
+  /** a varchar big enough to contain the widest string associated with the @param given enum */
+  public static ColumnAttributes Enumeration(Class<? extends Enum> eclass, boolean nullable) {
+    Extremer<Integer> maxWidth = new Extremer<>();
+    maxWidth.inspectArray(eclass.getEnumConstants(), symbol -> symbol.toString().length());
+    return ColumnAttributes.Stringy(maxWidth.getExtremum(10), nullable);
+    //not using Mysql enum mechanism, we are not ready to deal with changes to the enumeration.
+  }
+
+  public static ColumnAttributes fromDDL(String line) {
+    if (line.endsWith(",")) {
+      line = line.substring(0, line.length() - 1);
+    }
+    StringIterator words = new CsvIterator(false, ' ', line);
+
+    String word = words.next();
+    if (isTicked(word)) {
+      ColumnAttributes noob = new ColumnAttributes();
+      noob.name = StringX.removeParens(word);
+      String typeinfo = words.next();
+      int cutpoint = typeinfo.indexOf('(');
+      if (cutpoint > 0) {
+        noob.dataType = ColumnType.forName(typeinfo.substring(0, cutpoint));
+        noob.size = StringX.parseInt(typeinfo.substring(1 + cutpoint));
+      } else {
+        noob.dataType = ColumnType.forName(typeinfo);
+      }
+
+      while (words.hasNext()) {
+        word = words.next();
+        switch (word) {
+        case "unsigned"://mysql is fucking inconsistent in its casing!
+          break;
+        case "DEFAULT":
+          noob.defawlt = MysqlQuirks.unTick(words.next());
+          break;
+        case "AUTO_INCREMENT":
+          noob.autoIncrement = true;
+          break;
+        case "NOT":
+          word = words.next();
+          if (word.equals("NULL")) {
+            noob.nullable = false;
+          } else {
+            dbg.FATAL("NOT {0} not understood", word);
+          }
+          break;
+        case "NULL":
+          noob.nullable = true;
+          break;
+        case "ON": //
+          word = words.next();
+          if (word.equals("UPDATE")) {
+            word = words.next();
+            if (word.equals("CURRENT_TIMESTAMP")) {
+              noob.autoIncrement = true; //house rule: mark on update fields as auto.
+            } else {
+              dbg.FATAL("ON UPDATE {0} not understood", word);
+            }
+          } else {
+            dbg.FATAL("ON {0} not understood", word);
+          }
+          break;
+        default:
+          dbg.FATAL("ddl {0} not understood", word);
+          break;
+        }
+      }
+      return noob;
+    } else {
+      return null;
+    }
+  }
+
+  public static ColumnAttributes Stringy(int size, boolean nullable) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.size = size;
+    noob.nullable = nullable;
+    if (!nullable) {
+      noob.defawlt = "";//empty is not the same as null
+    }
+    return noob;
+  }
+
+  /**
+   * a numerical value
+   */
+  public static ColumnAttributes Number(boolean nullable) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.NUMERIC;
+    noob.nullable = nullable;
+    if (!nullable) {
+      noob.defawlt = "0";
+    }
+    return noob;
+  }
+
+  public static ColumnAttributes Boolean(boolean nullable) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.BOOL;
+    noob.nullable = nullable;
+    return noob;
+  }
+
+  /**
+   * a proper 'internal' pk that allows user init.
+   */
+  public static ColumnAttributes SimplePK() {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.REF;
+    noob.nullable = false;
+    noob.bePk();
+    return noob;
+  }
+
+  /**
+   * a proper 'internal' pk that is auto increment only
+   */
+  public static ColumnAttributes StrictPK() {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.REF;
+    noob.nullable = false;
+    noob.autoIncrement = true;
+    noob.bePk();
+    return noob;
+  }
+
+  /**
+   * an integer, such as for a quantity
+   */
+  public static ColumnAttributes ForeignKey(String foreignTableName, boolean nullable) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.REF;  //INT UNSIGNED
+    noob.nullable = nullable;
+    noob.more = foreignTableName;
+    return noob;
+  }
+
+  /**
+   * an integer, such as for a quantity
+   */
+  public static ColumnAttributes Cardinal(boolean nullable) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.INTEGER;
+    noob.nullable = nullable;
+    return noob;
+  }
+
+  /**
+   * a nonnegative integer, such as for an enum, one expects the data to be dense.
+   */
+  public static ColumnAttributes Ordinal(boolean nullable) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.SMALLINT;
+    noob.nullable = nullable;
+    return noob;
+  }
+
+  public static ColumnAttributes SingleLetterEnum(boolean nullable) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.CHAR;
+    noob.nullable = nullable;
+    return noob;
+  }
+
+  public static ColumnAttributes Blob() {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.BLOB;
+    noob.nullable = true;//house rule: never require blobs to exist, it gets in the way of changing our mind to keep them outside the tables.
+    return noob;
+  }
+
+  /**
+   * @param track is whether to alter this field with every operation else it is a creation date.
+   */
+  public static ColumnAttributes Timestamp(boolean track) {
+    ColumnAttributes noob = new ColumnAttributes();
+    noob.dataType = ColumnType.TIMESTAMP;
+    noob.nullable = !track;
+    noob.autoIncrement = track;//field is misnamed, this makes sense.
+    noob.defawlt = "CURRENT_TIMESTAMP";
+    return noob;
+  }
+
+  public static class Ordinator {
+    int ordinator = 0;
+
+    public void ordinate(ColumnAttributes col) {
+      col.ordinal = col.isAuto() ? 0 : ++ordinator;
+    }
+  }
+}

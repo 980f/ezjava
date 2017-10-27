@@ -11,23 +11,22 @@ public class StringX {
   private static final String SINGLEQUOTE = "'";
   private static final char SINGLEQUOTECHAR = '\'';
 
-  private StringX() {
-    //#namespace
-  }
+  private static final String opens = "({[<'`\"";
+  private static final String closes = ")}]>'`\"";
 
   /** build a string which is the image of the @param numImage multiplied by the given power of 10 */
   public StringBuilder decimalScale(String numImage, int powerof10) {
     StringBuilder worker = new StringBuilder(numImage);
     int dp = numImage.indexOf('.');
     int end = numImage.length();
-    if(end<1){
+    if (end < 1) {
       return worker;
     }
     final char firstChar = numImage.charAt(0);
     if (end == 1 && firstChar == '0') {
       return worker;//0 in is 0 out
     }
-    boolean signed= firstChar == '-' || firstChar=='+';
+    boolean signed = firstChar == '-' || firstChar == '+';
     if (powerof10 > 0) {//move dp to the right or add zeroes
       if (dp >= 0) {
         throw new IllegalArgumentException("not yet implemented");
@@ -36,10 +35,46 @@ public class StringX {
           worker.append('0');
         }
       }
-    } else if(powerof10<0){ //move dp to left, might have to add 0.
+    } else if (powerof10 < 0) { //move dp to left, might have to add 0.
       throw new IllegalArgumentException("not yet implemented");
     }
     return worker;
+  }
+
+  public static char closeFor(char open) {
+    int opener = opens.indexOf(open);
+    if (opener == BadIndex) {
+      return 0;
+    }
+    return closes.charAt(opener);
+  }
+
+
+  private StringX() {
+    //#namespace
+  }
+
+  public static char openFor(char close) {
+    int closer = closes.indexOf(close);
+    if (closer == BadIndex) {
+      return 0;
+    }
+    return opens.charAt(closer);
+  }
+
+  /** remove first and last chars of @param word. Always removes the first char, removes the last only if it matches the first. Actually, now @returns text between the first char and the last char that logically matches the first. */
+  public static String removeParens(String word) {
+    if (word == null || word.length() < 2) {
+      return "";
+    }
+    char open = word.charAt(0);
+    char close = closeFor(open);
+    int closeat = word.lastIndexOf(close);
+    if (closeat > 0) {
+      return word.substring(1, closeat);
+    } else {
+      return word.substring(1);
+    }
   }
 
   /** limited use conversion of camelcase to underscaore+lower */

@@ -1,7 +1,5 @@
 package pers.hal42.database;
 
-import com.fedfis.db.ColumnAttributes;
-
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;

@@ -1,8 +1,11 @@
 package pers.hal42.lang;
 
-
 import java.lang.reflect.Field;
 
+/**
+ * this class wasn't worth the effort of writing it.
+ * Someday java will provide a ".field" 10:50function and life will be so much better.
+ */
 public class Eponym {
   public String name;
 

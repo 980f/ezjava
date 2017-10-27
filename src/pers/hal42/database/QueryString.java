@@ -1,6 +1,5 @@
 package pers.hal42.database;
 
-import com.fedfis.db.ColumnAttributes;
 import pers.hal42.data.ObjectRange;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
@@ -887,6 +886,15 @@ public class QueryString {
     return Open();
   }
 
+  /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
+  public static Lister Select(TableInfo ti, Iterator<ColumnAttributes> cols) {
+    final QueryString qry = Select();
+    final String closer = format("{0} {1}", FROM, ti.fullName());
+    QueryString.Lister lister = qry.startList("", closer);
+    cols.forEachRemaining(col -> lister.append(col.name));
+    return lister;
+  }
+
   public static QueryString Count(ColumnAttributes col) {
     return Select().function(COUNT).cat(col.name).Close();
   }
@@ -1026,6 +1034,10 @@ public class QueryString {
     public Lister appendList(String prefix, String closer) {
       append("");  //get's our comma and accounts for it
       return q.new Lister(prefix, closer);
+    }
+
+    public void append(ColumnAttributes col) {
+      append(col.name);
     }
   }
 }
