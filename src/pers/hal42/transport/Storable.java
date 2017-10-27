@@ -870,7 +870,12 @@ public class Storable {
             } else if (fclaz == int.class) {
               child.setValue(field.getInt(obj));
             } else if (fclaz.isEnum()) {
-              child.setValue(field.get(obj).toString());
+              final Object anEnum = field.get(obj);
+              if (anEnum != null) {
+                child.setValue(anEnum.toString());
+              } else {
+                child.setNull();
+              }
             } else if (Xformer.IsPacker(fclaz)) {
               child.setValue(Xformer.Packed(field.get(obj), claz));
             }
@@ -901,6 +906,15 @@ public class Storable {
       }
     }
     return changes;
+  }
+
+  /** make the value as null as we can */
+  public void setNull() {
+    image = null;//agressive
+    dvalue = Double.NaN;
+    ivalue = ~0;
+    bit = false;
+    token = null;
   }
 
 

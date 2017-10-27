@@ -38,4 +38,9 @@ public class TableModel {
       return null;
     }
   }
+
+  /** @returns whether the table has a single column automatic primary key. */
+  public boolean simplePk() {
+    return pkIndex.cols.size() == 1 && pkIndex.cols.elementAt(0).isAuto();
+  }
 }

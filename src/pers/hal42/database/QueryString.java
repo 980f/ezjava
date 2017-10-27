@@ -775,6 +775,10 @@ public class QueryString {
     return new Lister("SET ", "");
   }
 
+  private Lister dupLister() {
+    return new Lister(" ON DUPLICATE KEY UPDATE ", "");//strange but true, a list with invisible parens
+  }
+
   /**
    * mysql quirk: while inserting fields into an insert statement record the names of non-pk fields in a TextList.
    * pass that TextList to this method and those fields will be updated with what otherwise was inserted
@@ -783,22 +787,41 @@ public class QueryString {
    */
   public QueryString OnDupUpdate(TextList nonPks) {
     lineBreak();
-    try (Lister lister = new Lister(" ON DUPLICATE KEY UPDATE ", "")) {//strange but true, a list with invisible parens
+    try (Lister lister = dupLister()) {
       nonPks.iterator().forEachRemaining(lister::duplicateUpdate);
     }
     return this;
   }
 
-  public QueryString insertOrUpdate(ColumnAttributes... cols) {
-    whereColumns(cols);
+  /**
+   * mysql quirk: while inserting fields into an insert statement record the names of non-pk fields in a TextList.
+   * pass that TextList to this method and those fields will be updated with what otherwise was inserted
+   *
+   * @returns this
+   */
+  public QueryString OnDupUpdate(Iterator<ColumnAttributes> cols) {
     lineBreak();
-    try (Lister lister = new Lister(" ON DUPLICATE KEY UPDATE ", "")) {//strange but true, a list with invisible parens
+    try (Lister lister = dupLister()) {
+      cols.forEachRemaining(lister::duplicateUpdate);
+    }
+    return this;
+  }
+
+  public QueryString OnDupUpdate(ColumnAttributes... cols) {
+    lineBreak();
+    try (Lister lister = dupLister()) {
       for (ColumnAttributes col : cols) {
         lister.duplicateUpdate(col.name);
       }
       return this;
     }
   }
+
+  public QueryString insertOrUpdate(ColumnAttributes... cols) {
+    whereColumns(cols);
+    return OnDupUpdate(cols);
+  }
+
 
   public QueryString from(TableInfo ti) {
     lineBreak();
@@ -885,6 +908,7 @@ public class QueryString {
     guts.append(keyword.toString().trim());
     return Open();
   }
+
 
   /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
   public static Lister Select(TableInfo ti, Iterator<ColumnAttributes> cols) {
@@ -1029,6 +1053,10 @@ public class QueryString {
     /** mysql: update clause of insert or update. */
     public void duplicateUpdate(String columname) {
       append(format("{0}=VALUES({0})", columname));
+    }
+
+    public void duplicateUpdate(ColumnAttributes col) {
+      append(format("{0}=VALUES({0})", col.name));
     }
 
     public Lister appendList(String prefix, String closer) {
