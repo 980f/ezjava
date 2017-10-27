@@ -42,6 +42,22 @@ public class StringX {
     return worker;
   }
 
+  /** limited use conversion of camelcase to underscaore+lower */
+  public static String camel2underscore(String cameled) {
+    StringBuilder output = new StringBuilder(cameled.length() * 2);
+    final char[] chars = cameled.toCharArray();
+    for (final char ch : chars) {
+      if (Character.isUpperCase(ch)) {
+        output.append('_');
+        output.append(Character.toLowerCase(ch));
+      } else {
+        output.append(ch);
+      }
+    }
+
+    return output.toString();
+  }
+
   public static boolean firstCharIs(String arg, char c) {
     return firstChar(arg) == c;
   }

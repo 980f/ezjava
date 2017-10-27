@@ -784,10 +784,21 @@ public class QueryString {
    */
   public QueryString OnDupUpdate(TextList nonPks) {
     lineBreak();
-    try (ListWrapper lister = new Lister(" ON DUPLICATE KEY UPDATE ", "")) {//strange but true, a list with invisible parens
-      nonPks.iterator().forEachRemaining(col -> lister.append(format("{0}=VALUES({0})", col)));
+    try (Lister lister = new Lister(" ON DUPLICATE KEY UPDATE ", "")) {//strange but true, a list with invisible parens
+      nonPks.iterator().forEachRemaining(lister::duplicateUpdate);
     }
     return this;
+  }
+
+  public QueryString insertOrUpdate(ColumnAttributes... cols) {
+    whereColumns(cols);
+    lineBreak();
+    try (Lister lister = new Lister(" ON DUPLICATE KEY UPDATE ", "")) {//strange but true, a list with invisible parens
+      for (ColumnAttributes col : cols) {
+        lister.duplicateUpdate(col.name);
+      }
+      return this;
+    }
   }
 
   public QueryString from(TableInfo ti) {
@@ -1005,6 +1016,16 @@ public class QueryString {
     /** add a preparedStatement clause: "name=?" */
     public void prepareSet(String columnname) {
       append(format("{0}=?", columnname));
+    }
+
+    /** mysql: update clause of insert or update. */
+    public void duplicateUpdate(String columname) {
+      append(format("{0}=VALUES({0})", columname));
+    }
+
+    public Lister appendList(String prefix, String closer) {
+      append("");  //get's our comma and accounts for it
+      return q.new Lister(prefix, closer);
     }
   }
 }

@@ -47,7 +47,7 @@ public class ListWrapper implements AutoCloseable {
    * This method can be called in a try-with-resources since it @returns this.
    */
   public ListWrapper open(String withOpenInit) {
-    if (StringX.NonTrivial(withOpenInit)) {
+    if (withOpenInit != null) {
       s.append(withOpenInit);
     }
     excessCommaAt = s.length();
@@ -58,7 +58,9 @@ public class ListWrapper implements AutoCloseable {
   public ListWrapper append(String field) {
     ++counter;
     addComma();
-    s.append(field);
+    if (field != null) {//want empty not StringBuilder's "null"
+      s.append(field);
+    }
     return this;
   }
 

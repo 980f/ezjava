@@ -117,102 +117,26 @@ public class ReflectX {
     return null;
   }
 
-  /**
-   * iterate deeply through a class hierarchy.
-   * Annoyingly java makes us choose between getting public hierarchy or only local for all member classes.
-   * One could mix those up and get all members of self and public hierarchy
-   */
-  public static class ClassWalker implements Iterator<Class> {
-    final Class node;//the starting point, retained for debug
-    final boolean local;
-    protected Class[] parts;//
-    protected int ci; //class index
-
-    //todo:1 double link list for efficiency, or otherwise maintain pointer to most deeply nested instance. Present implementation chases the list with every iteration step.
-    protected ClassWalker nested;
-
-    public ClassWalker(Class node, boolean local) {
-      this.node = node;
-      this.local = local;
-      parts = local ? node.getDeclaredClasses() : node.getClasses();
-      ci = parts.length;
-      nest();
-    }
-
-    public void nest() {
-      nested = ci > 0 ? new ClassWalker(parts[--ci], local) : null;//recurses
-    }
-
-    @Override
-    public boolean hasNext() {
-      if (nested != null) {
-        if (nested.hasNext()) {
-          return true;
-        } else {
-          nest();//has a --ci or nested <- null;
-          return hasNext();
-        }
-      } else {
-        return ci >= 0;
-      }
-    }
-
-    @Override
-    public Class next() {
-      if (nested != null) {
-        return nested.next();
-      } else {
-        --ci;
-        return node;
-      }
-    }
+  public static boolean isImplementorOf(Field probate, Class claz) {
+    return isImplementorOf(probate.getClass(), claz);
   }
 
-  public static class FieldWalker implements Iterator<Field> {
-    final Class ref;//the starting point, retained for debug
-    final boolean local;
-    ClassWalker cw;
-    Class current;
-    Field[] fields;
-    int fi;
-
-    public FieldWalker(Class ref, boolean local) {
-      this.ref = ref;
-      this.local = local;
-      cw = new ClassWalker(ref, local);
-      nextClass();
-    }
-
-    public void nextClass() {
-      if (cw.hasNext()) {
-        current = cw.next();
-        fields = local ? current.getDeclaredFields() : current.getFields();
-        fi = fields.length;
-      } else {
-        fields = null;
-        fi = 0;
+  /**
+   * @returns name of @param child within object @param parent, null if not an accessible child
+   */
+  public static String fieldName(Object parent, Object child) {
+    for (Field field : parent.getClass().getDeclaredFields()) {
+      try {
+        Object probate = field.get(parent);
+        if (probate == child) {
+          field.setAccessible(true);//maybe gratuitous but is fast.
+          return field.getName();
+        }
+      } catch (IllegalAccessException ignored) {
+        //
       }
     }
-
-    public boolean hasNext() {
-      if (fi > 0) {
-        return true;
-      } else {
-        nextClass();
-        return fi > 0;
-      }
-    }
-
-    /**
-     * @returns either a field if there is still one or null.
-     */
-    public Field next() {
-      if (fi > 0) {
-        return fields[--fi];
-      } else {
-        return null;//should not have been called.
-      }
-    }
+    return null;
   }
 
 
@@ -351,22 +275,29 @@ public class ReflectX {
       if (claz.isAssignableFrom(probate)) {
         return true;
       }
-      //swapped operands on tnhe above isAssignableFrom, replaced the following (feeling dumb).
-//      Class reprobate=probate;//retain original for debug
-//      do {
-//        final Class[] ifaces = reprobate.getInterfaces();//if probate implements an interface
-//        for (Class it : ifaces) {
-//          if (it.equals(claz)) {
-//            return true;
-//          }
-//        }
-//        reprobate=reprobate.getSuperclass();
-//        if(reprobate==claz){
-//          return true;
-//        }
-//      } while(reprobate!=Object.class);
     }
     return false;
+  }
+
+  /**
+   * @returns name of @param child within object @param parent, null if not an accessible child
+   */
+  public static Field findField(Object root, Object child) {
+    if (child == root) {
+      return null;
+    }
+    for (Field field : root.getClass().getDeclaredFields()) {
+      try {
+        Object probate = field.get(root);
+        if (probate == child) {
+          field.setAccessible(true);//maybe gratuitous but is fast.
+          return field;
+        }
+      } catch (IllegalAccessException ignored) {
+        //
+      }
+    }
+    return null;
   }
 
   @SuppressWarnings("unchecked")
@@ -552,19 +483,216 @@ public class ReflectX {
   /**
    * @returns name of @param child within object @param parent, null if not an accessible child
    */
-  public static String fieldName(Object parent, Object child) {
-    for (Field field : parent.getClass().getDeclaredFields()) {
+  public static <T> Field[] findParentage(Object root, T child) {
+    if (child == root) {
+      return new Field[0];
+    }
+    Class childClass = child.getClass();
+    FieldWalker fw = new FieldWalker(root.getClass());
+    while (fw.hasNext(childClass)) {
+      Field maybe = fw.next();
+
       try {
-        Object probate = field.get(parent);
-        if (probate == child) {
-          return field.getName();
+        Object obj = fw.getObject(root);
+        if (obj == child) {
+          return fw.genealogy();
         }
       } catch (IllegalAccessException ignored) {
-        //
       }
     }
     return null;
   }
+
+  /**
+   * iterate over the member classes of the given class, which is NOT the classes of the members.
+   * <p>
+   * I don't think this is useful.
+   */
+  public static class ClassWalker implements Iterator<Class> {
+    final Class node;//the starting point, retained for debug
+    //    final boolean local;
+    protected Class[] parts;//
+    protected int ci; //class index
+
+    //todo:1 double link list for efficiency, or otherwise maintain pointer to most deeply nested instance. Present implementation chases the list with every iteration step.
+    protected ClassWalker nested;
+
+    public ClassWalker(Class node) {
+      this.node = node;
+//      this.local = local;
+      parts = node.getDeclaredClasses();
+      ci = parts.length;
+      nest();
+    }
+
+    public void nest() {
+      nested = ci > 0 ? new ClassWalker(parts[--ci]) : null;//recurses
+    }
+
+    @Override
+    public boolean hasNext() {
+      if (nested != null) {
+        if (nested.hasNext()) {
+          return true;
+        } else {
+          nest();//has a --ci or nested <- null;
+          return hasNext();
+        }
+      } else {
+        return ci >= 0;
+      }
+    }
+
+    @Override
+    public Class next() {
+      if (nested != null) {
+        return nested.next();
+      } else {
+        --ci;
+        return node;
+      }
+    }
+  }
+
+  /**
+   * infinite descent if class has an outer class that has other inner classes.
+   * walk all the Scalar fields of a class hierarchy.
+   * This looks through definitions, an extended class's fields will NOT be seen.
+   * To get all actual fields requires objects.
+   * Scalar fields are members that are single valued as determined by @see ReflectX.isScalar()
+   */
+  public static class FieldWalker implements Iterator<Field> {
+    final Class ref;//the starting point, retained for debug
+    protected Field[] fields;
+    protected int fi;
+    protected FieldWalker nested = null;
+    protected boolean aggressive = true;
+    protected Field lookAhead = null;
+
+    /** @param ref is root class for the walk */
+    public FieldWalker(Class ref) {
+      this.ref = ref;
+      fields = ref.getDeclaredFields();
+      fi = fields.length;
+    }
+
+    public boolean hasNext(Class childClass) {
+      if (nested != null) {
+        if (nested.hasNext(childClass)) {
+          return true;
+        } else {
+          nested = null;
+        }
+      }
+      while (lookAhead == null && fi-- > 0) {//while we haven't found one and there are still some to look at
+        lookAhead = fields[fi];
+        if (isImplementorOf(childClass, lookAhead.getType())) {
+          return true;
+        }
+        if (!isScalar(lookAhead) && isNormal(lookAhead)) {//then we have a struct
+          nested = new FieldWalker(lookAhead.getType());
+          if (nested.hasNext(childClass)) {//almost always true.
+            return true;
+          }
+          nested = null;
+        }
+        lookAhead = null;
+      }
+      return false;
+    }
+
+    public boolean hasNext() {
+      if (nested != null) {
+        if (nested.hasNext()) {
+          return true;
+        } else {
+          nested = null;
+        }
+      }
+      while (lookAhead == null && fi-- > 0) {//while we haven't found one and there are still some to look at
+        lookAhead = fields[fi];
+        if (isScalar(lookAhead)) {
+          return true;
+        }
+        if (isNormal(lookAhead)) {
+          nested = new FieldWalker(lookAhead.getType());
+          if (nested.hasNext()) {//almost always true.
+            return true;
+          }
+          nested = null;
+        }
+        lookAhead = null;
+      }
+      return false;
+    }
+
+    /**
+     * @returns either a field if there is still one or null. Will return a null 'prematurely' if hasNext is not called as it should be, you can't just iterate until you get a null.
+     */
+    public Field next() {
+      if (nested != null) {
+        return nested.next();
+      }
+      try {
+        if (aggressive) {
+          lookAhead.setAccessible(true);
+        }
+        return lookAhead;//should not have been called.
+      } finally {
+        lookAhead = null;
+      }
+    }
+
+    /** @returns whether the field is something that a human would see as normal */
+    public boolean isNormal(Field f) {
+      if (f.isSynthetic()) {
+        return false;
+      }
+      final Class<?> type = f.getType();
+      if (type.isArray()) {
+        return false;
+      }
+      if (type.isAnnotation()) {
+        return false;
+      }
+      if (type.isAnonymousClass()) {
+        return false;
+      }
+      if (isImplementorOf(type, Iterable.class)) {
+        return false;
+      }
+      return true;
+    }
+
+    /** call this after calling next but before calling hasNext to get the parentage of what next() returned, that item will be at the end of the returned array. */
+    public Field[] genealogy() {
+      int level = depth();
+      Field[] parentage = new Field[level];
+      FieldWalker fw = this;
+      while (level-- > 0) {
+        parentage[level] = fw.fields[fw.fi];
+        fw = fw.nested;
+      }
+      return parentage;
+    }
+
+    public int depth() {
+      int count = 1;//count ourself
+      for (FieldWalker fw = this.nested; fw != null; fw = fw.nested) {
+        ++count;
+      }
+      return count;
+    }
+
+    public Object getObject(Object root) throws IllegalAccessException {
+      root = fields[fi].get(root);
+      if (nested != null) {
+        return nested.getObject(root);
+      }
+      return root;
+    }
+  }
+
 
   /** @returns a method of @param claz that has an annotation of @param noted which matches the optional argument @param matches. The compiler chooses which if there are more than one. */
   public static <A extends Annotation> Method methodFor(Class claz, Class<A> noted, Predicate<A> matches) {

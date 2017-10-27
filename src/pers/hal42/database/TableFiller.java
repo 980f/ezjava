@@ -2,7 +2,6 @@ package pers.hal42.database;
 
 import pers.hal42.lang.ReflectX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.text.Packable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -24,13 +23,13 @@ public class TableFiller {
    *
    * @returns the number of added fields. If the value is negative then it is the complement of how many were added before an exception halted the process.
    */
-  public static <T> int addToList(ResultSet rs, Class<? extends T> ref, boolean local, ListIterator<T> list, Predicate<T> refinclude) {
+  public static <T> int addToList(ResultSet rs, Class<? extends T> ref, ListIterator<T> list, Predicate<T> refinclude) {
     int successes = 0;
     DbColumn all = ReflectX.getAnnotation(ref, DbColumn.class);
     try {
       do {//for each row in result set, which has already been 'nexted' once.
         T obj = ref.newInstance();
-        ReflectX.FieldWalker fields = new ReflectX.FieldWalker(ref, local);//todo:1 this line is expensive enough that we should make a rewindable list.
+        ReflectX.FieldWalker fields = new ReflectX.FieldWalker(ref);//todo:1 this line is expensive enough that we should make a rewindable list.
         fields.forEachRemaining(field -> {
             DbColumn colAttr = field.getAnnotation(DbColumn.class);
             if (colAttr != null || (all != null && !ReflectX.ignorable(field))) {
@@ -56,9 +55,6 @@ public class TableFiller {
                     //want a static method that takes a string and gives an fclaz.
                     field.set(obj, ReflectX.enumObject(fclaz, rs.getString(name)));
                   }
-                } else if (ReflectX.isImplementorOf(fclaz, Packable.class)) {
-                  Packable packer = (Packable) field.get(obj);
-                  packer.parse(rs.getString(name));
                 } else {
                   dbg.ERROR("Not yet parsing type {0} from result set (field named {1})", fclaz.getName(), name);
                 }
@@ -83,11 +79,11 @@ public class TableFiller {
     }
   }
 
-  public static <T> void loadTable(String query, Class<? extends T> infoClass, boolean local, ListIterator<T> all, DBMacros jdbc) {
-    loadTable(query, infoClass, local, null, all, jdbc);
+  public static <T> void loadTable(String query, Class<? extends T> infoClass, ListIterator<T> all, DBMacros jdbc) {
+    loadTable(query, infoClass, null, all, jdbc);
   }
 
-  public static <T> void loadTable(String query, Class<? extends T> infoClass, boolean local, Predicate<T> refinclude, ListIterator<T> all, DBMacros jdbc) {
-    jdbc.doSimpleQuery(query, rs -> addToList(rs, infoClass, local, all, refinclude));
+  public static <T> void loadTable(String query, Class<? extends T> infoClass, Predicate<T> refinclude, ListIterator<T> all, DBMacros jdbc) {
+    jdbc.doSimpleQuery(query, rs -> addToList(rs, infoClass, all, refinclude));
   }
 }
