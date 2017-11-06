@@ -49,4 +49,17 @@ public class Xformer {
     }
     ReflectX.doMethod(obj, ReflectX.methodFor(claz, Xform.class, Xform::parser), packed);
   }
+
+
+  /** @returns best guess as to institution type given a character */
+  @Xform(parser = true)
+  public <T> T fromChar(char packedcase, T[] values) {
+    Character asObject = packedcase;
+    for (T it : values) {
+      if (asObject.equals(pack(it))) {
+        return it;
+      }
+    }
+    return null;
+  }
 }

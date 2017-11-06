@@ -113,6 +113,7 @@ public class PreparedStatementInserter implements AutoCloseable {
     }
   }
 
+  /** executes statement and @returns its ResultSet, possibly null */
   public ResultSet execute() throws SQLException {
     if (st.execute()) {//executeQuery() got "Can not issue data manipulation statements with executeQUery();
       return st.getResultSet();
