@@ -6,6 +6,8 @@ import java.sql.SQLException;
 import java.util.Iterator;
 import java.util.function.Function;
 
+import static pers.hal42.database.DBMacros.dbg;
+
 /** to simplify sequential setting of prepared statement values */
 public class PreparedStatementInserter implements AutoCloseable {
   final public boolean legit;
@@ -42,7 +44,12 @@ public class PreparedStatementInserter implements AutoCloseable {
       if (item instanceof Enum) {
         st.setObject(++sti, item.toString());//mysql indicated these were ** STREAM DATA **, also we want to ensure any interceptions of ours are invoked.
       } else {
-        st.setObject(++sti, item);
+        try {
+          st.setObject(++sti, item);
+        } catch (SQLException e) {
+          dbg.Caught(e, "setNext[{1}]:{0} value ", item, sti);
+          throw e;
+        }
       }
     }
     return sti;

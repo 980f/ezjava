@@ -817,12 +817,6 @@ public class QueryString {
     }
   }
 
-  public QueryString insertOrUpdate(ColumnAttributes... cols) {
-    whereColumns(cols);
-    return OnDupUpdate(cols);
-  }
-
-
   public QueryString from(TableInfo ti) {
     lineBreak();
     return cat(FROM).cat(ti.fullName());
@@ -869,13 +863,12 @@ public class QueryString {
   }
 
   /** "Set [name=?]*" */
-  public QueryString prepareToSet(ColumnAttributes... cols) {
-    try (QueryString.Lister lister = startSet()) {
-      for (ColumnAttributes col : cols) {
-        lister.prepareSet(col.name);
-      }
+  public Lister prepareToSet(ColumnAttributes... cols) {
+    QueryString.Lister lister = startSet();
+    for (ColumnAttributes col : cols) {
+      lister.prepareSet(col.name);
     }
-    return this;
+    return lister;
   }
 
   public QueryString prepareValues(Iterator<ColumnAttributes> cols) {
@@ -1025,6 +1018,9 @@ public class QueryString {
     return QueryString.Clause("").where().isTrue(column);
   }
 
+  public QueryString self() {
+    return this;
+  }
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
     public QueryString q;
@@ -1037,17 +1033,22 @@ public class QueryString {
     /** begin a list */
     public Lister(String prefix, String closer) {
       super(guts, prefix, closer);
+      q = self();
     }
 
     /** begin a list with strange separator */
     public Lister(String prefix, String closer, String comma) {
-      super(guts, prefix, closer);
+      this(prefix, closer);
       super.comma = comma;
     }
 
     /** add a preparedStatement clause: "name=?" */
     public void prepareSet(String columnname) {
       append(format("{0}=?", columnname));
+    }
+
+    public void prepareSet(ColumnAttributes col) {
+      append(format("{0}=?", col.name));
     }
 
     /** mysql: update clause of insert or update. */
@@ -1061,11 +1062,20 @@ public class QueryString {
 
     public Lister appendList(String prefix, String closer) {
       append("");  //get's our comma and accounts for it
-      return q.new Lister(prefix, closer);
+      return new Lister(prefix, closer);
     }
 
     public void append(ColumnAttributes col) {
       append(col.name);
     }
+
+    public QueryString insertOrUpdate(ColumnAttributes... cols) {
+      for (ColumnAttributes col : cols) {
+        prepareSet(col);
+      }
+      close();//because 'this' doesn't conveniently get finalized before the parent query string gets used.
+      return OnDupUpdate(cols);
+    }
+
   }
 }
