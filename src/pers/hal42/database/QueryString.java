@@ -236,15 +236,11 @@ public class QueryString {
   }
 
   public Lister startList(String prefix) {
-    Lister noob = new Lister(prefix);
-    noob.q = this;
-    return noob;
+    return new Lister(prefix);
   }
 
   public Lister startList(String prefix, String closer) {
-    Lister noob = new Lister(prefix, closer);
-    noob.q = this;
-    return noob;
+    return new Lister(prefix, closer);
   }
 
   /** append parenthesized list of columns */
@@ -1018,12 +1014,15 @@ public class QueryString {
     return QueryString.Clause("").where().isTrue(column);
   }
 
-  public QueryString self() {
+  /** provide inner class access */
+  public QueryString outer() {
     return this;
   }
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
-    public QueryString q;
+    public QueryString query() {
+      return outer();
+    }
 
     /** begin a list with a comma as the closer */
     public Lister(String prefix) {
@@ -1033,7 +1032,6 @@ public class QueryString {
     /** begin a list */
     public Lister(String prefix, String closer) {
       super(guts, prefix, closer);
-      q = self();
     }
 
     /** begin a list with strange separator */
@@ -1075,6 +1073,11 @@ public class QueryString {
       }
       close();//because 'this' doesn't conveniently get finalized before the parent query string gets used.
       return OnDupUpdate(cols);
+    }
+
+    public QueryString done() {
+      close();
+      return outer();
     }
 
   }

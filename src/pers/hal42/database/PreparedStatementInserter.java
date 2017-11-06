@@ -38,6 +38,10 @@ public class PreparedStatementInserter implements AutoCloseable {
     //but leave grand alone
   }
 
+  public int nextItem() {
+    return ++sti;
+  }
+
   /** @returns index of item just applied to statement */
   public int setNext(Object item) throws SQLException {
     if (legit) {
@@ -89,6 +93,21 @@ public class PreparedStatementInserter implements AutoCloseable {
       rewind();
     }
   }
+
+  public void batchSet(Iterator it) throws SQLException {
+    if (legit) {
+      ++sti;//just once, and the iterated arg has to be the final one
+      while (it.hasNext()) {
+        st.setObject(sti, it.next());
+        st.addBatch();
+        if (++counter >= batchSize) {
+          onBatchRun(DBMacros.doBatch(st));
+        }
+      }
+      rewind();
+    }
+  }
+
 
   /** for diagnostics call this when batch has been run if you run it outside of the provided batch() method. */
   public void onBatchRun(int oneSum) {
