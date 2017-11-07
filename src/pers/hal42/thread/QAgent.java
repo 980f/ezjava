@@ -117,6 +117,8 @@ public class QAgent<Qtype extends Comparable<Qtype>> implements Runnable {
                   dbg.VERBOSE(format("{0} about to run idle object", myname));
                   todo = idleObject;//recordType idleObject as active element for debug
                   actor.runone(todo);
+                } else {
+                  actor.periodically();
                 }
               }
             }

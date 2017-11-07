@@ -94,11 +94,13 @@ public class PreparedStatementInserter implements AutoCloseable {
     }
   }
 
-  public void batchSet(Iterator it) throws SQLException {
+  /** @param stringify is whether to convert items to string before setting on statement. This ia advisable for char being sent to a varchar and ditto for enum. mysql/j does a horrible job of passing such items about. */
+  public void batchSet(Iterator it, boolean stringify) throws SQLException {
     if (legit) {
       ++sti;//just once, and the iterated arg has to be the final one
       while (it.hasNext()) {
-        st.setObject(sti, it.next());
+        final Object next = it.next();
+        st.setObject(sti, stringify ? String.valueOf(next) : next);
         st.addBatch();
         if (++counter >= batchSize) {
           onBatchRun(DBMacros.doBatch(st));
