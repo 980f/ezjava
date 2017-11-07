@@ -166,6 +166,9 @@ public class ColumnAttributes {
       if (autoIncrement) {//abuse of this flag
         piece.append(AUTOSTAMP);
       }
+      if (autoIncrement || !nullable) {//legacy code, might remove if we improve Timestamp() factory.
+        defawlt = "CURRENT_TIMESTAMP";
+      }
     } else {
       if (autoIncrement) {
         piece.append(" AUTO_INCREMENT");
@@ -222,12 +225,12 @@ public class ColumnAttributes {
     StringIterator words = new CsvIterator(false, ' ', line);
 
     String word = words.next();
-    if (isTicked(word)) {
+    if (isTicked(word)) {//then it is a column definition
       ColumnAttributes noob = new ColumnAttributes();
       noob.name = StringX.removeParens(word);
       String typeinfo = words.next();
       int cutpoint = typeinfo.indexOf('(');
-      if (cutpoint > 0) {
+      if (cutpoint > 0) { // a size indicator is present
         noob.dataType = ColumnType.forName(typeinfo.substring(0, cutpoint));
         noob.size = StringX.parseInt(typeinfo.substring(1 + cutpoint));
       } else {
@@ -261,7 +264,7 @@ public class ColumnAttributes {
           if (word.equals("UPDATE")) {
             word = words.next();
             if (word.equals("CURRENT_TIMESTAMP")) {
-              noob.autoIncrement = true; //house rule: mark on update fields as auto.
+              noob.autoIncrement = true; //house rule: mark 'on update' fields as auto.
             } else {
               dbg.FATAL("ON UPDATE {0} not understood", word);
             }
@@ -270,7 +273,7 @@ public class ColumnAttributes {
           }
           break;
         default:
-          dbg.FATAL("ddl {0} not understood", word);
+          dbg.FATAL("ddl {0} not understood in {1}", word, line);
           break;
         }
       }
@@ -386,7 +389,6 @@ public class ColumnAttributes {
     noob.dataType = ColumnType.TIMESTAMP;
     noob.nullable = !track;
     noob.autoIncrement = track;//field is misnamed, this makes sense.
-    noob.defawlt = "CURRENT_TIMESTAMP";
     return noob;
   }
 
