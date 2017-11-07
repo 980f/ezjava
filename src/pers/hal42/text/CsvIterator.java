@@ -6,7 +6,8 @@ import pers.hal42.lang.StringX;
 /**
  * Created by Andy on 6/7/2017.
  * <p>
- * cute incremental csv parser
+ * cute incremental csv parser.
+ * Does not yet deal with quoting or escaping etc. for that you will need a serious parser.
  */
 public class CsvIterator implements StringIterator {
   private final boolean inReverse;

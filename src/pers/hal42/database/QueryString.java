@@ -1014,14 +1014,10 @@ public class QueryString {
     return QueryString.Clause("").where().isTrue(column);
   }
 
-  /** provide inner class access */
-  public QueryString outer() {
-    return this;
-  }
   /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
   public class Lister extends ListWrapper {
     public QueryString query() {
-      return outer();
+      return QueryString.this;
     }
 
     /** begin a list with a comma as the closer */
@@ -1077,7 +1073,7 @@ public class QueryString {
 
     public QueryString done() {
       close();
-      return outer();
+      return query();
     }
 
   }

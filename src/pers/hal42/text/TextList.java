@@ -536,11 +536,12 @@ public class TextList {
     for (int i = 0; i < storage.size(); i++) {
       block.append(PREFIX);
       block.append(itemAt(i));
-      block.append(EOL);//make this be conditional for last item. [see where done below]
+      block.append(EOL);
     }
     // this is especially used when created QueryStrings, so don't break it!
-    if ((block.length() > 0) && (EOL.length() > 0)) { // at least one item was added and the EOL has length.  Now kill the last EOL
-      block.setLength(block.length() - EOL.length());//remove trailing EOL
+    final int length = EOL.length();
+    if ((length > 0) && (block.length() >= length)) { // at least one item was added and the EOL has length.  Now kill the last EOL
+      block.setLength(block.length() - length);//remove trailing EOL
     }
     return block;
   }

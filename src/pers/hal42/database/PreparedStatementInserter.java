@@ -86,10 +86,7 @@ public class PreparedStatementInserter implements AutoCloseable {
   /** add to batch, run the batch if batchSize entries have been added */
   public void batch() throws SQLException {
     if (legit) {
-      st.addBatch();
-      if (++counter >= batchSize) {
-        onBatchRun(DBMacros.doBatch(st));
-      }
+      addbatch();
       rewind();
     }
   }
@@ -101,12 +98,16 @@ public class PreparedStatementInserter implements AutoCloseable {
       while (it.hasNext()) {
         final Object next = it.next();
         st.setObject(sti, stringify ? String.valueOf(next) : next);
-        st.addBatch();
-        if (++counter >= batchSize) {
-          onBatchRun(DBMacros.doBatch(st));
-        }
+        addbatch();
       }
       rewind();
+    }
+  }
+
+  private void addbatch() throws SQLException {
+    st.addBatch();
+    if (++counter >= batchSize) {
+      onBatchRun(DBMacros.doBatch(st));
     }
   }
 
@@ -148,5 +149,11 @@ public class PreparedStatementInserter implements AutoCloseable {
     } else {
       return null;
     }
+  }
+
+  /** for debug */
+  @Override
+  public String toString() {
+    return legit ? st.toString() : "(null)";
   }
 }

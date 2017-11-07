@@ -144,6 +144,9 @@ public class ColumnAttributes {
     if (defawlt == null || that.defawlt == null || defawlt.equals(that.defawlt)) {
       return true;
     } else {
+      if (that.defawlt.equals("NULL")) {//parsing mysql DDL sometimes gives us an explicit reference to NULL.
+        return !StringX.NonTrivial(defawlt);
+      }
       return false;
     }
   }
@@ -163,6 +166,7 @@ public class ColumnAttributes {
       piece.append(BENOTNULL);
     }
     if (dataType == ColumnType.TIMESTAMP) {//enforce it being a true timestamp
+      //todo:1 mysql coerced a nullable timestamp to not null default 0000
       if (autoIncrement) {//abuse of this flag
         piece.append(AUTOSTAMP);
       }
@@ -244,6 +248,7 @@ public class ColumnAttributes {
           break;
         case "DEFAULT":
           noob.defawlt = MysqlQuirks.unTick(words.next());
+          //todo: enable csviterator quoting logicremerge quoted words
           break;
         case "AUTO_INCREMENT":
           noob.autoIncrement = true;
