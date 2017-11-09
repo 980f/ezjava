@@ -40,12 +40,12 @@ public class TextList {
   }
 
   public TextList(String[] array) {
-    storage = new Vector<>();
+    this();
     fromStringArray(array);
   }
 
   public TextList(Object[] array) {
-    storage = new Vector<>();
+    this();
     fromObjectArray(array);
   }
 

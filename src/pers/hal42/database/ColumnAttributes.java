@@ -243,11 +243,17 @@ public class ColumnAttributes {
 
       while (words.hasNext()) {
         word = words.next();
-        switch (word) {
-        case "unsigned"://mysql is fucking inconsistent in its casing!
+        switch (word.toUpperCase()) {//mysql is damnably inconsistent in its casing! guarding against them changing it in the future
+        case "UNSIGNED":
           break;
         case "DEFAULT":
-          noob.defawlt = MysqlQuirks.unTick(words.next());
+          StringBuilder next = new StringBuilder(words.next());
+          if (next.toString().startsWith("'")) {
+            while (words.hasNext() && !next.toString().endsWith("'")) {
+              next.append(" ").append(words.next());
+            }
+          }
+          noob.defawlt = MysqlQuirks.unTick(next.toString());
           //todo: enable csviterator quoting logicremerge quoted words
           break;
         case "AUTO_INCREMENT":
@@ -271,10 +277,10 @@ public class ColumnAttributes {
             if (word.equals("CURRENT_TIMESTAMP")) {
               noob.autoIncrement = true; //house rule: mark 'on update' fields as auto.
             } else {
-              dbg.FATAL("ON UPDATE {0} not understood", word);
+              dbg.FATAL("ON UPDATE {0} not understood in {1}", word, line);
             }
           } else {
-            dbg.FATAL("ON {0} not understood", word);
+            dbg.FATAL("ON {0} not understood in {1}", word, line);
           }
           break;
         default:
