@@ -110,18 +110,19 @@ public class ObjectRange<T extends Comparable<T>> {
   public int compare(T item) {
     if (NonTrivial()) {
       int cmplow = one.compareTo(item);
-      if (cmplow < 0) {
-        return -1;//lower than lowest
+      if (cmplow >= 0) {
+        return cmplow;//item is lower or same as
       }
       if (broad) {
         int cmphigh = two.compareTo(item);
-        if (cmphigh >= 0) {
-          return 1;//higher than highest
+        if (cmphigh <= 0) {
+          return -cmphigh;//item is higher than highest
         } else {
-          return 0;
+          return 1;
         }
-      } else
-      return cmplow;
+      } else {
+        return 1;
+      }
     } else {
       return -2;
     }
@@ -131,6 +132,7 @@ public class ObjectRange<T extends Comparable<T>> {
   public void extend(T item) {
     int cmp = compare(item);
     switch (cmp) {
+    case -2:
     case -1:
       setOne(item);
       break;
@@ -141,6 +143,7 @@ public class ObjectRange<T extends Comparable<T>> {
       break;
     }
   }
+
   /**
    * @returns whether @param item is in range, if @param overlapped then range includes the higher bound.
    * overlapped probably should be a member rather than a passed parameter.
