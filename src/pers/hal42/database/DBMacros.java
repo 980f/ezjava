@@ -1365,7 +1365,7 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  /** @returns integer from executing @param selector, -1 on some of the faults. If -1 is a legitimate response and not acceptible on error then don't use this convenience method.*/
+  /** @returns integer from executing @param selector, -1 on some of the faults. If -1 is a legitimate response and not acceptible on error then don't use this convenience method. */
   public int getIntFrom(PreparedStatement selector, int whichcolumn) throws SQLException {
     final ResultSet rs = selector.executeQuery();
     return rs.next() ? getIntFromRS(whichcolumn, rs) : BadIndex;
@@ -1376,7 +1376,7 @@ public class DBMacros extends GenericDB {
       if (preparer != null) {
         preparer.accept(pst);
       }
-      ResultSet rs = pst.executeQuery();
+      ResultSet rs = pst.executeQuery();//autocloses when statement closes.
       if (rs.next() && actor != null) {
         actor.accept(rs);
         return true;
@@ -1385,6 +1385,33 @@ public class DBMacros extends GenericDB {
       }
     } catch (SQLException e) {
       dbg.Caught(e, query);
+      return false;
+    }
+  }
+
+  /**
+   * @param actor will receive a result set that if @param iterate is false has already been next'ed once, use a do{}while(rs.next());, else has already been exhausted.
+   * @returns whether actor was called at least once.
+   */
+  public boolean doPreparedStatement(PreparedStatement pst, Consumer<ResultSet> actor, boolean iterate) {
+    try (ResultSet rs = pst.executeQuery()) {
+      if (actor != null) {
+        if (rs.next()) {//always try once
+          actor.accept(rs);
+          if (iterate) {
+            while (rs.next()) {
+              actor.accept(rs);
+            }
+          }
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return false;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e, "running" + pst);
       return false;
     }
   }
