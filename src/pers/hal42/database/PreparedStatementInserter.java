@@ -1,5 +1,6 @@
 package pers.hal42.database;
 
+import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -134,7 +135,7 @@ public class PreparedStatementInserter implements AutoCloseable {
   }
 
   /** @returns new keys from running what is presumed to be an insert. */
-  public ResultSet executeInsert(int[] autokeys) throws SQLException {
+  public ResultSet executeInsert(/*int[] autokeys*/) throws SQLException {
     if (st.execute()) {
       return st.getGeneratedKeys();
     } else {

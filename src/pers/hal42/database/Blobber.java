@@ -19,6 +19,10 @@ public class Blobber implements java.sql.Blob {
     this.content = content;
   }
 
+  public Blobber(String content){
+    this(content!=null?content.getBytes():new byte[0]);
+  }
+
   @Override
   public long length() throws SQLException {
     return content.length;

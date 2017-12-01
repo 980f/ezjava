@@ -829,7 +829,20 @@ public class QueryString {
     where().prepared(col);
   }
 
-  /** where clause for prepared statement */
+  /** "where/and name=?" */
+  public void wherePrepared(String  col) {
+    where().nvPairPrepared(col);
+  }
+  /** "where/and name=? , ditto" */
+  public QueryString wherePrepared(String ... cols) {
+    for (String col : cols) {
+      wherePrepared(col);
+    }
+    return this;
+  }
+
+
+  /** "where/and name=? , ditto" */
   public QueryString whereColumns(ColumnAttributes... cols) {
     for (ColumnAttributes col : cols) {
       wherePrepared(col);
@@ -841,9 +854,7 @@ public class QueryString {
   /** where clause for prepared statement */
   public QueryString whereColumns(Iterator<ColumnAttributes> cols) {
 //only called 'where' once, then prepared many    cols.forEachRemaining(where()::prepared);
-    while (cols.hasNext()) {
-      wherePrepared(cols.next());
-    }
+    cols.forEachRemaining(this::wherePrepared);
     return this;
   }
 
@@ -867,10 +878,28 @@ public class QueryString {
     return lister;
   }
 
+  /** "( name,name) values (?,?)"*/
   public QueryString prepareValues(Iterator<ColumnAttributes> cols) {
     int marks;
     try (QueryString.Lister lister = startList("(")) {
       cols.forEachRemaining(col -> lister.append(col.name));
+      marks = lister.counter;
+    }
+    try (QueryString.Lister lister = startList(" VALUES (")) {
+      while (marks-- > 0) {
+        lister.append("?");
+      }
+    }
+    return this;
+  }
+
+  /** "( name,name) values (?,?)"*/
+  public QueryString prepareValues(String... cols) {
+    int marks;
+    try (QueryString.Lister lister = startList("(")) {
+      for (String col : cols) {
+        lister.append(col);
+      }
       marks = lister.counter;
     }
     try (QueryString.Lister lister = startList(" VALUES (")) {
@@ -1075,6 +1104,5 @@ public class QueryString {
       close();
       return query();
     }
-
   }
 }

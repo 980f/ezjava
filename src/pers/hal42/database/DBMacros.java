@@ -1074,7 +1074,7 @@ public class DBMacros extends GenericDB {
   /**
    * @returns true if the table is gone
    */
-  protected final boolean dropTable(String tablename) {
+  public final boolean dropTable(String tablename) {
     try (Finally pop = dbg.Push("dropTable")) {
       if (tableExists(tablename)) {
         dbg.ERROR("dropTable" + tablename + " returned " + update(modeler.genDropTable(tablename)));
@@ -1304,6 +1304,10 @@ public class DBMacros extends GenericDB {
     return new Blobber(content);
   }
 
+  public Blob makeBlob(String content) {
+    return new Blobber(content.getBytes());
+  }
+
   /**
    * make and execute a statement, call the actor if the resultset has something in it.
    *
@@ -1371,6 +1375,9 @@ public class DBMacros extends GenericDB {
     return rs.next() ? getIntFromRS(whichcolumn, rs) : BadIndex;
   }
 
+  /**
+   * if the query doesn't actually have any prepared params then give @param prepare a null.
+   * */
   public boolean doPreparedStatement(String query, Consumer<PreparedStatement> preparer, Consumer<ResultSet> actor) {
     try (PreparedStatement pst = makePreparedStatement(query)) {
       if (preparer != null) {
