@@ -107,6 +107,11 @@ public class EnumerationFilter<E extends Enum> {
   public EnumerationFilter<E> parseList(StringIterator list) {
     clear();//all usages at one point did this so I brought it into this method.
     while (list.hasNext()) {
+      final String perm = list.next();
+      if (perm.equalsIgnoreCase("all")) {
+        all = true;
+        return this;
+      }
       allow(ReflectX.parseEnum(claz, list.next()));
     }
     return this;
@@ -161,7 +166,7 @@ public class EnumerationFilter<E extends Enum> {
       @Override
       public boolean hasNext() {
         for (; pointer < present.length; ++pointer) {
-          if (present[pointer]) {
+          if (all || present[pointer]) {
             return true;
           }
         }
