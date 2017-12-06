@@ -196,7 +196,10 @@ public class QueryString {
     return cat("\n\t");
   }
 
-  /** JOIN @param tablename ON aliaser.base.joincolumnname EQUALS aliaser.next().joincolumnname */
+  /**
+   * Special doohickey for the fedfis widetables.
+   * JOIN @param tablename ON aliaser.base.joincolumnname EQUALS aliaser.next().joincolumnname
+   */
   public QueryString join(String tablename, String joincolumnname, AsciiIterator aliaser) {
     indent();
     cat(JOIN);
@@ -1103,6 +1106,11 @@ public class QueryString {
     public QueryString done() {
       close();
       return query();
+    }
+
+    public Lister nvPair(String column, String formula) {
+      comma().nvPair(column, formula);
+      return this;
     }
   }
 }

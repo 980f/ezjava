@@ -45,17 +45,17 @@ public class ColumnAttributes {
     this.autoIncrement = autoIncrement;
   }
 
+  /** used by ost of the factories */
   private ColumnAttributes() {
+    //dbg.FATAL("ColumnAttibutes null constructor called");
   }
 
   public ColumnAttributes(String column_name, String data_type) {
-    this.name = column_name;
-    this.dataType = ColumnType.forName(data_type);
+    this(column_name, ColumnType.forName(data_type));
   }
 
   public ColumnAttributes(String column_name, ColumnType data_type) {
-    this.name = column_name;
-    this.dataType = data_type;
+    this(true, data_type, BadIndex, column_name, null, false);
   }
 
   /**
