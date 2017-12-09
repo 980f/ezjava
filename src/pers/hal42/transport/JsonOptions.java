@@ -41,7 +41,11 @@ public class JsonOptions {
   }
 
   public JsonOptions(Storable existing) {
-    node = existing;
+    if (existing != null) {
+      node = existing;
+    } else {
+      node = JsonStorable.StandardRoot(getClass());//todo:00 java abhors a vacuum.
+    }
     rules = Storable.Rules.Master;
   }
 
