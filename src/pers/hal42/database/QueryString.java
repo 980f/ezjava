@@ -1109,7 +1109,7 @@ public class QueryString {
     }
 
     public Lister nvPair(String column, String formula) {
-      comma().nvPair(column, formula);
+      append(format("{0}={1}", column, formula));
       return this;
     }
   }
