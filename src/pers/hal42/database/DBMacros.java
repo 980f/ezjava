@@ -1377,6 +1377,8 @@ public class DBMacros extends GenericDB {
 
   /**
    * if the query doesn't actually have any prepared params then give @param prepare a null.
+   * @param actor will receive a result set that has already been next'ed once, use a do{}while(rs.next());, else has already been exhausted.
+   * @returns whether actor was called at least once.
    * */
   public boolean doPreparedStatement(String query, Consumer<PreparedStatement> preparer, Consumer<ResultSet> actor) {
     try (PreparedStatement pst = makePreparedStatement(query)) {

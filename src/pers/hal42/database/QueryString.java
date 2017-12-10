@@ -7,6 +7,7 @@ import pers.hal42.text.AsciiIterator;
 import pers.hal42.text.ListWrapper;
 import pers.hal42.text.TextList;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 import static java.text.MessageFormat.format;
@@ -932,11 +933,20 @@ public class QueryString {
 
 
   /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
-  public static Lister Select(TableInfo ti, Iterator<ColumnAttributes> cols) {
+  public static Lister SelectColumns(TableInfo ti, Iterator<ColumnAttributes> cols) {
+    return Select(ti, new ColumnAttributes.NameIterator(cols));
+  }
+
+  public static Lister Select(TableInfo ti, String... names) {
+    return Select(ti, Arrays.asList(names).iterator());
+  }
+
+  /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
+  public static Lister Select(TableInfo ti, Iterator<String> names) {
     final QueryString qry = Select();
     final String closer = format("{0} {1}", FROM, ti.fullName());
     QueryString.Lister lister = qry.startList("", closer);
-    cols.forEachRemaining(col -> lister.append(col.name));
+    names.forEachRemaining(lister::append);
     return lister;
   }
 

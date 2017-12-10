@@ -8,6 +8,8 @@ import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.CsvIterator;
 import pers.hal42.text.StringIterator;
 
+import java.util.Iterator;
+
 import static com.fedfis.db.MysqlQuirks.isTicked;
 import static java.text.MessageFormat.format;
 import static pers.hal42.lang.Index.BadIndex;
@@ -408,6 +410,24 @@ public class ColumnAttributes {
 
     public void ordinate(ColumnAttributes col) {
       col.ordinal = col.isAuto() ? 0 : ++ordinator;
+    }
+  }
+
+  public static class NameIterator implements Iterator<String> {
+    Iterator<ColumnAttributes> cols;
+
+    public NameIterator(Iterator<ColumnAttributes> cols) {
+      this.cols = cols;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return cols.hasNext();
+    }
+
+    @Override
+    public String next() {
+      return cols.next().name;
     }
   }
 }
