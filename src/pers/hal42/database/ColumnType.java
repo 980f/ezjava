@@ -10,6 +10,7 @@ public enum ColumnType {
   SMALLINT(Types.SMALLINT, false),  //
   TINYINT(Types.TINYINT, false), //
   NUMERIC(Types.NUMERIC, false), //
+  DOUBLE(Types.DOUBLE, false),
   BOOL(Types.BOOLEAN, false),   //
   TIME(Types.TIME, false),       //externally supplied time
   TIMESTAMP(Types.TIMESTAMP, false),  //database generated time value

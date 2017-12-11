@@ -307,11 +307,11 @@ public class ColumnAttributes {
   }
 
   /**
-   * a numerical value
+   * a numerical value of uncertain precision/range.
    */
   public static ColumnAttributes Number(boolean nullable) {
     ColumnAttributes noob = new ColumnAttributes();
-    noob.dataType = ColumnType.NUMERIC;
+    noob.dataType = ColumnType.DOUBLE;//fedfis house rule, need to analyze each and make them a decimal(,) declaration.
     noob.nullable = nullable;
     if (!nullable) {
       noob.defawlt = "0";

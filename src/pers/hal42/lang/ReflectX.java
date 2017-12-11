@@ -30,6 +30,21 @@ public class ReflectX {
     String legacy() default "";
   }
 
+  /** @deprecated NYI */
+  public static Field findGlobalField(String key) {
+    for (int searchSplit = key.lastIndexOf('.'); searchSplit >= 0; ) {
+      String classname = key.substring(0, searchSplit);
+      try {
+        final Class<?> parent = Class.forName(classname);
+//todo: drill through remaining fields to get child.       parent.getField()
+      } catch (ClassNotFoundException e) {
+        //dbg.Caught(e);
+        searchSplit = classname.lastIndexOf('.');
+      }
+    }
+    return null;
+  }
+
   /** @returns whether method was invoked */
   public static boolean doMethodNamed(Object o, String methodName, Object... args) {
     try {
