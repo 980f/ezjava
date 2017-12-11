@@ -931,6 +931,12 @@ public class QueryString {
     return Open();
   }
 
+  /** create or replace a view given a name for it and a select statement */
+  public static QueryString ForceView(TableInfo ti, QueryString select) {
+    final QueryString viewmaker = QueryString.Clause("CREATE OR REPLACE VIEW {0} AS {1}", ti.fullName(), select.toString());
+    return viewmaker;
+  }
+
 
   /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
   public static Lister SelectColumns(TableInfo ti, Iterator<ColumnAttributes> cols) {
