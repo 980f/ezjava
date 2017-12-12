@@ -97,6 +97,7 @@ public class UTC implements Comparable<UTC> {
     return utc > 0;
   }
 
+  /** make a new UTC that differs from @param startdate by @param days, negative for the past. */
   public static UTC ChangeByDays(UTC startdate, int days) { // can be positive or negative
     if (startdate == null) {
       return null;

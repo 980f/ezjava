@@ -41,19 +41,24 @@ public class QueryString {
     /////////
 
     SELECT,
+    ALLFIELDS("*"),
+
     AND,
     NOT,
     WHERE,
 
+    ORDERBY("ORDER BY"),
+    GROUPBY("GROUP BY"),
     ASC,
     DESC,
     UNION,
     VALUES,
     OR,
-    GTEQ,
-    GT,
-    LTEQ,
-    LT,
+    EQUALS("="),
+    GTEQ(">="),
+    GT(">"),
+    LTEQ("<="),
+    LT("<"),
 
     IS,
 
@@ -79,10 +84,15 @@ public class QueryString {
     CAST,
     BIGINT,
     LIMIT,;
+
     String spaced;
 
     SqlKeyword() {
       spaced = " " + super.toString() + " ";
+    }
+
+    SqlKeyword(String opertor) {
+      spaced = " " + opertor + " ";
     }
 
     /**
@@ -94,22 +104,12 @@ public class QueryString {
     }
   }
 
-  private static final String ORDERBY = "ORDER BY";
-  private static final String GROUPBY = "GROUP BY";
-  private static final String EQUALS = "=";
+
 
 //  protected static final String NEXTVAL = " NEXTVAL ";
   //   EMPTY = "";
 
-//   ALLFIELDS = " * ";
-//   SELECTALL = SELECT + ALLFIELDS;
-//
 
-  //  protected static final String SLIMUPPERSELECT = SELECT.trim().toUpperCase();
-//  protected static final String SLIMLOWERSELECT = SELECT.trim().toLowerCase();
-//  protected static final String SLIMUPPERSHOW = SHOW.trim().toUpperCase();
-//  protected static final String SLIMLOWERSHOW = SHOW.trim().toLowerCase();
-//  protected static final String LEFTOFEXPLAIN = StringX.subString(EXPLAIN, 0, 6);// "EXPLAI" since only 6 chars long
   public StringBuilder guts = new StringBuilder(200);//most queries are big
   /** state for deciding whether to use 'where' or 'and' when adding a filter term */
   protected boolean whered = false;
@@ -210,14 +210,14 @@ public class QueryString {
     guts.append(aliaser.first());
     guts.append('.');
     guts.append(joincolumnname);
-    cat("=");
+    cat(EQUALS);
     guts.append(aliaser.next());
     dot(joincolumnname);
     return this;
   }
 
   public QueryString Open() {
-    guts.append('(');
+    guts.append('(');  //no extra spaces
     return this;
   }
 
@@ -245,6 +245,13 @@ public class QueryString {
 
   public Lister startList(String prefix, String closer) {
     return new Lister(prefix, closer);
+  }
+
+  public QueryString spaced(Object... objects) {
+    for (Object object : objects) {
+      cat(String.valueOf(object));
+    }
+    return this;
   }
 
   /** append parenthesized list of columns */
@@ -738,10 +745,6 @@ public class QueryString {
     return this;
   }
 
-  public QueryString all() {
-    return word("*");
-  }
-
   public QueryString andRange(ColumnProfile rangeName, ObjectRange strange) {
     return andRange(rangeName, strange, true);
   }
@@ -984,7 +987,7 @@ public class QueryString {
   /** create new query starting "select *" */
   public static QueryString SelectAll() {
     QueryString noob = new QueryString();
-    return noob.cat(SELECT).all();
+    return noob.cat(SELECT).cat(ALLFIELDS);
   }
 
   /**
