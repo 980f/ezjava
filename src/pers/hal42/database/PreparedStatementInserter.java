@@ -1,6 +1,5 @@
 package pers.hal42.database;
 
-import java.sql.Blob;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -11,18 +10,23 @@ import static pers.hal42.database.DBMacros.dbg;
 
 /** to simplify sequential setting of prepared statement values */
 public class PreparedStatementInserter implements AutoCloseable {
+  /** whether constuctor had sane args. At a minium st!=null */
   final public boolean legit;
-  /** diagnostic counter */
+  /** batches stored since last batch execution */
   public int counter = 0;
+  /** batches since object created */
   public int grandCounter = 0;
+  /** sum of returned values, probably somewhat related to number of records modified. */
   public int grandSum = 0;
 
   /** how much batch to accumulate before sending. defaults to send all right away. */
   public int batchSize = 0;
 
-  //feel free to subvert this class, it is an assistant not a manager
+  //feel free to subvert this item, this class is an assistant not a manager
+  /** the statement that we are managing setting values on. */
   public PreparedStatement st;
-  //feel free to subvert this class, it is an assistant not a manager
+  //feel free to subvert this item, this class is an assistant not a manager
+  /** preincrementing pointer to next field to insert */
   public int sti;
 
   public PreparedStatementInserter(PreparedStatement st) {
