@@ -79,9 +79,8 @@ public class EnumerationFilter<E extends Enum> {
   }
 
   /** forget that any items were 'permitted/present' */
-  public EnumerationFilter<E> clear() {
+  public EnumerationFilter<E> denyAll() {
     all = false;
-//todo:2    Arrays.setAll(present,false);
     for (int i = present.length; i-- > 0; ) {
       present[i] = false;
     }
@@ -99,13 +98,13 @@ public class EnumerationFilter<E extends Enum> {
 
   /** a convenience for testing: only permit the given @param item */
   public void doOnly(E item) {
-    clear();
+    denyAll();
     allow(item);
   }
 
   /** set permissions according to a list of fullsized tags */
   public EnumerationFilter<E> parseList(StringIterator list) {
-    clear();//all usages at one point did this so I brought it into this method.
+    denyAll();//all usages at one point did this so I brought it into this method.
     while (list.hasNext()) {
       final String perm = list.next();
       if (perm.equalsIgnoreCase("all")) {

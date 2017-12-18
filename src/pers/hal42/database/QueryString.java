@@ -837,8 +837,9 @@ public class QueryString {
   }
 
   /** "where/and name=?" */
-  public void wherePrepared(String  col) {
+  public QueryString wherePrepared(String col) {
     where().nvPairPrepared(col);
+    return this;
   }
   /** "where/and name=? , ditto" */
   public QueryString wherePrepared(String ... cols) {
@@ -950,6 +951,12 @@ public class QueryString {
     return Select(ti, Arrays.asList(names).iterator());
   }
 
+  /** finish list and return query */
+  public static QueryString From(Lister open) {
+    open.close();
+    return open.query();
+  }
+
   /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
   public static Lister Select(TableInfo ti, Iterator<String> names) {
     final QueryString qry = Select();
@@ -1046,7 +1053,11 @@ public class QueryString {
 
   /** @returns new {@link QueryString} starting with "Select distinct(columname)" */
   public static QueryString SelectDistinct(ColumnProfile cp) {
-    return Select().cat(DISTINCT).cat(cp.fullName());
+    return SelectDistinct(cp.fullName());
+  }
+
+  public static QueryString SelectDistinct(String colname) {
+    return Select().cat(DISTINCT).cat(colname);
   }
 
   /** @returns new empty {@link QueryString} */
