@@ -815,6 +815,23 @@ public class QueryString {
    *
    * @returns this
    */
+  public QueryString OnDupUpdate(String... cols) {
+    lineBreak();
+    try (Lister lister = dupLister()) {
+      for (String col : cols) {
+        lister.duplicateUpdate(col);
+      }
+    }
+    return this;
+  }
+
+
+  /**
+   * mysql quirk: while inserting fields into an insert statement record the names of non-pk fields in a TextList.
+   * pass that TextList to this method and those fields will be updated with what otherwise was inserted
+   *
+   * @returns this
+   */
   public QueryString OnDupUpdate(Iterator<ColumnAttributes> cols) {
     lineBreak();
     try (Lister lister = dupLister()) {

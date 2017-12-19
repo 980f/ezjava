@@ -89,9 +89,10 @@ public class PreparedStatementInserter implements AutoCloseable {
   }
 
   /** add to batch, run the batch if batchSize entries have been added */
-  public void batch() throws SQLException {
-    if (legit) {
-      addbatch();
+  public boolean batch() throws SQLException {
+    try {
+      return legit && addbatch();
+    } finally {
       rewind();
     }
   }
@@ -109,11 +110,13 @@ public class PreparedStatementInserter implements AutoCloseable {
     }
   }
 
-  private void addbatch() throws SQLException {
+  private boolean addbatch() throws SQLException {
     st.addBatch();
     if (++counter >= batchSize) {
       onBatchRun(DBMacros.doBatch(st));
+      return true;
     }
+    return false;
   }
 
 

@@ -1,7 +1,5 @@
 package pers.hal42.text;
 
-import pers.hal42.lang.StringX;
-
 /**
  * Created by Andy on 6/27/2017.
  * <p>
@@ -17,8 +15,6 @@ public class ListWrapper implements AutoCloseable {
   public boolean useWhiteout = false;
   /** a courtesy, counts number of times append has been called */
   public int counter = 0;
-  /** */
-  protected int excessCommaAt = -1;
   protected String closer = null;
 
   public ListWrapper(StringBuilder sb) {
@@ -50,14 +46,14 @@ public class ListWrapper implements AutoCloseable {
     if (withOpenInit != null) {
       s.append(withOpenInit);
     }
-    excessCommaAt = s.length();
     return this;
   }
 
   /** add comma and @param field */
   public ListWrapper append(String field) {
-    ++counter;
-    addComma();
+    if (counter++ != 0) {
+      addComma();
+    }
     if (field != null) {//want empty not StringBuilder's "null"
       s.append(field);
     }
@@ -75,24 +71,10 @@ public class ListWrapper implements AutoCloseable {
   }
 
   /**
-   * add a close paren and remove comma only if opening paren was recorded.
+   * add a close paren only if not already done (can be sloppy and call close() more than once)
    */
   @Override
   public void close() {
-    if (StringX.NonTrivial(comma)) {
-      if (excessCommaAt >= 0) {
-        if (counter > 0) {//else we didn't actually stick a comma where we said we did.
-          if (useWhiteout) {
-            for (int quantity = comma.length(); quantity-- > 0; ) {//todo:1 does stringbuilder have this method? replace() wasn't quite right.
-              s.setCharAt(excessCommaAt + quantity, ' ');
-            }
-          } else {
-            s.delete(excessCommaAt, excessCommaAt + comma.length());
-          }
-        }
-      }
-    }
-    excessCommaAt = ~0;//unconditionally forget that a close was pending
     s.append(closer != null ? closer : ")"); //set closer to an empty string, not null, to get an 'invisible' list termination.
     closer = null;
   }
