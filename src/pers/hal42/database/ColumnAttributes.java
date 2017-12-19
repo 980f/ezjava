@@ -126,7 +126,7 @@ public class ColumnAttributes {
     ColumnAttributes that = (ColumnAttributes) o;
 
     if (!nullable && that.nullable) {
-      dbg.ERROR("Column {0} should be not null but existing is nullable", name);
+      dbg.ERROR("Column <{0}> should be not null but existing is nullable", name);
       //mysql apparently ignores our request for nullable if there is a default
     }
     if (size >= 0 && that.size >= 0 && size > that.size) {

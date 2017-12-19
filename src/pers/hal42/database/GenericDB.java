@@ -211,7 +211,7 @@ public class GenericDB {
         dbConnector = new DBConn();
       }
       if (conn == null) {
-        dbg.WARNING("Getting new connection for thread <{0}>!", myThreadName );
+        dbg.WARNING("Getting new connection for thread <{0}>", myThreadName);
 //        conn = cpool.checkOut();
         conn = dbConnector.makeConnection(connInfo);
       }
