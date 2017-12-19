@@ -407,23 +407,23 @@ public class QueryString {
     return cat(VALUES).Open();
   }
 
-  /**
-   * "AND (fi
-   */
-  public QueryString AndInList(ColumnProfile field, TextList options) {
-    if ((options != null) && (field != null)) {
-      switch (options.size()) {
-      case 0://make no changes whatsoever
-        break;
-      case 1://a simple compare
-        return nvPair(field, options.itemAt(0));
-      default://2 or more must be or'd together or use "IN" syntax %%%
-
-        break;
-      }
-    }
-    return this;
-  }
+//  /**
+//   * @deprecated NYI
+//   */
+//  public QueryString AndInList(ColumnProfile field, TextList options) {
+//    if ((options != null) && (field != null)) {
+//      switch (options.size()) {
+//      case 0://make no changes whatsoever
+//        break;
+//      case 1://a simple compare
+//        return where().nvPair(field, options.itemAt(0));
+//      default://2 or more must be or'd together or use "IN" syntax %%%
+//
+//        break;
+//      }
+//    }
+//    return this;
+//  }
 
   /** @returns this after appending set value=? [,value=?] for each item in @param colnames */
   public QueryString prepareToSet(Iterable<String> colnames) {
@@ -773,9 +773,22 @@ public class QueryString {
     return cat(CAST).Open().cat(what).as(datatype).Close();
   }
 
+  /**
+   * adds 'set' and tends to commas
+   * set
+   */
   public Lister startSet() {
     lineBreak();
     return new Lister("SET ", "");
+  }
+
+  /**
+   * in ( ... )
+   *
+   * @returns object for supplying the ...
+   */
+  public Lister startIn() {
+    return new Lister("IN (");
   }
 
   private Lister dupLister() {
@@ -1141,6 +1154,10 @@ public class QueryString {
     public Lister nvPair(String column, String formula) {
       append(format("{0}={1}", column, formula));
       return this;
+    }
+
+    public void append(Integer id) {
+      append(id.toString());
     }
   }
 }
