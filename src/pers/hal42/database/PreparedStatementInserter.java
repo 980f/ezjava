@@ -150,12 +150,16 @@ public class PreparedStatementInserter implements AutoCloseable {
     }
   }
 
-  /** executes statement and @returns its ResultSet, possibly null */
+  /** executes statement and @returns its ResultSet, possibly null. rewinds pointer for next use. */
   public ResultSet execute() throws SQLException {
-    if (st.execute()) {//executeQuery() got "Can not issue data manipulation statements with executeQUery();
-      return st.getResultSet();
-    } else {
-      return null;
+    try {
+      if (st.execute()) {//executeQuery() got "Can not issue data manipulation statements with executeQUery();
+        return st.getResultSet();
+      } else {
+        return null;
+      }
+    } finally {
+      rewind();
     }
   }
 
