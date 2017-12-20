@@ -8,6 +8,10 @@ import pers.hal42.timer.UTC;
 import java.text.DecimalFormat;
 import java.text.FieldPosition;
 import java.text.NumberFormat;
+import java.time.LocalDate;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -34,6 +38,16 @@ public class DateX {
     // I exist for static reasons
   }
 
+  /** zero hundred hours prior to now */
+  public static LocalDate DateStamp(int daysAgo) {
+    return ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(daysAgo).toLocalDate();
+  }
+
+  /** @returns a day @see DateStamp(int) */
+  public static String DateStamp(int daysAgo, String format) {
+    return DateTimeFormatter.ofPattern(StringX.OnTrivial(format, "yyyy-MM-dd")).format(DateX.DateStamp(0));
+  }
+
   public static String timeStampNow() {
     return timeStamp(Now());
   }
@@ -44,7 +58,7 @@ public class DateX {
 
   private static String timeStamp(Date today) {
 //    try (AutoCloseable free = timeMon.getMonitor()) {
-      return LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS").format(today);
+    return LocalTimeFormat.Utc("yyyyMMdd.HHmmss.SSS").format(today);
 //    } catch (Exception e) {
 //      // +++ deal with this
 //      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
@@ -54,7 +68,7 @@ public class DateX {
 
   public static String timeStampYearless(Date today) {
 //    try (AutoCloseable free = yearlesstimeMon.getMonitor()) {
-      return LocalTimeFormat.Utc("MMdd.HHmmss.SSS").format(today);
+    return LocalTimeFormat.Utc("MMdd.HHmmss.SSS").format(today);
 //    } catch (Exception e) {
 //      // +++ deal with this
 //      // --- CANNOT put any ErrorLogStream stuff here since this is used in ErrorLogStream.
@@ -103,9 +117,9 @@ public class DateX {
   public static String millisToSecsPlus(long millis) {
 //    try (AutoCloseable free = secsNMillisMonitor.getMonitor()) {
     final StringBuffer sbsnm = new StringBuffer();
-      double secs = Ticks.toSeconds(millis);
-      new DecimalFormat("#########0.000").format(secs, sbsnm, new FieldPosition(NumberFormat.INTEGER_FIELD));
-      return String.valueOf(sbsnm);
+    double secs = Ticks.toSeconds(millis);
+    new DecimalFormat("#########0.000").format(secs, sbsnm, new FieldPosition(NumberFormat.INTEGER_FIELD));
+    return String.valueOf(sbsnm);
 //    } catch (Exception e) {
 //      return "";
 //    }
