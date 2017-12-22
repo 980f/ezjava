@@ -77,8 +77,8 @@ public class JsonOptions {
   public void save(String filename) {
     // apply object to DOM
     updateDOM();
-    try {
-      JsonStorable.SaveOptions(node, new PrintStream(JsonStorable.Filenamer(node, filename)), 0);
+    try (PrintStream ps=new PrintStream(JsonStorable.Filenamer(node, filename))){//#using TWR to expedite the file closing.
+      JsonStorable.SaveOptions(node, ps, 0);
     } catch (FileNotFoundException e) {
       dbg.ERROR("saving options to file got {0}", e);
     }
