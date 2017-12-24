@@ -587,6 +587,13 @@ public class QueryString {
     return word(field.fullName()).cat(EQUALS).cat(NULL);
   }
 
+  /**
+   * Use one function that takes an object and does intelligent things with it instead of cols of these ???
+   */
+  public QueryString whereNotNull(String colname) {
+    return where().cat(colname).cat(" is not null ");//todo:1 use sqlwords
+  }
+
   public QueryString nvPair(ColumnProfile field, String value) {
     return nvPair(field.fullName(), value);
   }
@@ -963,6 +970,10 @@ public class QueryString {
   public QueryString function(SqlKeyword keyword) {
     guts.append(keyword.toString().trim());
     return Open();
+  }
+
+  public QueryString catf(String pattern, Object... field) {
+    return cat(format(pattern, field));
   }
 
   /** create or replace a view given a name for it and a select statement */
