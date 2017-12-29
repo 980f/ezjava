@@ -31,22 +31,17 @@ public class JsonOptions {
    * create and initialize from random file @param altfilename
    */
   public JsonOptions(String altfilename) {//public for test access, normal use is to derive from this class.
-    if (StringX.NonTrivial(altfilename)) {
-      node = new Storable(altfilename);
-    } else {
-      node = JsonStorable.StandardRoot(getClass());
-    }
-    rules = Storable.Rules.Master;
-    //#_# while it might seem like a nice idea to invoke load() here, the derived object's own fields don't yet exist and as such cannot therefore set defaults like they are supposed to. so no "load(altfilename)";
+    this(StringX.NonTrivial(altfilename) ? new Storable(altfilename) : null);
   }
 
   public JsonOptions(Storable existing) {
     if (existing != null) {
       node = existing;
     } else {
-      node = JsonStorable.StandardRoot(getClass());//todo:00 java abhors a vacuum.
+      node = JsonStorable.StandardRoot(getClass());
     }
     rules = Storable.Rules.Master;
+    //#_# while it might seem like a nice idea to invoke load() here, the derived object's own fields don't yet exist and as such cannot therefore set defaults like they are supposed to. so no "load(altfilename)";
   }
 
   /** apply DOM to object */
