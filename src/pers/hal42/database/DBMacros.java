@@ -744,8 +744,7 @@ public class DBMacros extends GenericDB {
         String remarks = getTableInfo(rs, "REMARKS");
         dbg.VERBOSE("Found table: CAT=" + catalog + ", SCHEM=" + schema + ", NAME=" + name + ", TYPE=" + type + ", REMARKS=" + remarks);
         if ((name != null) && (name.indexOf("SYS") != 0)) { // +++ We MUST make a rule to NOT start our table names with SYS!
-          TableInfo ti = new TableInfo(catalog, schema, name, type, remarks);
-          tables.add(ti);
+          tables.add(new SimpleTableInfo(catalog, schema, name, type, remarks));
         }
       }
       closeStmt(getStatement(rs));
@@ -768,7 +767,7 @@ public class DBMacros extends GenericDB {
    */
   public DatabaseProfile profileDatabase(String databaseName, String tablename, boolean sort) {
     dbg.VERBOSE("Profiling database: {0} ...", databaseName);
-    TableInfo tq = new TableInfo(null, databaseName, tablename, null, null);
+    SimpleTableInfo tq = new SimpleTableInfo(null, databaseName, tablename, null, null);
     DatabaseProfile tables = new DatabaseProfile(databaseName);
     //noinspection StringEquality
     if (tablename != ALLTABLES) {
@@ -854,7 +853,7 @@ public class DBMacros extends GenericDB {
   public boolean tableExists(String tableName) {
     boolean ret = false;
     if (StringX.NonTrivial(tableName)) {
-      TableInfo tq = new TableInfo(tableName);
+      TableInfo tq = new SimpleTableInfo(tableName);
       TableInfoList tablelist = getTableList(tq);
       for (int i = tablelist.size(); i-- > 0; ) {
         if (tablelist.itemAt(i).name().equalsIgnoreCase(tableName)) {
@@ -1274,14 +1273,14 @@ public class DBMacros extends GenericDB {
   protected final boolean dropTableConstraint(String tablename, String constraintname) {
     String toDrop = "drop constraint " + tablename + "." + constraintname;
     try (Finally pop = dbv.Push("dropTableConstraint")) {
-      TableProfile tempprof = TableProfile.create(new TableInfo(tablename), null, null);
+      TableProfile tempprof = TableProfile.create(new SimpleTableInfo(tablename), null, null);
       return !tableExists(tablename) || update(modeler.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) >= 0;
     }
   }
 
   protected final boolean renameField(String table, String oldname, String newname) {
     int count = 0;
-    TableInfo tq = new TableInfo(table);
+    TableInfo tq = new SimpleTableInfo(table);
     if (fieldExists(tq, oldname)) {
       count = update(modeler.genRenameColumn(table, oldname, newname));
     }

@@ -978,8 +978,7 @@ public class QueryString {
 
   /** create or replace a view given a name for it and a select statement */
   public static QueryString ForceView(TableInfo ti, QueryString select) {
-    final QueryString viewmaker = QueryString.Clause("CREATE OR REPLACE VIEW {0} AS {1}", ti.fullName(), select.toString());
-    return viewmaker;
+    return QueryString.Clause("CREATE OR REPLACE VIEW {0} AS {1}", ti.fullName(), select.toString());
   }
 
 
