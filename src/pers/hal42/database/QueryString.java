@@ -22,94 +22,22 @@ import static pers.hal42.database.QueryString.SqlKeyword.*;
 public class QueryString {
   public static final ErrorLogStream dbg = ErrorLogStream.getForClass(PGQueryString.class);
 
-  /** sql keywords, in CAPS and surrounded with spaces */
-  public enum SqlKeyword {
-    FROM,
-    UPDATE,
-    SET,
-    INSERT,
-    DELETE,
-    ON,
-    IN,
-    BETWEEN, //beware this is inclusive of both ends.
-    ADD,
-    NULL,
-    JOIN,
-    LEFT,
-    SHOW,
-    EXPLAIN,
-    /////////
-    SELECT,
-    ALLFIELDS("*"),
-
-    AND,
-    NOT,
-    WHERE,
-
-    ORDERBY("ORDER BY"),
-    GROUPBY("GROUP BY"),
-    ASC,
-    DESC,
-    UNION,
-    VALUES,
-    OR,
-    EQUALS("="),
-    GTEQ(">="),
-    GT(">"),
-    LTEQ("<="),
-    LT("<"),
-
-    IS,
-
-    DISTINCT,
-
-    COLUMN,
-    SUM,
-    COUNT,
-    MAX,
-    MIN,
-    AS,
-    HAVING,
-
-    SUBSTRING,
-    TO,
-    FOR,
-    CASE,
-    END,
-    ELSE,
-    THEN,
-    WHEN,
-    USING,
-    CAST,
-    BIGINT,
-    LIMIT,;
-
-    String spaced;
-
-    SqlKeyword() {
-      spaced = " " + super.toString() + " ";
-    }
-
-    SqlKeyword(String opertor) {
-      spaced = " " + opertor + " ";
-    }
-
-    /**
-     * @return nominal name with spaces around it.
-     */
-    @Override
-    public String toString() {
-      return spaced;
-    }
-  }
+  /**
+   * whether to put line breaks in many places
+   */
+  public boolean wrappy = true;
 //  protected static final String NEXTVAL = " NEXTVAL ";
   //   EMPTY = "";
 
   public StringBuilder guts = new StringBuilder(200);//most queries are big
-  /** state for deciding whether to use 'where' or 'and' when adding a filter term */
+  /**
+   * state for deciding whether to use 'where' or 'and' when adding a filter term
+   */
   protected boolean whered = false;
-  /** whether to put line breaks in many places */
-  public boolean wrappy = true;
+  /**
+   * simplify multi ordering
+   */
+  private boolean ordered = false;
 
   public QueryString(SqlKeyword starter) {
     guts.append(starter);
@@ -123,50 +51,59 @@ public class QueryString {
     guts.append("");
   }
 
-  /** @returns query text */
-  public String toString() {
-    return String.valueOf(guts);
+  /**
+   * create or replace a view given a name for it and a select statement
+   */
+  public static QueryString ForceView(TableInfo ti, QueryString select) {
+    return QueryString.Clause("CREATE OR REPLACE VIEW {0} AS {1}", ti.fullName(), select.toString());
   }
 
-  /** append @param sql wrapped with spaces */
-  public QueryString cat(SqlKeyword sql) {
-    guts.append(sql.spaced);
-    return this;
+  /**
+   * creates a querystring fills out column name, sets up adding the from clause when you close the lister.
+   */
+  public static Lister SelectColumns(TableInfo ti, Iterator<ColumnAttributes> cols) {
+    return Select(ti, new ColumnAttributes.NameIterator(cols));
   }
 
-  /** append @param s wrapped with spaces */
-  public QueryString cat(QueryString s) {
-    space();
-    cat(String.valueOf(s));
-    space();
-    return this;
+  /**
+   * finish list and return query
+   */
+  public static QueryString From(Lister open) {
+    open.close();
+    return open.query();
   }
 
-  /** append @param s wrapped with spaces */
-  public QueryString cat(String s) {
-    space();
-    guts.append(s);
-    space();
-    return this;
+  /**
+   * creates a querystring fills out column name, sets up adding the from clause when you close the lister.
+   */
+  public static Lister Select(TableInfo ti, Iterator<String> names) {
+    final QueryString qry = Select();
+    final String closer = format("{0} {1}", FROM, ti.fullName());
+    QueryString.Lister lister = qry.startList("", closer);
+    names.forEachRemaining(lister::append);
+    return lister;
   }
 
-  /** append @param c without any spaces */
-  public QueryString cat(char c) {
-    guts.append(c);
-    return this;
+  /**
+   * @returns new query starting "delete from sch.tab"
+   */
+  public static QueryString DeleteFrom(TableInfo ti) {
+    return new QueryString().cat(DELETE).cat(FROM).cat(ti.fullName());
   }
 
-  /** append number, with spaces */
-  public QueryString cat(int s) {
-    return cat((long) s);
+  /**
+   * @returns new query starting "insert  table sch.tab"
+   */
+  public static QueryString Insert(TableInfo ti) {
+    return Insert().cat(ti.fullName());
   }
 
-  /** append number with spaces */
-  public QueryString cat(long s) {
-    space();
-    guts.append(s);
-    space();
-    return this;
+  /**
+   * create new query starting "insert "
+   */
+  public static QueryString Insert() {
+    QueryString noob = new QueryString();
+    return noob.cat(INSERT);
   }
 
   public QueryString dot(String name) {
@@ -176,19 +113,30 @@ public class QueryString {
     return this;
   }
 
-  /** append AS clause, with generous spaces */
-  public QueryString alias(String aliaser) {
-    return cat(AS).word(aliaser);
+  /**
+   * @returns new query starting with: "update schema.tablename "
+   */
+  public static QueryString Update(TableInfo ti) {
+    return Clause(SqlKeyword.UPDATE.toString()).cat(ti.fullName());
   }
 
-  /** append AS clause, with generous spaces, advances @param aliaser */
-  public QueryString alias(AsciiIterator aliaser) {
-    return cat(AS).word(aliaser.next());
+  /**
+   * create new query starting "select *"
+   */
+  public static QueryString SelectAll(TableInfo ti) {
+    QueryString noob = new QueryString();
+    noob.cat(SELECT).cat(ALLFIELDS);
+    if (ti != null) {
+      noob.from(ti);
+    }
+    return noob;
   }
 
-  /** append newline and tab */
-  public QueryString indent() {
-    return cat("\n\t");
+  /**
+   * @returns new {@link QueryString} starting with Select
+   */
+  public static QueryString Select() {
+    return new QueryString(SELECT);
   }
 
   /**
@@ -219,10 +167,11 @@ public class QueryString {
     return Open().cat(cp.fullName());
   }
 
-  /** @returns this after appending just a close paren, no added spaces. */
-  public QueryString Close() {
-    guts.append(')');
-    return this;
+  /**
+   * @returns new {@link QueryString} starting with "Select " then @param first
+   */
+  public static QueryString Select(QueryString first) {
+    return Select().cat(first);
   }
 
   public QueryString dot(String prefix, String postfix) {
@@ -241,23 +190,25 @@ public class QueryString {
     return new Lister(prefix, closer);
   }
 
-  /** simplify multi ordering */
-  private boolean ordered = false;
-
-  /** @returns this after appending each item as a string with spaces */
-  public QueryString spaced(Object... objects) {
-    for (Object object : objects) {
-      cat(String.valueOf(object));
-    }
-    return this;
+  /**
+   * @returns new {@link QueryString} starting with "Select table.name "
+   */
+  public static QueryString Select(ColumnProfile cp) {
+    return Select().cat(cp.fullName());
   }
 
-  /** append parenthesized list of columns */
-  public QueryString catList(String prefix, Iterator<ColumnAttributes> cols, String closer) {
-    try (QueryString.Lister lister = startList(prefix, closer)) {
-      cols.forEachRemaining(col -> lister.append(col.name));
-    }
-    return this;
+  /**
+   * @returns new {@link QueryString} starting with "Select justnameNoTable."
+   */
+  public static QueryString Select(ColumnAttributes col) {
+    return Select().cat(col.name);
+  }
+
+  /**
+   * @returns new {@link QueryString} starting with "Select distinct(columname)"
+   */
+  public static QueryString SelectDistinct(ColumnProfile cp) {
+    return SelectDistinct(cp.fullName());
   }
 
   public QueryString catList(String prefix, String closer, ColumnAttributes... cols) {
@@ -278,23 +229,20 @@ public class QueryString {
     return this;
   }
 
-  /** you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state */
-  public QueryString where() {
-    if (whered) {
-      return and();
-    } else {
-      whered = true;
-      return cat(WHERE);
-    }
+  /**
+   * @returns new empty {@link QueryString}
+   */
+  public static QueryString Clause(String message, Object... clump) {
+    QueryString clause = new QueryString();
+    clause.cat(format(message, clump));
+    return clause;
   }
 
-  /** you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state */
-  public QueryString and() {
-    if (whered) {
-      return cat(AND);
-    } else {
-      return where();
-    }
+  /**
+   * @returns New clause starting with Where column=false
+   */
+  public static QueryString WhereNot(ColumnProfile column) {
+    return QueryString.Clause("").where().isFalse(column);
   }
 
   public QueryString where(String columnish, Object valued) {
@@ -303,24 +251,23 @@ public class QueryString {
     return this;
   }
 
-  public QueryString quoted(String value) {
-    if (value == null) {
-      qMark();
-    } else {
-      cat("'");
-      guts.append(value);
-      cat("'");
-    }
-    return this;
+  /**
+   * @returns query text
+   */
+  public String toString() {
+    return String.valueOf(guts);
   }
 
   public QueryString qMark() {
     return cat("?");
   }
 
-  /** @returns this after appending "IN( @param list )" */
-  public QueryString in(String list) {
-    return cat(IN).Open().cat(list).Close();
+  /**
+   * append @param sql wrapped with spaces
+   */
+  public QueryString cat(SqlKeyword sql) {
+    guts.append(sql.spaced);
+    return this;
   }
 
   public QueryString or() {
@@ -331,26 +278,32 @@ public class QueryString {
     return cat(NOT);
   }
 
-  /** @returns this after appending "sum( @param str )" */
-  public QueryString sum(String str) {
-    return cat(SUM).Open().cat(str).Close();
+  /**
+   * append @param s wrapped with spaces
+   */
+  public QueryString cat(QueryString s) {
+    space();
+    cat(String.valueOf(s));
+    space();
+    return this;
   }
 
-  /** @returns this after appending "in ( @param list )" adding commas as needed between list elements which are each quoted */
-  public QueryString inQuoted(TextList list) {
-    // have to do this list manually, as quoting has some special rules ...
-    // create a new list with the quoted strings in it, then cat them into a StringBuffer and output as a string.
-    // This would be faster if it was directly into a StringBuffer, but I am in a hurry right now.
-    TextList list2 = new TextList(list.size());
-    for (int i = 0; i < list.size(); i++) {
-      list2.add(Quoted(list.itemAt(i)));
-    }
-    return inUnquoted(list2);
+  /**
+   * append @param s wrapped with spaces
+   */
+  public QueryString cat(String s) {
+    space();
+    guts.append(s);
+    space();
+    return this;
   }
 
-  /** @returns this after appending "in ( @param list )" adding commas as needed between list elements */
-  public QueryString inUnquoted(TextList list) {
-    return in(list.asParagraph(","));
+  /**
+   * append @param c without any spaces
+   */
+  public QueryString cat(char c) {
+    guts.append(c);
+    return this;
   }
 
   public QueryString inUnquoted(ColumnProfile cp, TextList list) {
@@ -407,9 +360,11 @@ public class QueryString {
     return cat(CASE).cat(field).cat(WHEN).cat(comparedTo).cat(THEN).cat(ifEquals).cat(ELSE).cat(ifNot).cat(END);
   }
 
-  /** @returns this after "VALUES (" */
-  public QueryString Values() {
-    return cat(VALUES).Open();
+  /**
+   * append number, with spaces
+   */
+  public QueryString cat(int s) {
+    return cat((long) s);
   }
 //  /**
 //   * @deprecated NYI
@@ -480,20 +435,21 @@ public class QueryString {
     return comma().cat(s);
   }
 
-  /** ensure there is a space at the end of the string */
-  private QueryString space() {
-    if (guts.length() > 0 && guts.charAt(guts.length() - 1) != ' ') {
-      guts.append(' ');
-    }
+  /**
+   * append number with spaces
+   */
+  public QueryString cat(long s) {
+    space();
+    guts.append(s);
+    space();
     return this;
   }
 
-  /** append '(' @param s ')' with appropriate spaces */
-  public QueryString parenth(String s) {
-//    space();
-    Open().cat(s).Close();
-    space();
-    return this;
+  /**
+   * append AS clause, with generous spaces
+   */
+  public QueryString alias(String aliaser) {
+    return cat(AS).word(aliaser);
   }
 
   public QueryString quoted(char c) {
@@ -541,16 +497,11 @@ public class QueryString {
     }
   }
 
-  /** @returns this after conditionally adding an orderby clause: ascending of @param orderly is positive, descending if negative */
-  public QueryString orderby(String columnName, int orderly) {
-    orderby(columnName);
-    if (orderly > 0) {
-      return orderby(columnName).cat(ASC);
-    }
-    if (orderly < 0) {
-      return cat(DESC);
-    }
-    return this;
+  /**
+   * append AS clause, with generous spaces, advances @param aliaser
+   */
+  public QueryString alias(AsciiIterator aliaser) {
+    return cat(AS).word(aliaser.next());
   }
 //  public QueryString commaAsc(ColumnProfile next) {
 //    return comma().cat(next.fullName()).cat(ASC);
@@ -621,17 +572,19 @@ public class QueryString {
     return word(field).cat(EQUALS).value(value);
   }
 
-  /** append  " field =?" */
-  public QueryString nvPairPrepared(String field) {
-    word(field);
-    cat(EQUALS);
-    qMark();
-    return this;
+  /**
+   * append newline and tab
+   */
+  public QueryString indent() {
+    return cat("\n\t");
   }
 
-  /** append "field.name=?" */
-  public QueryString prepared(ColumnAttributes field) {
-    return nvPairPrepared(field.name);
+  /**
+   * @returns this after appending just a close paren, no added spaces.
+   */
+  public QueryString Close() {
+    guts.append(')');
+    return this;
   }
 
   public QueryString nvPair(String field, int value) {
@@ -887,94 +840,106 @@ public class QueryString {
     return cat(FROM).cat(ti.fullName());
   }
 
-  /** suggested linebreak, @see indent for forceful one */
-  public void lineBreak() {
-    if (wrappy) {
-      indent();
+  /**
+   * @returns this after appending each item as a string with spaces
+   */
+  public QueryString spaced(Object... objects) {
+    for (Object object : objects) {
+      cat(String.valueOf(object));
     }
+    return this;
   }
 
   public void wherePrepared(ColumnAttributes col) {
     where().prepared(col);
   }
 
-  /** "where/and name=?" */
-  public QueryString wherePrepared(String col) {
-    where().nvPairPrepared(col);
-    return this;
-  }
-
-  /** "where/and name=? , ditto" */
-  public QueryString wherePrepared(String... cols) {
-    for (String col : cols) {
-      wherePrepared(col);
-    }
-    return this;
-  }
-
-  /** "where/and name=? , ditto" */
-  public QueryString whereColumns(ColumnAttributes... cols) {
-    for (ColumnAttributes col : cols) {
-      wherePrepared(col);
-    }
-    return this;
-  }
-
-  /** where clause for prepared statement */
-  public QueryString whereColumns(Iterator<ColumnAttributes> cols) {
-//only called 'where' once, then prepared many    cols.forEachRemaining(where()::prepared);
-    cols.forEachRemaining(this::wherePrepared);
-    return this;
-  }
-
-  /** append prepared statement with a field for each member of list. */
-  public QueryString whereList(ColumnAttributes col, int listSize) {
-    where();
-    word(col.name);
-    cat(IN);
-    try (Lister simple = new Lister("(")) {
-      simple.append("?");
-    }
-    return this;
-  }
-
-  /** "Set [name=?]. @returns a lister object which you must eventually close. *" */
-  public QueryString prepareToSet(Object... cols) {
-    try (QueryString.Lister lister = startSet()) {
-      DeepIterator<String> wad = new DeepIterator<>(QueryString::columNameFrom, cols);
-      wad.forEachRemaining(lister::prepareSet);
-    }
-    return this;
-  }
-
-  /** "Set [name=?]. @returns a lister object which you must eventually close. *" */
-  public QueryString.Lister prepareToInsert(Object... cols) {
-    QueryString.Lister lister = startSet();
-    DeepIterator<String> wad = new DeepIterator<>(QueryString::columNameFrom, cols);
-    wad.forEachRemaining(lister::prepareSet);
-    return lister;
-  }
-
-  /** "( name,name) values (?,?)" */
-  public QueryString prepareValues(Iterator<ColumnAttributes> cols) {
-    int marks;
-    try (QueryString.Lister lister = startList("(")) {
+  /**
+   * append parenthesized list of columns
+   */
+  public QueryString catList(String prefix, Iterator<ColumnAttributes> cols, String closer) {
+    try (QueryString.Lister lister = startList(prefix, closer)) {
       cols.forEachRemaining(col -> lister.append(col.name));
-      marks = lister.counter;
     }
-    return insertMarks(marks);
+    return this;
   }
 
-  /** "( name,name) values (?,?)" */
-  public QueryString prepareValues(String... cols) {
-    int marks;
-    try (QueryString.Lister lister = startList("(")) {
-      for (String col : cols) {
-        lister.append(col);
-      }
-      marks = lister.counter;
+  /**
+   * you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state
+   */
+  public QueryString where() {
+    if (whered) {
+      return and();
+    } else {
+      whered = true;
+      return cat(WHERE);
     }
-    return insertMarks(marks);
+  }
+
+  /**
+   * you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state
+   */
+  public QueryString and() {
+    if (whered) {
+      return cat(AND);
+    } else {
+      return where();
+    }
+  }
+
+  public QueryString quoted(String value) {
+    if (value == null) {
+      qMark();
+    } else {
+      space();
+      guts.append("'");
+      guts.append(value);
+      guts.append("'");
+      space();
+    }
+    return this;
+  }
+
+  /**
+   * @returns this after appending "IN( @param list )"
+   */
+  public QueryString in(String list) {
+    return cat(IN).Open().cat(list).Close();
+  }
+
+  /**
+   * @returns this after appending "sum( @param str )"
+   */
+  public QueryString sum(String str) {
+    return cat(SUM).Open().cat(str).Close();
+  }
+
+  /**
+   * @returns this after appending "in ( @param list )" adding commas as needed between list elements which are each quoted
+   */
+  public QueryString inQuoted(TextList list) {
+    // have to do this list manually, as quoting has some special rules ...
+    // create a new list with the quoted strings in it, then cat them into a StringBuffer and output as a string.
+    // This would be faster if it was directly into a StringBuffer, but I am in a hurry right now.
+    TextList list2 = new TextList(list.size());
+    for (int i = 0; i < list.size(); i++) {
+      list2.add(Quoted(list.itemAt(i)));
+    }
+    return inUnquoted(list2);
+  }
+
+  /**
+   * @returns this after appending "in ( @param list )" adding commas as needed between list elements
+   */
+  public QueryString inUnquoted(TextList list) {
+    return in(list.asParagraph(","));
+  }
+
+  /**
+   * @returns this after "VALUES ("
+   */
+  public QueryString Values() {
+    return cat(VALUES).Open();
   }
 
   public QueryString prepareThings(Object... things) {
@@ -986,14 +951,14 @@ public class QueryString {
     return insertMarks(marks);
   }
 
-  /** typer erasure problem vis a vis prepareValues(Iterator<Columnattributes> */
-  public QueryString prepareVaguely(Iterator<String> cols) {
-    int marks;
-    try (QueryString.Lister lister = startList("(")) {
-      cols.forEachRemaining(lister::append);
-      marks = lister.counter;
+  /**
+   * ensure there is a space at the end of the string
+   */
+  private QueryString space() {
+    if (guts.length() > 0 && guts.charAt(guts.length() - 1) != ' ') {
+      guts.append(' ');
     }
-    return insertMarks(marks);
+    return this;
   }
 
   private QueryString insertMarks(int marks) {
@@ -1005,16 +970,13 @@ public class QueryString {
     return this;
   }
 
-  /** test a boolean column according to @param level where 1=true, -1 =false, 0= don't check it */
-  public QueryString whereMaybe(String colname, int level) {
-    switch (level) {
-    case 1://must be hidden
-      where(colname, 1);
-    case 0://don't care
-      break;
-    case -1://not hidden
-      where(colname, 0);
-    }
+  /**
+   * append '(' @param s ')' with appropriate spaces
+   */
+  public QueryString parenth(String s) {
+//    space();
+    Open().cat(s).Close();
+    space();
     return this;
   }
 
@@ -1054,64 +1016,102 @@ public class QueryString {
     return cat(format(pattern, field));
   }
 
-  /** create or replace a view given a name for it and a select statement */
-  public static QueryString ForceView(TableInfo ti, QueryString select) {
-    return QueryString.Clause("CREATE OR REPLACE VIEW {0} AS {1}", ti.fullName(), select.toString());
+  /**
+   * @returns this after conditionally adding an orderby clause: ascending of @param orderly is positive, descending if negative
+   */
+  public QueryString orderby(String columnName, int orderly) {
+    orderby(columnName);
+    if (orderly > 0) {
+      return orderby(columnName).cat(ASC);
+    }
+    if (orderly < 0) {
+      return cat(DESC);
+    }
+    return this;
   }
 
-  /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
-  public static Lister SelectColumns(TableInfo ti, Iterator<ColumnAttributes> cols) {
-    return Select(ti, new ColumnAttributes.NameIterator(cols));
+  /**
+   * append  " field =?"
+   */
+  public QueryString nvPairPrepared(String field) {
+    word(field);
+    cat(EQUALS);
+    qMark();
+    return this;
   }
 
   public static Lister Select(TableInfo ti, String... names) {
     return Select(ti, Arrays.asList(names).iterator());
   }
 
-  /** finish list and return query */
-  public static QueryString From(Lister open) {
-    open.close();
-    return open.query();
+  /**
+   * append "field.name=?"
+   */
+  public QueryString prepared(ColumnAttributes field) {
+    return nvPairPrepared(field.name);
   }
 
-  /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
-  public static Lister Select(TableInfo ti, Iterator<String> names) {
-    final QueryString qry = Select();
-    final String closer = format("{0} {1}", FROM, ti.fullName());
-    QueryString.Lister lister = qry.startList("", closer);
-    names.forEachRemaining(lister::append);
-    return lister;
+  /**
+   * suggested linebreak, @see indent for forceful one
+   */
+  public void lineBreak() {
+    if (wrappy) {
+      indent();
+    }
   }
 
   public static QueryString Count(ColumnAttributes col) {
     return Select().function(COUNT).cat(col.name).Close();
   }
 
-  /** @returns new query starting "delete from sch.tab" */
-  public static QueryString DeleteFrom(TableInfo ti) {
-    return new QueryString().cat(DELETE).cat(FROM).cat(ti.fullName());
+  /**
+   * "where/and name=?"
+   */
+  public QueryString wherePrepared(String col) {
+    where().nvPairPrepared(col);
+    return this;
   }
 
-  /** @returns new query starting "insert  table sch.tab" */
-  public static QueryString Insert(TableInfo ti) {
-    return Insert().cat(ti.fullName());
+  /**
+   * "where/and name=? , ditto"
+   */
+  public QueryString wherePrepared(String... cols) {
+    for (String col : cols) {
+      wherePrepared(col);
+    }
+    return this;
   }
 
-  /** create new query starting "insert " */
-  public static QueryString Insert() {
-    QueryString noob = new QueryString();
-    return noob.cat(INSERT);
+  /**
+   * "where/and name=? , ditto"
+   */
+  public QueryString whereColumns(ColumnAttributes... cols) {
+    for (ColumnAttributes col : cols) {
+      wherePrepared(col);
+    }
+    return this;
   }
 
-  /** @returns new query starting with: "update schema.tablename " */
-  public static QueryString Update(TableInfo ti) {
-    return Clause(SqlKeyword.UPDATE.toString()).cat(ti.fullName());
+  /**
+   * where clause for prepared statement
+   */
+  public QueryString whereColumns(Iterator<ColumnAttributes> cols) {
+//only called 'where' once, then prepared many    cols.forEachRemaining(where()::prepared);
+    cols.forEachRemaining(this::wherePrepared);
+    return this;
   }
 
-  /** create new query starting "select *" */
-  public static QueryString SelectAll() {
-    QueryString noob = new QueryString();
-    return noob.cat(SELECT).cat(ALLFIELDS);
+  /**
+   * append prepared statement with a field for each member of list.
+   */
+  public QueryString whereList(ColumnAttributes col, int listSize) {
+    where();
+    word(col.name);
+    cat(IN);
+    try (Lister simple = new Lister("(")) {
+      simple.append("?");
+    }
+    return this;
   }
 
   /**
@@ -1148,74 +1148,216 @@ public class QueryString {
     return Quoted(String.valueOf(ell));
   }
 
-  /** @returns new {@link QueryString} starting with Select */
-  public static QueryString Select() {
-    return new QueryString(SELECT);
+  /**
+   * "Set [name=?]. @returns a lister object which you must eventually close. *"
+   */
+  public QueryString prepareToSet(Object... cols) {
+    try (QueryString.Lister lister = startSet()) {
+      DeepIterator<String> wad = new DeepIterator<>(QueryString::columNameFrom, cols);
+      wad.forEachRemaining(lister::prepareSet);
+    }
+    return this;
   }
 
-  /** @returns new {@link QueryString} starting with "Select " then @param first */
-  public static QueryString Select(QueryString first) {
-    return Select().cat(first);
+  /**
+   * "Set [name=?]. @returns a lister object which you must eventually close. *"
+   */
+  public QueryString.Lister prepareToInsert(Object... cols) {
+    QueryString.Lister lister = startSet();
+    DeepIterator<String> wad = new DeepIterator<>(QueryString::columNameFrom, cols);
+    wad.forEachRemaining(lister::prepareSet);
+    return lister;
   }
 
-  /** @returns new {@link QueryString} starting with "Select table.name " */
-  public static QueryString Select(ColumnProfile cp) {
-    return Select().cat(cp.fullName());
+  /**
+   * "( name,name) values (?,?)"
+   */
+  public QueryString prepareValues(Iterator<ColumnAttributes> cols) {
+    int marks;
+    try (QueryString.Lister lister = startList("(")) {
+      cols.forEachRemaining(col -> lister.append(col.name));
+      marks = lister.counter;
+    }
+    return insertMarks(marks);
   }
 
-  /** @returns new {@link QueryString} starting with "Select justnameNoTable." */
-  public static QueryString Select(ColumnAttributes col) {
-    return Select().cat(col.name);
+  /**
+   * "( name,name) values (?,?)"
+   */
+  public QueryString prepareValues(String... cols) {
+    int marks;
+    try (QueryString.Lister lister = startList("(")) {
+      for (String col : cols) {
+        lister.append(col);
+      }
+      marks = lister.counter;
+    }
+    return insertMarks(marks);
   }
 
-  /** @returns new {@link QueryString} starting with "Select distinct(columname)" */
-  public static QueryString SelectDistinct(ColumnProfile cp) {
-    return SelectDistinct(cp.fullName());
+  /**
+   * typer erasure problem vis a vis prepareValues(Iterator<Columnattributes>
+   */
+  public QueryString prepareVaguely(Iterator<String> cols) {
+    int marks;
+    try (QueryString.Lister lister = startList("(")) {
+      cols.forEachRemaining(lister::append);
+      marks = lister.counter;
+    }
+    return insertMarks(marks);
   }
 
   public static QueryString SelectDistinct(String colname) {
     return Select().cat(DISTINCT).cat(colname);
   }
 
-  /** @returns new empty {@link QueryString} */
-  public static QueryString Clause(String message, Object... clump) {
-    QueryString clause = new QueryString();
-    clause.cat(format(message, clump));
-    return clause;
+  /**
+   * test a boolean column according to @param level where 1=true, -1 =false, 0= don't check it
+   */
+  public QueryString whereMaybe(String colname, int level) {
+    switch (level) {
+    case 1://must be hidden
+      where(colname, 1);
+    case 0://don't care
+      break;
+    case -1://not hidden
+      where(colname, 0);
+    }
+    return this;
   }
 
-  /** @returns New clause starting with Where column=false */
-  public static QueryString WhereNot(ColumnProfile column) {
-    return QueryString.Clause("").where().isFalse(column);
+  public void cat(Number number) {
+    if (number.getClass() == Double.class) {
+      cat(number.doubleValue());
+    } else if (number.getClass() == Float.class) {
+      cat(number.floatValue());
+    } else if (number.getClass() == Long.class) {
+      cat(number.longValue());
+    } else {
+      cat(number.intValue());
+    }
   }
 
   public static QueryString WhereIsTrue(ColumnProfile column) {
     return QueryString.Clause("").where().isTrue(column);
   }
 
-  /** list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion. */
+  /**
+   * sql keywords, in CAPS and surrounded with spaces
+   */
+  public enum SqlKeyword {
+    FROM,
+    UPDATE,
+    SET,
+    INSERT,
+    DELETE,
+    ON,
+    IN,
+    BETWEEN, //beware this is inclusive of both ends.
+    ADD,
+    NULL,
+    JOIN,
+    LEFT,
+    SHOW,
+    EXPLAIN,
+    /////////
+    SELECT,
+    ALLFIELDS("*"),
+
+    AND,
+    NOT,
+    WHERE,
+
+    ORDERBY("ORDER BY"),
+    GROUPBY("GROUP BY"),
+    ASC,
+    DESC,
+    UNION,
+    VALUES,
+    OR,
+    EQUALS("="),
+    GTEQ(">="),
+    GT(">"),
+    LTEQ("<="),
+    LT("<"),
+
+    IS,
+
+    DISTINCT,
+
+    COLUMN,
+    SUM,
+    COUNT,
+    MAX,
+    MIN,
+    AS,
+    HAVING,
+
+    SUBSTRING,
+    TO,
+    FOR,
+    CASE,
+    END,
+    ELSE,
+    THEN,
+    WHEN,
+    USING,
+    CAST,
+    BIGINT,
+    LIMIT,;
+
+    String spaced;
+
+    SqlKeyword() {
+      spaced = " " + super.toString() + " ";
+    }
+
+    SqlKeyword(String opertor) {
+      spaced = " " + opertor + " ";
+    }
+
+    /**
+     * @return nominal name with spaces around it.
+     */
+    @Override
+    public String toString() {
+      return spaced;
+    }
+  }
+
+  /**
+   * list builder aid. Now that this code is not inlined in many places we can test whether inserting a comma and then removing it later takes more time than checking for the need for a comma with each item insertion.
+   */
   public class Lister extends ListWrapper {
     public QueryString query() {
       return QueryString.this;
     }
 
-    /** begin a list with a comma as the closer */
+    /**
+     * begin a list with a comma as the closer
+     */
     public Lister(String prefix) {
       this(prefix, ") ");
     }
 
-    /** begin a list */
+    /**
+     * begin a list
+     */
     public Lister(String prefix, String closer) {
       super(guts, prefix, closer);
     }
 
-    /** begin a list with strange separator */
+    /**
+     * begin a list with strange separator
+     */
     public Lister(String prefix, String closer, String comma) {
       this(prefix, closer);
       super.comma = comma;
     }
 
-    /** add a preparedStatement clause: "name=?" */
+    /**
+     * add a preparedStatement clause: "name=?"
+     */
     public void prepareSet(String columnname) {
       append(format("{0}=?", columnname));
     }
@@ -1224,7 +1366,29 @@ public class QueryString {
       append(format("{0}=?", col.name));
     }
 
-    /** mysql: update clause of insert or update. */
+    /**
+     * append ,this=that with some intelligence on wrapping that
+     */
+    public void setValue(String columname, Object value) {
+      append(columname);
+      query().cat(EQUALS);
+      if (value != null) {
+        if (value instanceof Boolean) {
+          Boolean aBoolean = (Boolean) value;
+          query().quoted(aBoolean ? "true" : "false");
+        } else if (value instanceof Number) {
+          query().cat((Number) value);
+        } else {
+          query().quoted(String.valueOf(value));
+        }
+      } else {
+        query().cat("null");
+      }
+    }
+
+    /**
+     * mysql: update clause of insert or update.
+     */
     public void duplicateUpdate(String columname) {
       append(format("{0}=VALUES({0})", columname));
     }
@@ -1242,7 +1406,9 @@ public class QueryString {
       append(col.name);
     }
 
-    /** @pararm cols are a set of columns that are inserted if possible else updated. Expected usage is prepareInsert(keyed columns).ElseUpdate(updatable columns) */
+    /**
+     * @pararm cols are a set of columns that are inserted if possible else updated. Expected usage is prepareInsert(keyed columns).ElseUpdate(updatable columns)
+     */
     public QueryString ElseUpdate(ColumnAttributes... cols) {
       for (ColumnAttributes col : cols) {
         prepareSet(col);
@@ -1251,6 +1417,9 @@ public class QueryString {
       return OnDupUpdate(cols);
     }
 
+    /**
+     * finishes the list and @returns the querystring
+     */
     public QueryString done() {
       close();
       return query();

@@ -187,4 +187,11 @@ public class EnumerationFilter<E extends Enum> {
     iterator().forEachRemaining(action);
   }
 
+  public int active() {
+    int sum = 0;
+    for (int pointer = present.length; pointer-- > 0; ) {
+      sum += present[pointer] ? 1 : 0;
+    }
+    return sum;
+  }
 }
