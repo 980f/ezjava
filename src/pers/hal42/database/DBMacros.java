@@ -734,7 +734,7 @@ public class DBMacros extends GenericDB {
     //due to mysql we will try to trigger an exception, sigh. Need a model specific code for this.
     try {
 //todo:1   modeler.testTableExists()
-      query(QueryString.SelectAll().from(ti).limit(0), true, false);
+      query(QueryString.SelectAll(ti).limit(0), true, false);
       return true;
     } catch (SQLException mysqlisabysmal) {
       return false;
@@ -1362,7 +1362,7 @@ public class DBMacros extends GenericDB {
   /**
    * make and execute a statement, call the actor passing whether there is a result set.
    *
-   * @returns whether  actor has been invoked. (it won't be if there is an sql exception)
+   * @returns whether actor has been invoked (true even if it is null ;). Will be false if there is an sql exception but also if there is no result set.
    */
   public boolean doSimpleAction(String query, Consumer<Boolean> actor) {
     try (Statement stmt = makeStatement()) {
