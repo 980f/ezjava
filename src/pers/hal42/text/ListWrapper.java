@@ -1,5 +1,10 @@
 package pers.hal42.text;
 
+import pers.hal42.ext.StringifyingArrayIterator;
+
+import java.util.Iterator;
+import java.util.function.Function;
+
 /**
  * Created by Andy on 6/27/2017.
  * <p>
@@ -56,6 +61,37 @@ public class ListWrapper implements AutoCloseable {
     }
     if (field != null) {//want empty not StringBuilder's "null"
       s.append(field);
+    }
+    return this;
+  }
+
+  public ListWrapper append(Iterator<String> it) {
+    it.forEachRemaining(this::append);
+    return this;
+  }
+
+  /**
+   * append all sorts of things, intelligently handling simple collections via @param fier which can return nulls for things that must be omitted from the list.
+   *
+   * @returns this
+   */
+  public ListWrapper append(Function<Object, String> fier, Object... things) {
+    for (Object thing : things) {
+      if (thing == null) {
+        continue;//buyer beware
+      }
+      if (thing instanceof Iterable) {
+        append(new pers.hal42.ext.StringifyingIterator<>((Iterable<Object>) thing, fier));
+      } else if (thing instanceof Iterator) {
+        append(new pers.hal42.ext.StringifyingIterator<>((Iterator<Object>) thing, fier));
+      } else if (thing instanceof Object[]) {
+        append(new StringifyingArrayIterator<>((Object[]) thing, fier));
+      } else {
+        final String name = fier.apply(thing);
+        if (name != null) {
+          append(name);
+        }
+      }
     }
     return this;
   }

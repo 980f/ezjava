@@ -6,45 +6,23 @@ import java.util.*;
 
 /**
  * a Map for really small sets, uses linear search for key or value.
+ * IE this is an array of pairs made to look like a map.
  * <p>
  * The entrySet() method is expensive, keySet() and values() are not.
  * you can get the key for a value by calling getKey(value).
+ * all iterators step in the same order
  */
 
 public class LinearMap<K, V> implements Map<K, V>, VectorSet.StructureWatcher {
-  class EntryIterator implements Iterator<Entry<K, V>> {
-    private int pointer = 0;
-
-    /**
-     * Returns {@code true} if the iteration has more elements.
-     * (In other words, returns {@code true} if {@link #next} would
-     * return an element rather than throwing an exception.)
-     *
-     * @return {@code true} if the iteration has more elements
-     */
-    @Override
-    public boolean hasNext() {
-      return pointer < keys.size();
+  @NotNull
+  @Override
+  public Set<Entry<K, V>> entrySet() {
+    /* must create new storage */
+    VectorSet<Entry<K, V>> gross = new VectorSet<>(size());
+    for (int i = size(); i-- > 0; ) {//#order matches key iterator
+      gross.addElement(new SimpleEntry<>(keys.get(i), values.get(i)));
     }
-
-    /**
-     * Returns the next element in the iteration.
-     *
-     * @return the next element in the iteration
-     * @throws NoSuchElementException if the iteration has no more elements
-     */
-    @Override
-    public Entry<K, V> next() {
-      if (hasNext()) {
-        try {
-          return new SimpleEntry<>(keys.get(pointer), values.get(pointer));
-        } finally {
-          ++pointer;
-        }
-      } else {
-        throw new NoSuchElementException("past end of LinearMap Entry iteration");
-      }
-    }
+    return gross;
   }
 
   protected VectorSet<K> keys;
@@ -139,15 +117,39 @@ public class LinearMap<K, V> implements Map<K, V>, VectorSet.StructureWatcher {
     return values;
   }
 
-  @NotNull
-  @Override
-  public Set<Entry<K, V>> entrySet() {
-    /* must create new storage */
-    VectorSet<Entry<K, V>> gross = new VectorSet<>(size());
-    for (int i = size(); i-- > 0; ) {
-      gross.addElement(new SimpleEntry<>(keys.get(i), values.get(i)));
+  class EntryIterator implements Iterator<Entry<K, V>> {
+    private int pointer = keys.size(); //#order matches set iterator
+
+    /**
+     * Returns {@code true} if the iteration has more elements.
+     * (In other words, returns {@code true} if {@link #next} would
+     * return an element rather than throwing an exception.)
+     *
+     * @return {@code true} if the iteration has more elements
+     */
+    @Override
+    public boolean hasNext() {
+      return pointer >= 0;
     }
-    return gross;
+
+    /**
+     * Returns the next element in the iteration.
+     *
+     * @return the next element in the iteration
+     * @throws NoSuchElementException if the iteration has no more elements
+     */
+    @Override
+    public Entry<K, V> next() {
+      if (hasNext()) {
+        try {
+          return new SimpleEntry<>(keys.get(pointer), values.get(pointer));
+        } finally {
+          ++pointer;
+        }
+      } else {
+        throw new NoSuchElementException("past end of LinearMap Entry iteration");
+      }
+    }
   }
 
   public int ordinal(K key) {

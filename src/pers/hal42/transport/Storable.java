@@ -88,6 +88,84 @@ public class Storable {
     child(String.valueOf(k)).setValue(v);
   }
 
+  public boolean setSelf(Object obj, Rules r) {
+    if (obj == null) {
+      return false;
+    }
+    Class claz = obj.getClass();
+    Stored all = ReflectX.getAnnotation(claz, Stored.class);
+    final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
+    for (Field field : fields) {
+      Stored stored = field.getAnnotation(Stored.class);
+      if (stored != null || (all != null && !usuallySkip(field))) {
+        String name = field.getName();
+        if (name.equals(this.name)) {
+          try {
+            Class fclaz = field.getType();//parent class: getDeclaringClass();
+            if (r.aggressive) {
+              field.setAccessible(true);
+            }
+            switch (this.type) {
+            case Unclassified:
+              //don't know what to do
+              return false;
+            case Null:
+              //explicitly nothing to do, let us not destroy fields until we really find a reason to.
+              return true;
+            case Boolean:
+              if (fclaz == boolean.class) {
+                field.setBoolean(obj, this.getTruth());
+                return true;
+              } else {
+                return false;
+              }
+            case Enummy:
+              if (fclaz.isEnum()) {
+//              child.setEnumerizer(fclaz);
+                final Enum childEnum = this.getEnum();
+                if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
+                  field.set(obj, childEnum);
+                  return true;
+                } else {
+                  dbg.VERBOSE("Improper or null enum {0}", fullName());
+                  return false;
+                }
+              } else {
+                return false;
+              }
+            case WholeNumber:
+              if (fclaz == int.class) {
+                field.setInt(obj, getIntValue());
+                return true;
+              } else {
+                return false;
+              }
+            case Floating:
+              if (fclaz == int.class) {
+                field.setDouble(obj, getValue());
+                return true;
+              } else {
+                return false;
+              }
+            case Textual:
+              if (fclaz == String.class) {
+                field.set(obj, getImage());
+                return true;
+              } else {
+                return false;
+              }
+            case Wad:
+              return false;
+            }
+          } catch (IllegalAccessException e) {
+            dbg.Caught(e);
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   /**
    * set the values of fields marked 'Stored' (and set the local types).
    * if @param narrow then only fields that are direct members of the object are candidates, else base classes are included. (untested as false)
@@ -102,7 +180,6 @@ public class Storable {
       return -1;
     }
     int changes = 0;
-
     Class claz = obj.getClass();
     Stored all = ReflectX.getAnnotation(claz, Stored.class);
     final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
@@ -670,18 +747,16 @@ public class Storable {
   }
 
   public void setValue(int whole) {
-    ivalue = whole;
     if (type == Type.Unclassified) {
       setType(WholeNumber);
     }
-
+    ivalue = whole;
     bit = ivalue != 0;//coa
     if (enumerizer != null) {
       enumOnSetNumber();
     }
 //    image= unchanged, can't afford to render to text on every change
   }
-
 
   /** this will only work well when the Map's keys have a nice toString, and the values are object wrappers for the known types herein. */
   @SuppressWarnings("unchecked")
@@ -837,12 +912,12 @@ public class Storable {
     }
   }
 
+  /** set value in this DOM to that of the object */
   public int apply(Object obj, Rules r) {
     if (obj == null) {
       return -1;
     }
     int changes = 0;
-
     Class claz = obj.getClass();
     Stored all = (Stored) claz.getAnnotation(Stored.class);
     final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
@@ -919,7 +994,6 @@ public class Storable {
     token = null;
   }
 
-
   /**
    * find or create child
    */
@@ -963,9 +1037,7 @@ public class Storable {
       } catch (Throwable any) {
         ivalue = BadIndex;
         try {
-
           dvalue = Double.parseDouble(image);//leave this as the overly picky parser
-
           setType(Floating);
         } catch (Throwable anymore) {
           dvalue = Double.NaN;

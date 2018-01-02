@@ -61,4 +61,9 @@ public class SimpleTableInfo implements TableInfo {
     return name;
   }
 
+  @Override
+  /** debug */
+  public String toString() {
+    return fullName();
+  }
 }

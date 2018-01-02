@@ -74,39 +74,26 @@ public class DBMacros extends GenericDB {
     return getIntFromQuery(QueryString.Select().cat("LAST_INSERT_ID()"));
   }
 
-
-  class NamedStatementList extends Vector<NamedStatement> {
-    private ErrorLogStream dbg = null;
-
-    public NamedStatementList(ErrorLogStream dbg) {
-      this.dbg = dbg;
-    }
-
-    public NamedStatement itemAt(int index) {
-      NamedStatement retval = null;
-      if ((index < size()) && (index >= 0)) {
-        retval = elementAt(index);
-      }
-      return retval;
-    }
-
-    public void Remove(Statement stmt) {
-      boolean removed = false;
-      //todo: Vector should now have a remove item if present
-      for (NamedStatement ns : this) {
-        if ((ns != null) && ns.equals(stmt)) {
-          removed = remove(ns);
-          break;
+  /** this executes profoundly poorly on mysql! It takes *minutes* */
+  public TableInfoList getTableList(TableInfo tableInfo) {
+    // get the list of all tables in the new database
+    TableInfoList tables = new TableInfoList();
+    ResultSet rs = getTables(tableInfo);
+    if (rs != null) {
+      while (next(rs)) {
+        String name = getTableInfo(rs, "TABLE_NAME");
+        String catalog = getTableInfo(rs, "TABLE_CAT");
+        String schema = getTableInfo(rs, "TABLE_SCHEM");
+        String type = getTableInfo(rs, "TABLE_TYPE");
+        String remarks = getTableInfo(rs, "REMARKS");
+        dbg.VERBOSE("Found table: CAT=" + catalog + ", SCHEM=" + schema + ", NAME=" + name + ", TYPE=" + type + ", REMARKS=" + remarks);
+        if ((name != null) && (name.indexOf("SYS") != 0)) { // +++ We MUST make a rule to NOT start our table names with SYS!
+          tables.add(new SimpleTableInfo(catalog, schema, name, type, remarks));
         }
       }
-      if (dbg != null) {
-        if (removed) {
-          dbg.VERBOSE("Statement FOUND for removal: " + stmt);
-        } else {
-          dbg.WARNING("Statement NOT found for removal: " + stmt);
-        }
-      }
+      closeStmt(getStatement(rs));
     }
+    return tables.sortByName();
   }
 
   class NamedStatement {
@@ -731,27 +718,7 @@ public class DBMacros extends GenericDB {
     return rs;
   }
 
-  public TableInfoList getTableList(TableInfo tableInfo) {
-    // get the list of all tables in the new database
-    TableInfoList tables = new TableInfoList();
-    ResultSet rs = getTables(tableInfo);
-    if (rs != null) {
-      while (next(rs)) {
-        String name = getTableInfo(rs, "TABLE_NAME");
-        String catalog = getTableInfo(rs, "TABLE_CAT");
-        String schema = getTableInfo(rs, "TABLE_SCHEM");
-        String type = getTableInfo(rs, "TABLE_TYPE");
-        String remarks = getTableInfo(rs, "REMARKS");
-        dbg.VERBOSE("Found table: CAT=" + catalog + ", SCHEM=" + schema + ", NAME=" + name + ", TYPE=" + type + ", REMARKS=" + remarks);
-        if ((name != null) && (name.indexOf("SYS") != 0)) { // +++ We MUST make a rule to NOT start our table names with SYS!
-          tables.add(new SimpleTableInfo(catalog, schema, name, type, remarks));
-        }
-      }
-      closeStmt(getStatement(rs));
-    }
-    return tables.sortByName();
-  }
-
+  /** used by getTableList so that we can watch it execute, no one else should use this. */
   private String getTableInfo(ResultSet rs, String info) {
     try (Finally pop = dbg.Push("getTableInfo")) {
       dbg.VERBOSE("Calling ResultSet.getString() regarding: " + info + "...");
@@ -759,6 +726,18 @@ public class DBMacros extends GenericDB {
     } catch (SQLException e) {
       dbg.ERROR("Excepted trying to get field {0} from result set threw {1}.", info, e);
       return "";
+    }
+  }
+
+  /** check whether a table exists. If you put wildcards in @param ti all this will tell you is that something like that exists. */
+  public boolean tableExists(TableInfo ti) {
+    //due to mysql we will try to trigger an exception, sigh. Need a model specific code for this.
+    try {
+//todo:1   modeler.testTableExists()
+      query(QueryString.SelectAll().from(ti).limit(0), true, false);
+      return true;
+    } catch (SQLException mysqlisabysmal) {
+      return false;
     }
   }
 
@@ -850,20 +829,33 @@ public class DBMacros extends GenericDB {
     return tp;
   }
 
-  public boolean tableExists(String tableName) {
-    boolean ret = false;
-    if (StringX.NonTrivial(tableName)) {
-      TableInfo tq = new SimpleTableInfo(tableName);
-      TableInfoList tablelist = getTableList(tq);
-      for (int i = tablelist.size(); i-- > 0; ) {
-        if (tablelist.itemAt(i).name().equalsIgnoreCase(tableName)) {
-          ret = true;
-          break;
-        }
+  /**
+   * @returns true if the table is gone
+   */
+  public final boolean dropTable(TableInfo tablename) {
+    try (Finally pop = dbg.Push("dropTable")) {
+      if (tableExists(tablename)) {
+        dbg.ERROR("dropTable" + tablename + " returned " + update(modeler.genDropTable(tablename.fullName())));
+        return !tableExists(tablename);
+      } else {
+        return true;
       }
     }
-    return ret;
   }
+//  /** checks the default schema for MINUTES before it decides whether to do something stupid ...*/
+//  public boolean tableExists(String tableName) {
+//    if (StringX.NonTrivial(tableName)) {
+//      TableInfo tq = new SimpleTableInfo(tableName);
+//      TableInfoList tablelist = getTableList(tq);
+//      for (int i = tablelist.size(); i-- > 0; ) {
+//        if (tablelist.itemAt(i).name().equalsIgnoreCase(tableName)) {
+//         return true;
+//        }
+//      }
+//    }
+//    return false;
+//  }
+
 
   public boolean fieldExists(TableInfo tableName, String fieldName) {
     TableProfile tp = profileTable(tableName);
@@ -1070,16 +1062,36 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  /**
-   * @returns true if the table is gone
-   */
-  public final boolean dropTable(String tablename) {
-    try (Finally pop = dbg.Push("dropTable")) {
-      if (tableExists(tablename)) {
-        dbg.ERROR("dropTable" + tablename + " returned " + update(modeler.genDropTable(tablename)));
-        return !tableExists(tablename);
-      } else {
-        return true;
+  class NamedStatementList extends Vector<NamedStatement> {
+    private ErrorLogStream dbg;
+
+    public NamedStatementList(ErrorLogStream dbg) {
+      this.dbg = dbg;
+    }
+
+    public NamedStatement itemAt(int index) {
+      NamedStatement retval = null;
+      if ((index < size()) && (index >= 0)) {
+        retval = elementAt(index);
+      }
+      return retval;
+    }
+
+    public void Remove(Statement stmt) {
+      boolean removed = false;
+      //todo: Vector should now have a remove item if present
+      for (NamedStatement ns : this) {
+        if ((ns != null) && ns.equals(stmt)) {
+          removed = remove(ns);
+          break;
+        }
+      }
+      if (dbg != null) {
+        if (removed) {
+          dbg.VERBOSE("Statement FOUND for removal: " + stmt);
+        } else {
+          dbg.WARNING("Statement NOT found for removal: " + stmt);
+        }
       }
     }
   }
@@ -1254,29 +1266,27 @@ public class DBMacros extends GenericDB {
       }
     }
   }
-
-  protected final Op validateAddTable(TableProfile table) {
-    String functionName = "validateAddTable";
-    try (Finally pop = dbv.Push(functionName)) {
-      dbv.mark("Add table " + table.name());
-      if (!tableExists(table.name())) {
-        boolean did = createTable(table);
-        dbv.ERROR((did ? "Added" : "!! COULD NOT ADD") + " table " + table.name());
-        return (did ? DONE : FAILED);
-      } else {
-        dbv.VERBOSE("Table " + table.name() + " already added.");
-        return ALREADY;
-      }
-    }
-  }
-
-  protected final boolean dropTableConstraint(String tablename, String constraintname) {
-    String toDrop = "drop constraint " + tablename + "." + constraintname;
-    try (Finally pop = dbv.Push("dropTableConstraint")) {
-      TableProfile tempprof = TableProfile.create(new SimpleTableInfo(tablename), null, null);
-      return !tableExists(tablename) || update(modeler.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) >= 0;
-    }
-  }
+//  protected final Op validateAddTable(TableProfile table) {
+//    String functionName = "validateAddTable";
+//    try (Finally pop = dbv.Push(functionName)) {
+//      dbv.mark("Add table " + table.name());
+//      if (!tableExists(table.name())) {
+//        boolean did = createTable(table);
+//        dbv.ERROR((did ? "Added" : "!! COULD NOT ADD") + " table " + table.name());
+//        return (did ? DONE : FAILED);
+//      } else {
+//        dbv.VERBOSE("Table " + table.name() + " already added.");
+//        return ALREADY;
+//      }
+//    }
+//  }
+//  protected final boolean dropTableConstraint(String tablename, String constraintname) {
+//    String toDrop = "drop constraint " + tablename + "." + constraintname;
+//    try (Finally pop = dbv.Push("dropTableConstraint")) {
+//      TableProfile tempprof = TableProfile.create(new SimpleTableInfo(tablename), null, null);
+//      return !tableExists(tablename) || update(modeler.genDropConstraint(tempprof, new Constraint(constraintname, tempprof, null))) >= 0;
+//    }
+//  }
 
   protected final boolean renameField(String table, String oldname, String newname) {
     int count = 0;
@@ -1286,18 +1296,17 @@ public class DBMacros extends GenericDB {
     }
     return (count == 0);
   }
-
-  //todo:1 use dbmd's getMaxTableNameLength to see if the name is too long
-  protected final boolean createTable(TableProfile tp) {
-    try (Finally pop = dbg.Push("haveTable")) {
-      if (!tableExists(tp.name())) {
-        dbg.ERROR("haveTable " + tp.name() + " returned " + update(modeler.genCreateTable(tp)));
-        return tableExists(tp.name());
-      } else {
-        return true;
-      }
-    }
-  }
+//  //todo:1 use dbmd's getMaxTableNameLength to see if the name is too long
+//  protected final boolean createTable(TableProfile tp) {
+//    try (Finally pop = dbg.Push("haveTable")) {
+//      if (!tableExists(tp.name())) {
+//        dbg.ERROR("haveTable " + tp.name() + " returned " + update(modeler.genCreateTable(tp)));
+//        return tableExists(tp.name());
+//      } else {
+//        return true;
+//      }
+//    }
+//  }
 
   public Blob makeBlob(byte[] content) {
     return new Blobber(content);

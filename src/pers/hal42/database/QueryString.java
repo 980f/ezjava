@@ -1,6 +1,7 @@
 package pers.hal42.database;
 
 import pers.hal42.data.ObjectRange;
+import pers.hal42.ext.DeepIterator;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.AsciiIterator;
@@ -31,7 +32,6 @@ public class QueryString {
     ON,
     IN,
     BETWEEN, //beware this is inclusive of both ends.
-
     ADD,
     NULL,
     JOIN,
@@ -39,7 +39,6 @@ public class QueryString {
     SHOW,
     EXPLAIN,
     /////////
-
     SELECT,
     ALLFIELDS("*"),
 
@@ -103,12 +102,8 @@ public class QueryString {
       return spaced;
     }
   }
-
-
-
 //  protected static final String NEXTVAL = " NEXTVAL ";
   //   EMPTY = "";
-
 
   public StringBuilder guts = new StringBuilder(200);//most queries are big
   /** state for deciding whether to use 'where' or 'and' when adding a filter term */
@@ -181,7 +176,6 @@ public class QueryString {
     return this;
   }
 
-
   /** append AS clause, with generous spaces */
   public QueryString alias(String aliaser) {
     return cat(AS).word(aliaser);
@@ -247,6 +241,10 @@ public class QueryString {
     return new Lister(prefix, closer);
   }
 
+  /** simplify multi ordering */
+  private boolean ordered = false;
+
+  /** @returns this after appending each item as a string with spaces */
   public QueryString spaced(Object... objects) {
     for (Object object : objects) {
       cat(String.valueOf(object));
@@ -256,21 +254,29 @@ public class QueryString {
 
   /** append parenthesized list of columns */
   public QueryString catList(String prefix, Iterator<ColumnAttributes> cols, String closer) {
-    try (QueryString.Lister pklister = startList(prefix, closer)) {
-      cols.forEachRemaining(col -> pklister.append(col.name));
+    try (QueryString.Lister lister = startList(prefix, closer)) {
+      cols.forEachRemaining(col -> lister.append(col.name));
     }
     return this;
   }
 
   public QueryString catList(String prefix, String closer, ColumnAttributes... cols) {
-    try (QueryString.Lister pklister = startList(prefix, closer)) {
+    try (QueryString.Lister lister = startList(prefix, closer)) {
       for (ColumnAttributes col : cols) {
-        pklister.append(col.name);
+        lister.append(col.name);
       }
     }
     return this;
   }
 
+  public QueryString catList(String prefix, String closer, String... cols) {
+    try (QueryString.Lister lister = startList(prefix, closer)) {
+      for (String col : cols) {
+        lister.append(col);
+      }
+    }
+    return this;
+  }
 
   /** you can freely mix 'where' and 'and', this class internally chooses which verb to use based on state */
   public QueryString where() {
@@ -329,7 +335,6 @@ public class QueryString {
   public QueryString sum(String str) {
     return cat(SUM).Open().cat(str).Close();
   }
-
 
   /** @returns this after appending "in ( @param list )" adding commas as needed between list elements which are each quoted */
   public QueryString inQuoted(TextList list) {
@@ -406,7 +411,6 @@ public class QueryString {
   public QueryString Values() {
     return cat(VALUES).Open();
   }
-
 //  /**
 //   * @deprecated NYI
 //   */
@@ -424,14 +428,6 @@ public class QueryString {
 //    }
 //    return this;
 //  }
-
-  /** @returns this after appending set value=? [,value=?] for each item in @param colnames */
-  public QueryString prepareToSet(Iterable<String> colnames) {
-    try (QueryString.Lister lister = startSet()) {
-      colnames.forEach(lister::prepareSet);
-    }
-    return this;
-  }
 
   public QueryString SetJust(ColumnProfile field, String val) {
     // do NOT use nvPair(field,val) here, as it puts a table. prefix on the fieldname
@@ -529,21 +525,33 @@ public class QueryString {
     return comma().value(c);
   }
 
-  public QueryString orderby(String columnName) {
-    return cat(ORDERBY).cat(columnName);
-  }
-
-  /** @returns this after conditionally adding an orderby clause: ascending of @param orderly is positive, descending if negative */
-  public QueryString orderby(String columnName, int orderly) {
-    if (orderly > 0) {
-      return orderby(columnName).cat(ASC);
-    }
-    if (orderly < 0) {
-      return orderby(columnName).cat(DESC);
+  public QueryString catColumns(String prefix, String closer, Object... cols) {
+    try (QueryString.Lister lister = startList(prefix, closer)) {
+      lister.append(QueryString::columNameFrom, cols);
     }
     return this;
   }
 
+  public QueryString orderby(String columnName) {
+    if (!ordered) {
+      ordered = true;
+      return cat(ORDERBY).cat(columnName);
+    } else {
+      return comma().cat(columnName);
+    }
+  }
+
+  /** @returns this after conditionally adding an orderby clause: ascending of @param orderly is positive, descending if negative */
+  public QueryString orderby(String columnName, int orderly) {
+    orderby(columnName);
+    if (orderly > 0) {
+      return orderby(columnName).cat(ASC);
+    }
+    if (orderly < 0) {
+      return cat(DESC);
+    }
+    return this;
+  }
 //  public QueryString commaAsc(ColumnProfile next) {
 //    return comma().cat(next.fullName()).cat(ASC);
 //  }
@@ -563,7 +571,6 @@ public class QueryString {
   public QueryString orderbyasc(int columnFirst) {
     return orderby(String.valueOf(columnFirst), 1);
   }
-
 //  public QueryString commaDesc(ColumnProfile next) {
 //    return comma().cat(next.fullName()).cat(DESC);
 //  }
@@ -774,7 +781,6 @@ public class QueryString {
     return cat(LIMIT).cat(n);
   }
 
-
   protected QueryString castAs(String what, String datatype) {
     //CAST(TXN.TRANSTARTTIME AS BIGINT)
     return cat(CAST).Open().cat(what).as(datatype).Close();
@@ -786,7 +792,7 @@ public class QueryString {
    */
   public Lister startSet() {
     lineBreak();
-    return new Lister("SET ", "");
+    return new Lister(SqlKeyword.SET.toString(), "");
   }
 
   /**
@@ -795,7 +801,18 @@ public class QueryString {
    * @returns object for supplying the ...
    */
   public Lister startIn() {
-    return new Lister("IN (");
+    cat(SqlKeyword.IN);
+    return new Lister("(");
+  }
+
+  /**
+   * in ( ... )
+   *
+   * @returns object for supplying the ...
+   */
+  public Lister startIn(String colname) {
+    cat(colname);
+    return startIn();
   }
 
   private Lister dupLister() {
@@ -832,7 +849,6 @@ public class QueryString {
     return this;
   }
 
-
   /**
    * mysql quirk: while inserting fields into an insert statement record the names of non-pk fields in a TextList.
    * pass that TextList to this method and those fields will be updated with what otherwise was inserted
@@ -853,6 +869,15 @@ public class QueryString {
       for (ColumnAttributes col : cols) {
         lister.duplicateUpdate(col.name);
       }
+      return this;
+    }
+  }
+
+  public QueryString OnDupUpdate(Object... cols) {
+    lineBreak();
+    try (Lister lister = dupLister()) {
+      DeepIterator<String> wad = new DeepIterator<>(QueryString::columNameFrom, cols);
+      wad.forEachRemaining(lister::duplicateUpdate);
       return this;
     }
   }
@@ -878,14 +903,14 @@ public class QueryString {
     where().nvPairPrepared(col);
     return this;
   }
+
   /** "where/and name=? , ditto" */
-  public QueryString wherePrepared(String ... cols) {
+  public QueryString wherePrepared(String... cols) {
     for (String col : cols) {
       wherePrepared(col);
     }
     return this;
   }
-
 
   /** "where/and name=? , ditto" */
   public QueryString whereColumns(ColumnAttributes... cols) {
@@ -894,7 +919,6 @@ public class QueryString {
     }
     return this;
   }
-
 
   /** where clause for prepared statement */
   public QueryString whereColumns(Iterator<ColumnAttributes> cols) {
@@ -914,31 +938,34 @@ public class QueryString {
     return this;
   }
 
-  /** "Set [name=?]*" */
-  public Lister prepareToSet(ColumnAttributes... cols) {
-    QueryString.Lister lister = startSet();
-    for (ColumnAttributes col : cols) {
-      lister.prepareSet(col.name);
+  /** "Set [name=?]. @returns a lister object which you must eventually close. *" */
+  public QueryString prepareToSet(Object... cols) {
+    try (QueryString.Lister lister = startSet()) {
+      DeepIterator<String> wad = new DeepIterator<>(QueryString::columNameFrom, cols);
+      wad.forEachRemaining(lister::prepareSet);
     }
+    return this;
+  }
+
+  /** "Set [name=?]. @returns a lister object which you must eventually close. *" */
+  public QueryString.Lister prepareToInsert(Object... cols) {
+    QueryString.Lister lister = startSet();
+    DeepIterator<String> wad = new DeepIterator<>(QueryString::columNameFrom, cols);
+    wad.forEachRemaining(lister::prepareSet);
     return lister;
   }
 
-  /** "( name,name) values (?,?)"*/
+  /** "( name,name) values (?,?)" */
   public QueryString prepareValues(Iterator<ColumnAttributes> cols) {
     int marks;
     try (QueryString.Lister lister = startList("(")) {
       cols.forEachRemaining(col -> lister.append(col.name));
       marks = lister.counter;
     }
-    try (QueryString.Lister lister = startList(" VALUES (")) {
-      while (marks-- > 0) {
-        lister.append("?");
-      }
-    }
-    return this;
+    return insertMarks(marks);
   }
 
-  /** "( name,name) values (?,?)"*/
+  /** "( name,name) values (?,?)" */
   public QueryString prepareValues(String... cols) {
     int marks;
     try (QueryString.Lister lister = startList("(")) {
@@ -947,10 +974,46 @@ public class QueryString {
       }
       marks = lister.counter;
     }
+    return insertMarks(marks);
+  }
+
+  public QueryString prepareThings(Object... things) {
+    int marks;
+    try (QueryString.Lister lister = startList("(")) {
+      lister.append(QueryString::columNameFrom, things);
+      marks = lister.counter;
+    }
+    return insertMarks(marks);
+  }
+
+  /** typer erasure problem vis a vis prepareValues(Iterator<Columnattributes> */
+  public QueryString prepareVaguely(Iterator<String> cols) {
+    int marks;
+    try (QueryString.Lister lister = startList("(")) {
+      cols.forEachRemaining(lister::append);
+      marks = lister.counter;
+    }
+    return insertMarks(marks);
+  }
+
+  private QueryString insertMarks(int marks) {
     try (QueryString.Lister lister = startList(" VALUES (")) {
       while (marks-- > 0) {
         lister.append("?");
       }
+    }
+    return this;
+  }
+
+  /** test a boolean column according to @param level where 1=true, -1 =false, 0= don't check it */
+  public QueryString whereMaybe(String colname, int level) {
+    switch (level) {
+    case 1://must be hidden
+      where(colname, 1);
+    case 0://don't care
+      break;
+    case -1://not hidden
+      where(colname, 0);
     }
     return this;
   }
@@ -961,6 +1024,21 @@ public class QueryString {
    */
   public QueryString whereBetween(ColumnAttributes col) {
     return where().cat(col.name).cat(SqlKeyword.BETWEEN).qMark().cat(AND).qMark();
+  }
+
+  public QueryString whereMaybe(ColumnAttributes col, int level) {
+    return whereMaybe(col.name, level);
+  }
+
+  static String columNameFrom(Object thing) {
+    if (thing == null) {
+      return null;
+    }
+    if (thing instanceof ColumnAttributes) {
+      ColumnAttributes columnAttributes = (ColumnAttributes) thing;
+      return columnAttributes.name;
+    }
+    return String.valueOf(thing);//
   }
 
   /**
@@ -980,7 +1058,6 @@ public class QueryString {
   public static QueryString ForceView(TableInfo ti, QueryString select) {
     return QueryString.Clause("CREATE OR REPLACE VIEW {0} AS {1}", ti.fullName(), select.toString());
   }
-
 
   /** creates a querystring fills out column name, sets up adding the from clause when you close the lister. */
   public static Lister SelectColumns(TableInfo ti, Iterator<ColumnAttributes> cols) {
@@ -1165,7 +1242,8 @@ public class QueryString {
       append(col.name);
     }
 
-    public QueryString insertOrUpdate(ColumnAttributes... cols) {
+    /** @pararm cols are a set of columns that are inserted if possible else updated. Expected usage is prepareInsert(keyed columns).ElseUpdate(updatable columns) */
+    public QueryString ElseUpdate(ColumnAttributes... cols) {
       for (ColumnAttributes col : cols) {
         prepareSet(col);
       }
