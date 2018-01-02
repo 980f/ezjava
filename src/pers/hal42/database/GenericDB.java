@@ -87,6 +87,11 @@ public class GenericDB {
    * replaced pool with a regenerator
    */
   protected DBConn dbConnector;
+
+  public MysqlConnectionInfo getConnInfo() {
+    return connInfo;
+  }
+
   //  protected boolean validated() {
 //    return (cpool != null) && cpool.validated;
 //  }

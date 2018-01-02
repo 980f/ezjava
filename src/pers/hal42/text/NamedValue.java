@@ -80,6 +80,7 @@ public class NamedValue {
   }
 
   @Override
+  /** @returns canonical image of name and value "wheatver=(null)" for value free items */
   public String toString() {
     return hasValue() ? format("{0}{1}{2}", key, cutter, value) : String.valueOf(key);  //wrapped with format() to deal with nulls.
   }

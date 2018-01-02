@@ -57,7 +57,7 @@ public class JsonStorable extends PushedJSONParser {
   /** called by parser when it discovers the end of a value */
   protected Storable makeChild(Storable parent) {
     ++stats.totalNodes;
-    Storable kid = parent.makeChild(haveName ? name : null);//ternary in case we forgot to erase previous parse results
+    Storable kid = parent.child(haveName ? name : null);//ternary in case we forgot to erase previous parse results
     String value = super.token.isValid() ? getString(super.token) : null;
     if (value != null) {
       ++stats.totalScalar;//<=totalNodes.
