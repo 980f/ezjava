@@ -1,6 +1,5 @@
 package pers.hal42.database;
 
-import com.fedfis.db.MysqlQuirks;
 import pers.hal42.ext.Extremer;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
@@ -10,7 +9,7 @@ import pers.hal42.text.StringIterator;
 
 import java.util.Iterator;
 
-import static com.fedfis.db.MysqlQuirks.isTicked;
+import static pers.hal42.database.MysqlQuirks.isTicked;
 import static java.text.MessageFormat.format;
 import static pers.hal42.lang.Index.BadIndex;
 
