@@ -1,4 +1,4 @@
-(defproject ezjava-98f "1.0.0-theriodontia" ;; theme: dinosaurs
+(defproject ezjava-980f "1.0.0-theriodontia" ;; theme: dinosaurs
   :description "EZJava: conveniences for writing crash-proof java programs"
   :url "https://github.com/980f/ezjava"
   :license {:name "MIT"
