@@ -10,6 +10,8 @@ import pers.hal42.thread.Counter;
 
 import java.sql.*;
 
+import static java.text.MessageFormat.format;
+import static pers.hal42.database.QueryString.Clause;
 import static pers.hal42.lang.Index.BadIndex;
 
 public class GenericDB {
@@ -26,7 +28,7 @@ public class GenericDB {
     }
 
     public QueryString genDropTable(String tablename) {
-      return null;
+      return Clause(format("DROP TABLE IF EXISTS {0}", tablename));
     }
 
     public QueryString genAddField(ColumnProfile column) {

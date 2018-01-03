@@ -22,8 +22,8 @@ import static pers.hal42.lang.Index.BadIndex;
 
 /*
  * functions for performing database queries and updates
-* usage:  class MyDatabase extends DBMacros implements Database, ConfigurationManager, HardwareCfgMgr , BusinessCfgMgr
-  * */
+ * usage:  class MyDatabase extends DBMacros implements Database, ConfigurationManager, HardwareCfgMgr , BusinessCfgMgr
+ * */
 
 enum DBFunctionType {
   UPDATE, QUERY, NEXT;
@@ -505,12 +505,10 @@ public class DBMacros extends GenericDB {
     return StringX.parseDouble(getStringFromRS(column, myrs));
   }
 
-
   /** @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure */
   public Statement query(QueryString queryStr, boolean throwException) throws Exception {
     return query(queryStr, throwException, true /*canReattempt*/);
   }
-
 
   /** @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure. @param canReattempt is whether to try to deal with exceptions not related to the query string */
   private Statement query(QueryString queryStr, boolean throwException, boolean canReattempt) throws SQLException {
@@ -835,7 +833,7 @@ public class DBMacros extends GenericDB {
   public final boolean dropTable(TableInfo tablename) {
     try (Finally pop = dbg.Push("dropTable")) {
       if (tableExists(tablename)) {
-        dbg.ERROR("dropTable" + tablename + " returned " + update(modeler.genDropTable(tablename.fullName())));
+        dbg.WARNING("DropTable {0} update returned {1}", tablename, update(modeler.genDropTable(tablename.fullName())));
         return !tableExists(tablename);
       } else {
         return true;
@@ -855,7 +853,6 @@ public class DBMacros extends GenericDB {
 //    }
 //    return false;
 //  }
-
 
   public boolean fieldExists(TableInfo tableName, String fieldName) {
     TableProfile tp = profileTable(tableName);
@@ -888,7 +885,6 @@ public class DBMacros extends GenericDB {
       }
     }
   }
-
 
   public boolean foreignKeyExists(ForeignKeyProfile foreignKey) {
     boolean ret = false;
@@ -1051,7 +1047,6 @@ public class DBMacros extends GenericDB {
    * @returns true if the index no logner exists
    */
   protected final boolean dropIndex(String indexname, String tablename) {
-    int i = -1;
     try (Finally pop = dbg.Push("dropIndex")) {
       if (indexExists(indexname, tablename)) {
         return update(modeler.genDropIndex(indexname)) >= 0;
@@ -1385,9 +1380,10 @@ public class DBMacros extends GenericDB {
 
   /**
    * if the query doesn't actually have any prepared params then give @param prepare a null.
+   *
    * @param actor will receive a result set that has already been next'ed once, use a do{}while(rs.next());, else has already been exhausted.
    * @returns whether actor was called at least once.
-   * */
+   */
   public boolean doPreparedStatement(String query, Consumer<PreparedStatement> preparer, Consumer<ResultSet> actor) {
     try (PreparedStatement pst = makePreparedStatement(query)) {
       if (preparer != null) {
@@ -1446,7 +1442,6 @@ public class DBMacros extends GenericDB {
      * @param t the input argument
      */
     void accept(T t) throws SQLException;
-
     //add more Consumer features as needed
   }
 
