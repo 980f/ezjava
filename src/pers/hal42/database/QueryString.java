@@ -850,8 +850,8 @@ public class QueryString {
     return this;
   }
 
-  public void wherePrepared(ColumnAttributes col) {
-    where().prepared(col);
+  public QueryString wherePrepared(ColumnAttributes col) {
+    return where().prepared(col);
   }
 
   /**
@@ -1017,17 +1017,24 @@ public class QueryString {
   }
 
   /**
-   * @returns this after conditionally adding an orderby clause: ascending of @param orderly is positive, descending if negative
+   * @returns this after conditionally adding an orderby clause: ascending if @param orderly is positive, descending if negative, adds nothing if 0
    */
   public QueryString orderby(String columnName, int orderly) {
-    orderby(columnName);
+
     if (orderly > 0) {
       return orderby(columnName).cat(ASC);
     }
     if (orderly < 0) {
-      return cat(DESC);
+      return orderby(columnName).cat(DESC);
     }
     return this;
+  }
+
+  /**
+   * @returns this after conditionally adding an orderby clause: ascending if @param orderly is positive, descending if negative, adds nothing if 0
+   */
+  public QueryString orderby(ColumnAttributes col, int orderly) {
+    return orderby(col.name, orderly);
   }
 
   /**

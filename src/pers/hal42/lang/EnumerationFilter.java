@@ -88,6 +88,21 @@ public class EnumerationFilter<E extends Enum> {
   }
 
   /** try to set a permission. @returns whether @param item was valid (not null) */
+  public boolean deny(E item) {
+    if (item != null) {
+      if (all) {
+        all = false;
+        for (int i = present.length; i-- > 0; ) {
+          present[i] = true;
+        }
+      }
+      present[item.ordinal()] = false;
+      return true;
+    }
+    return false;
+  }
+
+  /** try to set a permission. @returns whether @param item was valid (not null) */
   public boolean allow(E item) {
     if (item != null) {
       present[item.ordinal()] = true;
