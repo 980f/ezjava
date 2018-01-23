@@ -21,7 +21,6 @@ public class PreparedStatementInserter implements AutoCloseable {
 
   /** how much batch to accumulate before sending. defaults to send all right away. */
   public int batchSize = 0;
-
   //feel free to subvert this item, this class is an assistant not a manager
   /** the statement that we are managing setting values on. */
   public PreparedStatement st;
@@ -35,10 +34,19 @@ public class PreparedStatementInserter implements AutoCloseable {
     sti = 0;
   }
 
-  public void rewind() throws SQLException {
+  public boolean rewind() {
     if (legit) {
-      st.clearParameters();//application,type_id,id,period_end,map_type ,parent_id);  status,result,note
-      sti = 0;
+      try {
+        st.clearParameters();//application,type_id,id,period_end,map_type ,parent_id);  status,result,note
+        return true;
+      } catch (SQLException e) {
+        dbg.Caught(e, "clearing parameters, highly unlikely");
+        return false;
+      } finally {
+        sti = 0;
+      }
+    } else {
+      return true;
     }
     //but leave grand alone
   }
@@ -90,11 +98,7 @@ public class PreparedStatementInserter implements AutoCloseable {
 
   /** add to batch, run the batch if batchSize entries have been added */
   public boolean batch() throws SQLException {
-    try {
-      return legit && addbatch();
-    } finally {
-      rewind();
-    }
+    return legit && addbatch();
   }
 
   /** @param stringify is whether to convert items to string before setting on statement. This ia advisable for char being sent to a varchar and ditto for enum. mysql/j does a horrible job of passing such items about. */
@@ -106,19 +110,21 @@ public class PreparedStatementInserter implements AutoCloseable {
         st.setObject(sti, stringify ? String.valueOf(next) : next);
         addbatch();
       }
-      rewind();
     }
   }
 
   private boolean addbatch() throws SQLException {
-    st.addBatch();
-    if (++counter >= batchSize) {
-      onBatchRun(DBMacros.doBatch(st));
-      return true;
+    try {
+      st.addBatch();
+      if (++counter >= batchSize) {
+        onBatchRun(DBMacros.doBatch(st));
+        return true;
+      }
+      return false;
+    } finally {
+      rewind();
     }
-    return false;
   }
-
 
   /** for diagnostics call this when batch has been run if you run it outside of the provided batch() method. */
   public void onBatchRun(int oneSum) {
@@ -153,7 +159,7 @@ public class PreparedStatementInserter implements AutoCloseable {
   /** executes statement and @returns its ResultSet, possibly null. rewinds pointer for next use. */
   public ResultSet execute() throws SQLException {
     try {
-      if (legit&&st.execute()) {//executeQuery() got "Can not issue data manipulation statements with executeQUery();
+      if (legit && st.execute()) {//executeQuery() got "Can not issue data manipulation statements with executeQUery();
         return st.getResultSet();
       } else {
         return null;

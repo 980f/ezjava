@@ -207,7 +207,7 @@ public class JsonStorable extends PushedJSONParser {
     if (clipper >= 0) {
       optsfile = optsfile.substring(0, clipper);
     }
-    Storable root = new Storable(optsfile);//named 4 debug
+    Storable root = Storable.Groot(optsfile);//named 4 debug
 
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile)) {
@@ -221,8 +221,7 @@ public class JsonStorable extends PushedJSONParser {
    * @returns newly created Storable with values loaded from file named for @param claz
    */
   public static Storable StandardRoot(Class claz) {
-    String optsfile = Filename(claz);
-    return new Storable(optsfile);//#JsonOptions expects the node name to be the filename.
+    return Storable.Groot(Filename(claz));//#JsonOptions expects the node name to be the filename.
   }
 
   public static class Printer {
@@ -367,7 +366,7 @@ public class JsonStorable extends PushedJSONParser {
   }
 
   public static Storable FromFile(Path optsfile) {
-    Storable root = new Storable(optsfile.toString());//name in file gets lost
+    Storable root = Storable.Groot(optsfile.toString());//name in file gets lost
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile.toString())) {//todo:1 path versions of this method
       optsloader.parse(root);

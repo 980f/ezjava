@@ -31,7 +31,7 @@ public class JsonOptions {
    * create and initialize from random file @param altfilename
    */
   public JsonOptions(String altfilename) {//public for test access, normal use is to derive from this class.
-    this(StringX.NonTrivial(altfilename) ? new Storable(altfilename) : null);
+    this(StringX.NonTrivial(altfilename) ? Storable.Groot(altfilename) : null);
   }
 
   public JsonOptions(Storable existing) {
