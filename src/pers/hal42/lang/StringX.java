@@ -706,9 +706,13 @@ public class StringX {
     return parseDouble(s, 0.0);
   }
 
+  /**
+   * locally ignores commas because we can't seem to control Locale and so we get commas even when we wish we did not.
+   */
   public static double parseDouble(String s, double onerror) {
     try {
-      return Double.parseDouble(s);
+      String purified = replace(s, ",", "");
+      return Double.parseDouble(purified);
     } catch (Exception caught) {
       return onerror;      //be silent on errors
     }
