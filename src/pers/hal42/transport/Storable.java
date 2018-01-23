@@ -656,7 +656,7 @@ public class Storable {
     } else if (obj instanceof Map) {
       setValue((Map) obj);
     } else {
-      dbg.FATAL("implement setValue {0}", obj.getClass().getName());
+      dbg.FATAL("implement Storable::setValue {0}", obj.getClass().getName());
     }
   }
 
