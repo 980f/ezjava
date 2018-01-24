@@ -41,6 +41,23 @@ public class StringX {
     return worker;
   }
 
+  public static String removeLeading(String opener, String body) {
+    if (NonTrivial(opener) && NonTrivial(body) && body.startsWith(opener)) {
+      return body.substring(opener.length());
+    } else {
+      return body;
+    }
+  }
+
+  public static String removeTrailing(String closer, String body) {
+    if (NonTrivial(closer) && NonTrivial(body) && body.endsWith(closer)) {
+      return body.substring(0, body.length() - closer.length());
+    } else {
+      return body;
+    }
+  }
+
+
   public static char closeFor(char open) {
     int opener = opens.indexOf(open);
     if (opener == BadIndex) {
@@ -48,7 +65,6 @@ public class StringX {
     }
     return closes.charAt(opener);
   }
-
 
   private StringX() {
     //#namespace
@@ -89,7 +105,6 @@ public class StringX {
         output.append(ch);
       }
     }
-
     return output.toString();
   }
 
@@ -120,7 +135,6 @@ public class StringX {
   }
 
   public static String replace(StringBuffer source, String toReplace, String with, boolean recurse) {
-
     if (source == null) {
       return null;
     }
@@ -660,21 +674,17 @@ public class StringX {
     if (NonTrivial(s)) {
       s = s.trim();
       int numchars = lengthOf(s);
-
       if (numchars <= 0 || radix < Character.MIN_RADIX || radix > Character.MAX_RADIX) {
         return 0;
       }
-
       int nextChar = 0;
       if (s.charAt(nextChar) == '-') {
         ++nextChar;
         hadSign = true;
       }
-
       if (s.charAt(nextChar) == '+') {//tolerate signed strings.
         ++nextChar;
       }
-
       while (nextChar < numchars) {
         int digit = Character.digit(s.charAt(nextChar++), radix);
         if (digit < 0) {
@@ -732,7 +742,6 @@ public class StringX {
       return purified;
     }
   }
-
 
   /** with removeDashes converts names into acceptable enum token */
   public static String imputeDashes(String purified) {
