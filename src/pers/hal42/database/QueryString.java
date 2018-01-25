@@ -245,6 +245,18 @@ public class QueryString {
     return QueryString.Clause("").where().isFalse(column);
   }
 
+  /**
+   * @param subselect must be a select that returns a single value
+   * @returns this after appending where/and @param columnish = (subselect)
+   */
+  public QueryString where(String columnish, QueryString subselect) {
+    return where().cat(columnish).cat(SqlKeyword.EQUALS).Open().cat(subselect.toString()).Close();
+  }
+
+  /**
+   * @returns this after appending where/and @param columnish = @param valued .toString()
+   * @apiNote does NOT quote the @param valued.image.
+   */
   public QueryString where(String columnish, Object valued) {
     where();
     nvPair(columnish, String.valueOf(valued));
