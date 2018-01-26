@@ -10,6 +10,7 @@ public class SimpleTableInfo implements TableInfo {
   //don't want to depend upon db connection features for these:
   public static String SharedCatalog;
   public static String SharedSchema;
+
   protected String schema;
   protected String name;
   private String catalog;
@@ -62,7 +63,7 @@ public class SimpleTableInfo implements TableInfo {
   }
 
   @Override
-  /** debug */
+  /* 4debug */
   public String toString() {
     return fullName();
   }

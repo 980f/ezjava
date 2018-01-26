@@ -65,6 +65,10 @@ public class QueryString {
     return Select(ti, new ColumnAttributes.NameIterator(cols));
   }
 
+  public static Lister SelectColumns(TableInfo ti, ColumnAttributes... cols) {
+    return Select(ti, new ColumnAttributes.NameIterator(cols));
+  }
+
   /**
    * finish list and return query
    */
