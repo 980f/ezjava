@@ -4,7 +4,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import pers.hal42.lang.Finally;
 import pers.hal42.lang.LinearMap;
-import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.StringifyingIterator;
@@ -20,6 +19,7 @@ import java.text.MessageFormat;
 import java.util.*;
 
 import static pers.hal42.lang.Index.BadIndex;
+import static pers.hal42.lang.ReflectX.*;
 import static pers.hal42.lang.StringX.NonTrivial;
 import static pers.hal42.transport.Storable.Origin.Defawlted;
 import static pers.hal42.transport.Storable.Origin.Ether;
@@ -93,7 +93,7 @@ public class Storable {
       return false;
     }
     Class claz = obj.getClass();
-    Stored all = ReflectX.getAnnotation(claz, Stored.class);
+    Stored all = getAnnotation(claz, Stored.class);
     final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
     for (Field field : fields) {
       Stored stored = field.getAnnotation(Stored.class);
@@ -179,121 +179,123 @@ public class Storable {
     if (obj == null) {
       return -1;
     }
-    int changes = 0;
-    Class claz = obj.getClass();
-    Stored all = ReflectX.getAnnotation(claz, Stored.class);
-    final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
-    for (Field field : fields) {
-      Stored stored = field.getAnnotation(Stored.class);
-      if (stored != null || (all != null && !usuallySkip(field))) {
-        String name = field.getName();
-        Storable child = existingChild(name);
-        if (child == null) {
-          String altname = stored != null ? stored.legacy() : all.legacy();
-          if (NonTrivial(altname)) {//optional search for prior equivalent
-            if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
-              altname += name;
-            }
-            child = findChild(altname, false);
-          }
-        }
-        if (child != null) {//then we have init data for the field
-          try {
-            String hasParser = (stored != null) ? stored.parseList() : null;
-            if (StringX.NonTrivial(hasParser)) {
-              //delegate field setting to parser function
-              ReflectX.doMethodNamed(field.get(obj), hasParser, new StringifyingIterator(children()));
-              continue;//next field.
-            }
-            Class fclaz = field.getType();//parent class: getDeclaringClass();
-            if (r.aggressive) {
-              field.setAccessible(true);
-            }
-            if (fclaz == String.class) {
-              field.set(obj, child.getImage());//this is our main exception to recursing on non-natives.
-            } else if (fclaz == boolean.class) {
-              field.setBoolean(obj, child.getTruth());
-            } else if (fclaz == double.class) {
-              field.setDouble(obj, child.getValue());
-            } else if (fclaz == int.class) {
-              field.setInt(obj, (int) child.getValue());
-            } else if (fclaz.isEnum()) {
-              //noinspection unchecked
-              child.setEnumerizer(fclaz);
-              final Enum childEnum = child.getEnum();
-              if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
-                field.set(obj, childEnum);
-              } else {
-                dbg.VERBOSE("Improper or null enum {0}", child.fullName());
+    try (Finally pop = dbg.Push("applyTo::{0}", obj.getClass())) {
+      int changes = 0;
+      Class claz = obj.getClass();
+      Stored all = getAnnotation(claz, Stored.class);
+      final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
+      for (Field field : fields) {
+        Stored stored = field.getAnnotation(Stored.class);
+        if (stored != null || (all != null && !usuallySkip(field))) {
+          String name = field.getName();
+          Storable child = existingChild(name);
+          if (child == null) {
+            String altname = stored != null ? stored.legacy() : all.legacy();
+            if (NonTrivial(altname)) {//optional search for prior equivalent
+              if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
+                altname += name;
               }
-            } else if (fclaz == Storable.class) {//member is a reference to a child herein
-              field.set(obj, child);
-            } else if (Xformer.IsPacker(fclaz)) {//on type just means that it is worth looking for a method
-              Xformer.UnpackInto(field.get(obj), claz, child.getImage());
+              child = findChild(altname, false);
             }
-            //todo:1 add clauses for the remaining field.setXXX methods.
-            else {
-              //time for recursive descent
-              Object nestedObject = field.get(obj);
-              if (nestedObject == null) {
-                dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
-                //autocreate members if no args constructor exists, which our typical usage pattern makes common.
-                if (r.create) {
-                  if (fclaz == java.util.Properties.class) { //map stored into properties
-                    nestedObject = new java.util.Properties();
-                  } else {
-                    Generator generator = new Generator(fclaz);
-                    nestedObject = generator.newInstance(this, r);
-                    //if object is compound ..
-                    if (nestedObject != null && nestedObject instanceof Collection) {
-                      Collection objs = (Collection) nestedObject;
-                      applyTo(objs, r);
-                      return changes;
+          }
+          if (child != null) {//then we have init data for the field
+            try {
+              String hasParser = (stored != null) ? stored.parseList() : null;
+              if (StringX.NonTrivial(hasParser)) {
+                //delegate field setting to parser function
+                doMethodNamed(field.get(obj), hasParser, new StringifyingIterator(children()));
+                continue;//next field.
+              }
+              Class fclaz = field.getType();//parent class: getDeclaringClass();
+              if (r.aggressive) {
+                field.setAccessible(true);
+              }
+              if (fclaz == String.class) {
+                field.set(obj, child.getImage());//this is our main exception to recursing on non-natives.
+              } else if (fclaz == boolean.class) {
+                field.setBoolean(obj, child.getTruth());
+              } else if (fclaz == double.class) {
+                field.setDouble(obj, child.getValue());
+              } else if (fclaz == int.class) {
+                field.setInt(obj, (int) child.getValue());
+              } else if (fclaz.isEnum()) {
+                //noinspection unchecked
+                child.setEnumerizer(fclaz);
+                final Enum childEnum = child.getEnum();
+                if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
+                  field.set(obj, childEnum);
+                } else {
+                  dbg.VERBOSE("Improper or null enum {0}", child.fullName());
+                }
+              } else if (fclaz == Storable.class) {//member is a reference to a child herein
+                field.set(obj, child);
+              } else if (Xformer.IsPacker(fclaz)) {//on type just means that it is worth looking for a method
+                Xformer.UnpackInto(field.get(obj), claz, child.getImage());
+              }
+              //todo:1 add clauses for the remaining field.setXXX methods.
+              else {
+                //time for recursive descent
+                Object nestedObject = field.get(obj);
+                if (nestedObject == null) {
+                  dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
+                  //autocreate members if no args constructor exists, which our typical usage pattern makes common.
+                  if (r.create) {
+                    if (fclaz == Properties.class) { //map stored into properties
+                      nestedObject = new Properties();
+                    } else {
+                      Generator generator = new Generator(fclaz);
+                      nestedObject = generator.newInstance(this, r);
+                      //if object is compound ..
+                      if (nestedObject != null && nestedObject instanceof Collection) {
+                        Collection objs = (Collection) nestedObject;
+                        applyTo(objs, r);
+                        return changes;
+                      }
+                    }
+                    field.set(obj, nestedObject);
+                  }
+                }
+                if (nestedObject != null) {
+                  child.setType(Type.Wad);//should already be true
+                  if (nestedObject instanceof Properties) { //must precede map and collections since it is one.
+                    changes += child.applyTo((Properties) nestedObject, false);//todo:1 review choice of stringify, or find a means to configure it.
+                  } else if (nestedObject instanceof Map) {
+                    Map map = (Map) nestedObject;//must be map<String*> else bad things will happen.
+                    changes += child.applyTo(field, map, r);
+                    return changes; //NYI!
+                  } else if (nestedObject instanceof Collection) {
+                    Collection objs = (Collection) nestedObject;
+                    changes += child.applyTo(field, objs, r);
+                  }
+                  //
+                  else { //simple treewalk
+                    int subchanges = child.applyTo(nestedObject, r);
+                    if (subchanges >= 0) {
+                      changes += subchanges;
+                    } else {
+                      dbg.ERROR("Not yet setting fields of type {0}", fclaz.getCanonicalName());
                     }
                   }
-                  field.set(obj, nestedObject);
                 }
+                continue;//in order to not increment 'changes'
               }
-              if (nestedObject != null) {
-                child.setType(Type.Wad);//should already be true
-                if (nestedObject instanceof Properties) { //must precede map and collections since it is one.
-                  changes += child.applyTo((Properties) nestedObject, false);//todo:1 review choice of stringify, or find a means to configure it.
-                } else if (nestedObject instanceof Map) {
-                  Map map = (Map) nestedObject;//must be map<String*> else bad things will happen.
-                  changes += child.applyTo(field, map, r);
-                  return changes; //NYI!
-                } else if (nestedObject instanceof Collection) {
-                  Collection objs = (Collection) nestedObject;
-                  changes += child.applyTo(field, objs, r);
-                }
-                //
-                else { //simple treewalk
-                  int subchanges = child.applyTo(nestedObject, r);
-                  if (subchanges >= 0) {
-                    changes += subchanges;
-                  } else {
-                    dbg.ERROR("Not yet setting fields of type {0}", fclaz.getCanonicalName());
-                  }
-                }
-              }
-              continue;//in order to not increment 'changes'
+              ++changes;
+            } catch (IllegalAccessException e) {
+              dbg.Caught(e, "applying Storable to {0}", claz.getCanonicalName());
             }
-            ++changes;
-          } catch (IllegalAccessException e) {
-            dbg.Caught(e, "applying Storable to {0}", claz.getCanonicalName());
           }
         }
       }
-    }
-    final Method method = ReflectX.methodFor(claz, Stored.class, stored -> "postload".equals(stored.legacy()));
-    if (method != null) {
-      try {
-        method.invoke(obj);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        dbg.Caught(e);
+      final Method method = methodFor(claz, Stored.class, stored -> "postload".equals(stored.legacy()));
+      if (method != null) {
+        try {
+          method.invoke(obj);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+          dbg.Caught(e);
+        }
       }
+      return changes;
     }
-    return changes;
   }
 
   public static class Rules {
@@ -416,68 +418,12 @@ public class Storable {
     }
   }
 
-  /**
-   * used to create objects from Storable's
-   */
-  @SuppressWarnings("unchecked")
-  private static class Generator {
-    final Class glass;// = ReflectX.classForName(gen.fcqn());
-    Constructor storied = null;//
-    Constructor nullary = null;  // ctor= glass.getConstructor()
-    boolean viable = false;
-
-    public Generator(Class glass) {
-      this.glass = glass;
-      try {
-        storied = glass.getConstructor(Storable.class);
-        viable = true;
-      } catch (NoSuchMethodException e) {
-        try {
-          nullary = glass.getConstructor();
-          viable = true;
-        } catch (NoSuchMethodException e1) {
-          dbg.ERROR("Constructing Storable.Generator for {0} ignoring {1}", glass.getName(), e1);
-        }
-      }
-    }
-
-    /**
-     * can't try/catch inside a delegating constructor :(
-     */
-    private Generator(Field field) {
-      this(ReflectX.classForName(field.getAnnotation(Generatable.class).fqcn()));
-    }
-
-    Object newInstance(Storable child, Rules r) {
-      if (!viable) {
-        return null;
-      }
-      try {
-        if (storied != null && child != null) {
-          return storied.newInstance(child);
-        } else {
-          Object noob = nullary.newInstance();
-          child.applyTo(noob, r);
-          return noob;
-        }
-      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-        dbg.Caught(e);
-        viable = false;
-        return null;
-      }
-    }
-
-    /**
-     * to create normal fields (not collection-like)
-     */
-    static Generator forField(Field field) {
-      try {
-        return new Generator(field);
-      } catch (NullPointerException e) {
-        //either field isn't annotated, or the annotation is not a known class name.
-        dbg.Caught(e);
-        return null;
-      }
+  private void enumOnSetImage() {
+    try {
+      token = parseEnum(enumerizer, image);
+      ivalue = token != null ? token.ordinal() : BadIndex;
+    } catch (NullPointerException | IllegalArgumentException e) {
+      dbg.Caught(e); //not our job to enforce validity
     }
   }
 
@@ -886,12 +832,78 @@ public class Storable {
     return wasUnknown;
   }
 
-  private void enumOnSetImage() {
-    try {
-      token = ReflectX.parseEnum(enumerizer, image);
-      ivalue = token != null ? token.ordinal() : BadIndex;
-    } catch (NullPointerException | IllegalArgumentException e) {
-      dbg.Caught(e); //not our job to enforce validity
+  /** set value in this DOM to that of the object */
+  public int apply(Object obj, Rules r) {
+    if (obj == null) {
+      return -1;
+    }
+    try (Finally pop = dbg.Push("ApplyObjectToDom")) {
+      int changes = 0;
+      Class claz = obj.getClass();
+      Stored all = (Stored) claz.getAnnotation(Stored.class);
+      final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
+      for (Field field : fields) {
+        Stored stored = field.getAnnotation(Stored.class);
+        if (stored != null || (all != null && !usuallySkip(field))) {
+          String name = field.getName();
+          Storable child = r.create ? this.child(name) : this.existingChild(name);
+          //note: do not update legacy fields, let them die a natural death.
+          if (child != null) {
+            try {
+              Class fclaz = field.getType();//parent class: getDeclaringClass();
+              if (r.aggressive) {
+                field.setAccessible(true);
+              }
+              if (fclaz == String.class) {
+                final Object thing = field.get(obj);
+                if (thing != null) {
+                  child.setValue(thing.toString());//this is our only exception to recursing on non-natives.
+                } else {
+                  killChild(child.ordinal());
+                }
+              } else if (fclaz == boolean.class) {
+                child.setValue(field.getBoolean(obj));
+              } else if (fclaz == double.class) {
+                child.setValue(field.getDouble(obj));
+              } else if (fclaz == int.class) {
+                child.setValue(field.getInt(obj));
+              } else if (fclaz.isEnum()) {
+                final Object anEnum = field.get(obj);
+                if (anEnum != null) {
+                  child.setValue(anEnum.toString());
+                } else {
+                  child.setNull();
+                }
+              } else if (Xformer.IsPacker(fclaz)) {
+                child.setValue(Xformer.Packed(field.get(obj), claz));
+              }
+              //todo:1 add clauses for the remaining field.getXXX methods.
+              else {
+                //time for recursive descent
+                final Object nestedObject = field.get(obj);
+                if (nestedObject == null) {
+                  dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
+                } else if (isImplementorOf(fclaz, Map.class)) {
+                  //then set children to map entries
+                  child.setValue((Map) nestedObject);
+                } else {
+                  int subchanges = child.apply(nestedObject, r);
+                  if (subchanges >= 0) {
+                    changes += subchanges;
+                  } else {
+                    dbg.ERROR("Not yet recording fields of type {0}", fclaz.getCanonicalName());
+                  }
+                }
+                continue;//in order to not increment 'changes'
+              }
+              ++changes;
+            } catch (IllegalAccessException e) {
+              dbg.Caught(e, "applying {0} to Storable", claz.getCanonicalName());
+            }
+          }
+        }
+      }
+      return changes;
     }
   }
 
@@ -904,77 +916,29 @@ public class Storable {
     }
   }
 
-  /** set value in this DOM to that of the object */
-  public int apply(Object obj, Rules r) {
-    if (obj == null) {
-      return -1;
-    }
-    int changes = 0;
-    Class claz = obj.getClass();
-    Stored all = (Stored) claz.getAnnotation(Stored.class);
-    final Field[] fields = r.narrow ? claz.getDeclaredFields() : claz.getFields();
-    for (Field field : fields) {
-      Stored stored = field.getAnnotation(Stored.class);
-      if (stored != null || (all != null && !usuallySkip(field))) {
-        String name = field.getName();
-        Storable child = r.create ? this.child(name) : this.existingChild(name);
-        //note: do not update legacy fields, let them die a natural death.
-        if (child != null) {
-          try {
-            Class fclaz = field.getType();//parent class: getDeclaringClass();
-            if (r.aggressive) {
-              field.setAccessible(true);
-            }
-            if (fclaz == String.class) {
-              final Object thing = field.get(obj);
-              if (thing != null) {
-                child.setValue(thing.toString());//this is our only exception to recursing on non-natives.
-              } else {
-                killChild(child.ordinal());
-              }
-            } else if (fclaz == boolean.class) {
-              child.setValue(field.getBoolean(obj));
-            } else if (fclaz == double.class) {
-              child.setValue(field.getDouble(obj));
-            } else if (fclaz == int.class) {
-              child.setValue(field.getInt(obj));
-            } else if (fclaz.isEnum()) {
-              final Object anEnum = field.get(obj);
-              if (anEnum != null) {
-                child.setValue(anEnum.toString());
-              } else {
-                child.setNull();
-              }
-            } else if (Xformer.IsPacker(fclaz)) {
-              child.setValue(Xformer.Packed(field.get(obj), claz));
-            }
-            //todo:1 add clauses for the remaining field.getXXX methods.
-            else {
-              //time for recursive descent
-              final Object nestedObject = field.get(obj);
-              if (nestedObject == null) {
-                dbg.WARNING("No object for field {0} of type {1} ", name, fclaz.getName());
-              } else if (ReflectX.isImplementorOf(fclaz, Map.class)) {
-                //then set children to map entries
-                child.setValue((Map) nestedObject);
-              } else {
-                int subchanges = child.apply(nestedObject, r);
-                if (subchanges >= 0) {
-                  changes += subchanges;
-                } else {
-                  dbg.ERROR("Not yet recording fields of type {0}", fclaz.getCanonicalName());
-                }
-              }
-              continue;//in order to not increment 'changes'
-            }
+  @SuppressWarnings("unchecked")
+  public int applyTo(Field field, Map map, Rules r) {
+    try (Finally pop = dbg.Push("applyTo::Field:Map")) {
+      int changes = 0;
+      final Iterator<Storable> kids = wad.iterator();
+      Generator generator = r.create ? Generator.forField(field) : null;
+      try {
+        while (kids.hasNext()) {
+          Storable child = kids.next();
+          Object obj = map.get(child.name);
+          if (obj != null) {
+            changes += child.applyTo(obj, r);
+          } else if (generator != null) {
+            Object noob = generator.newInstance(child, r);
+            map.put(child.name, noob);
             ++changes;
-          } catch (IllegalAccessException e) {
-            dbg.Caught(e, "applying {0} to Storable", claz.getCanonicalName());
           }
         }
+      } catch (ClassCastException | NullPointerException any) {
+        //map type not supported
       }
+      return changes;
     }
-    return changes;
   }
 
   /** make the value as null as we can */
@@ -1155,27 +1119,9 @@ public class Storable {
     return changes;
   }
 
-  @SuppressWarnings("unchecked")
-  public int applyTo(Field field, Map map, Rules r) {
-    int changes = 0;
-    final Iterator<Storable> kids = wad.iterator();
-    Generator generator = r.create ? Generator.forField(field) : null;
-    try {
-      while (kids.hasNext()) {
-        Storable child = kids.next();
-        Object obj = map.get(child.name);
-        if (obj != null) {
-          changes += child.applyTo(obj, r);
-        } else if (generator != null) {
-          Object noob = generator.newInstance(child, r);
-          map.put(child.name, noob);
-          ++changes;
-        }
-      }
-    } catch (ClassCastException | NullPointerException any) {
-      //map type not supported
-    }
-    return changes;
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+  public static boolean usuallySkip(Field field) {
+    return ignorable(field);
   }
 
   @Override
@@ -1183,9 +1129,70 @@ public class Storable {
     return MessageFormat.format("{0}:{1}", name, image);
   }
 
-  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-  public static boolean usuallySkip(Field field) {
-    return ReflectX.ignorable(field);
+  /**
+   * used to create objects from Storable's
+   */
+  @SuppressWarnings("unchecked")
+  private static class Generator {
+    final Class glass;// = ReflectX.classForName(gen.fcqn());
+    Constructor storied = null;//
+    Constructor nullary = null;  // ctor= glass.getConstructor()
+    /** notes whether one of the constructors exists */
+    boolean viable = false;
+
+    public Generator(Class glass) {
+      this.glass = glass;
+      try {
+        storied = glass.getConstructor(Storable.class);
+        viable = true;
+      } catch (NoSuchMethodException e) {
+        try {
+          nullary = glass.getConstructor();
+          viable = true;
+        } catch (NoSuchMethodException e1) {
+          dbg.ERROR("Cannot autocreate {0}, it lacks both null and (Storable) constructors", glass.getName());
+        }
+      }
+    }
+
+    /**
+     * can't try/catch inside a delegating constructor :(
+     */
+    private Generator(Field field) {
+      this(classForName(field.getAnnotation(Generatable.class).fqcn()));
+    }
+
+    Object newInstance(Storable child, Rules r) {
+      if (!viable || child == null) {
+        return null;
+      }
+      try {
+        if (storied != null) {
+          return storied.newInstance(child);
+        } else {
+          Object noob = nullary.newInstance();
+          child.applyTo(noob, r);
+          return noob;
+        }
+      } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+        dbg.Caught(e);
+        viable = false;
+        return null;
+      }
+    }
+
+    /**
+     * to create normal fields (not collection-like)
+     */
+    static Generator forField(Field field) {
+      try {
+        return new Generator(field);
+      } catch (NullPointerException e) {
+        //either field isn't annotated, or the annotation is not a known class name.
+        dbg.Caught(e, "Trying to create a generator for field:{0}", field);
+        return null;
+      }
+    }
   }
 
   /**

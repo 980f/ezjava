@@ -56,7 +56,7 @@ public class JsonOptions {
 
   /** loads=parses file and applies it to the data members of extension classes */
   public void load(String filename) {
-    updateDOM();
+    updateDOM(); //bring in defaults from object construction.
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(JsonStorable.Filenamer(node, filename))) {
       optsloader.parse(node);
