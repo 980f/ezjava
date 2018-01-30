@@ -716,6 +716,31 @@ public class DBMacros extends GenericDB {
     return rs;
   }
 
+  /**
+   * @returns schema name that fits @param wildcard and is closest but no greater than @param limit
+   */
+  public String getSchemaLike(String wildcard, String limit) {
+    String query = "select schema_name from information_schema.schemata where schema_name like ? and schema_name <= ? order by schema_name desc limit 1 "; //todo:1 delegate to Quirks class.
+    try (PreparedStatement pst = makePreparedStatement(query)) {
+      if (pst != null) {
+        pst.setString(1, wildcard);
+        pst.setString(2, limit);
+        ResultSet rs = pst.executeQuery();
+        if (rs.next()) {
+          return rs.getString(1);
+        } else {
+          return null;
+        }
+      } else {
+        dbg.ERROR("Couldn't connect to server to find current schema.");
+        return null;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e);
+      return null;
+    }
+  }
+
   /** used by getTableList so that we can watch it execute, no one else should use this. */
   private String getTableInfo(ResultSet rs, String info) {
     try (Finally pop = dbg.Push("getTableInfo")) {

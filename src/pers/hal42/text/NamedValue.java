@@ -1,10 +1,10 @@
 package pers.hal42.text;
 
 import pers.hal42.lang.Bool;
-import pers.hal42.lang.StringX;
 
 import static java.text.MessageFormat.format;
 import static pers.hal42.lang.Index.BadIndex;
+import static pers.hal42.lang.StringX.*;
 
 /** key=value pair, with parsing to create them. */
 public class NamedValue {
@@ -18,7 +18,7 @@ public class NamedValue {
   }
 
   public boolean hasValue() {
-    return StringX.NonTrivial(value);
+    return NonTrivial(value);
   }
 
   /** constructor for most common case of simple commandline arg */
@@ -27,7 +27,7 @@ public class NamedValue {
   }
 
   public boolean hasKey() {
-    return StringX.NonTrivial(key);
+    return NonTrivial(key);
   }
 
   /** @returns whether both the key and value seem to be nontrivial */
@@ -38,7 +38,7 @@ public class NamedValue {
   /** split @param pair at char cutter. If cutter not present then the value is null and the key is pair.trim(). */
   public void split(String pair, char cutter) {
     this.cutter = cutter;
-    splitAt(StringX.cutPoint(pair, cutter), pair);
+    splitAt(cutPoint(pair, cutter), pair);
   }
 
   public NamedValue() {
@@ -66,22 +66,32 @@ public class NamedValue {
 
   /** @returns either the value member parsed, or if the value isn't parsable @param def */
   public int getValue(int def) {
-    return StringX.NonTrivial(value) ? StringX.parseInt(value) : def;
+    return NonTrivial(value) ? parseInt(value) : def;
   }
 
   /** @returns either the value member parsed, or if the value isn't parsable @param def */
   public double getReal(double def) {
-    return StringX.parseDouble(value, def);
+    return parseDouble(value, def);
   }
 
   /** @returns either the value member parsed, or if the value isn't parsable @param def */
   public boolean getValue(boolean b) {
-    return StringX.NonTrivial(value) ? Bool.For(value) : b;
+    return NonTrivial(value) ? Bool.For(value) : b;
   }
 
-  @Override
-  /** @returns canonical image of name and value "wheatver=(null)" for value free items */
-  public String toString() {
-    return hasValue() ? format("{0}{1}{2}", key, cutter, value) : String.valueOf(key);  //wrapped with format() to deal with nulls.
+  /**
+   * @returns either the value member parsed, or if the value isn't parsable @param def
+   */
+  public String getText(String def) {
+    return TrivialDefault(value, def);
   }
+
+  /**
+   * @returns canonical image of name and value "whatever=..." or just 'whatever' for value free items
+   */
+  @Override
+  public String toString() {
+    return hasValue() ? format("{0}{1}{2}", key, cutter, value) : String.valueOf(key);
+  }
+
 }
