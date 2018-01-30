@@ -117,6 +117,18 @@ public class LinearMap<K, V> implements Map<K, V>, VectorSet.StructureWatcher {
     return values;
   }
 
+
+  /**
+   * @returns @param i th value, null if the index is invalid.
+   */
+  public V nth(int i) {
+    try {
+      return values.get(i);
+    } catch (ArrayIndexOutOfBoundsException ignored) {
+      return null;
+    }
+  }
+
   class EntryIterator implements Iterator<Entry<K, V>> {
     private int pointer = keys.size(); //#order matches set iterator
 
