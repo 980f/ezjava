@@ -88,6 +88,12 @@ public class Storable {
     child(String.valueOf(k)).setValue(v);
   }
 
+
+  /**
+   * finds field of object named same as this and sets it to the related value of this.
+   *
+   * @returns whether an assignment was made.
+   */
   public boolean setSelf(Object obj, Rules r) {
     if (obj == null) {
       return false;
@@ -121,7 +127,7 @@ public class Storable {
               }
             case Enummy:
               if (fclaz.isEnum()) {
-//              child.setEnumerizer(fclaz);
+//too agressive, compare and complain              child.setEnumerizer(fclaz);
                 final Enum childEnum = this.getEnum();
                 if (childEnum != null) { //we do not override caller unless we are sure we have a proper object.
                   field.set(obj, childEnum);

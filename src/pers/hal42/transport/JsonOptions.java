@@ -107,11 +107,12 @@ public class JsonOptions {
   }
 
   /** set backing store AND related field of this object. Initially this is very picky about what it is willing to update, add more logic in setSelf as the need arises. */
-  public boolean setByName(String name, String value) {
+  @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+  public boolean setByName(String name, String value, boolean autocreate) {
     Storable field = node.findChild(name, false);
     if (field != null) {
       field.setValue(value);
-      field.setSelf(this, rules);
+      field.setSelf(this, rules); //propagates changes to watchers,
       return true;
     } else {
       return false;
