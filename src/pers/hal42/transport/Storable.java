@@ -1223,23 +1223,24 @@ public class Storable {
       this.glass = glass;
 
       for (Arguable arg : Arguable.values()) {
+        arg2use = arg;
         try {
-          switch (arg) {
+          switch (arg2use) {
           case storied:
             factory = glass.getConstructor(Storable.class);
-            break;
+            return;
           case stringy:
             factory = glass.getConstructor(String.class);
-            break;
+            return;
           case numbing:
             factory = glass.getConstructor(Double.class);
-            break;
+            return;
           case integral:
             factory = glass.getConstructor(Integer.class);
-            break;
+            return;
           case nullary:
             factory = glass.getConstructor();
-            break;
+            return;
           }
         } catch (NoSuchMethodException ignored) {
 
