@@ -700,8 +700,8 @@ public class DBMacros extends GenericDB {
         };
         rs = getDatabaseMetadata().getTables(ti.catalog(), ti.schema(), ti.name(), types);
       } else {//mysql stuff, can't get a handle on what they want in the above query but they don't like it.
-        Statement stmt = makeStatement();
-        String query = MessageFormat.format("SELECT * FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name WHERE t.table_schema = ''{0}'' and t.table_name LIKE ''{1}'';", ti.schema(), ti.name());
+        Statement stmt = makeStatement();   //need to query tables to get type and remark.
+        String query = MessageFormat.format("SELECT * FROM information_schema.tables WHERE table_schema = ''{0}'' and table_name LIKE ''{1}'';", ti.schema(), ti.name());
         if (stmt.execute(query)) {
           rs = stmt.getResultSet();
         }

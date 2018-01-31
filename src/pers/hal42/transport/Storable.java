@@ -239,39 +239,33 @@ public class Storable {
                 Xformer.UnpackInto(field.get(obj), claz, child.getImage());
               }
               //todo:1 add clauses for the remaining field.setXXX methods.
-              else {
-                //time for recursive descent
+              else { //time for recursive descent
                 Object nestedObject = field.get(obj);
                 if (nestedObject == null) {
-                  dbg.WARNING("No object for field {0}", name);//wtf?- ah, null member
-                  //autocreate members if no args constructor exists, which our typical usage pattern makes common.
                   if (r.create) {
                     if (fclaz == Properties.class) { //map stored into properties
                       nestedObject = new Properties();
                     } else {
                       Generator generator = new Generator(fclaz);
-                      nestedObject = generator.newInstance(this, r);
-                      //if object is compound ..
-                      if (nestedObject != null && nestedObject instanceof Collection) {
-                        Collection objs = (Collection) nestedObject;
-                        applyTo(objs, r);
-                        return changes;
+                      nestedObject = generator.newInstance(this, r);//some classes will load at this point.
+                      if (generator.arg2use == Generator.Arguable.storied) {
+                        //construction used the node, don't need to applyTo.
+                        field.set(obj, nestedObject);
+                        continue;
                       }
+                      //typically a args constructor was used, our typical usage pattern makes common.
                     }
                     field.set(obj, nestedObject);
                   }
                 }
                 if (nestedObject != null) {
-                  child.setType(Type.Wad);//should already be true
+//test rather than set                  child.setType(Type.Wad);//should already be true
                   if (nestedObject instanceof Properties) { //must precede map and collections since it is one.
                     changes += child.applyTo((Properties) nestedObject, false);//todo:1 review choice of stringify, or find a means to configure it.
-                  } else if (nestedObject instanceof Map) {
-                    Map map = (Map) nestedObject;//must be map<String*> else bad things will happen.
-                    changes += child.applyTo(field, map, r);
-                    return changes; //NYI!
+                  } else if (nestedObject instanceof Map) {//must precede collections since it is one.
+                    changes += child.applyTo(field, (Map) nestedObject, r);
                   } else if (nestedObject instanceof Collection) {
-                    Collection objs = (Collection) nestedObject;
-                    changes += child.applyTo(field, objs, r);
+                    changes += child.applyTo(field, (Collection) nestedObject, r);
                   }
                   //
                   else { //simple treewalk
@@ -282,6 +276,8 @@ public class Storable {
                       dbg.ERROR("Not yet setting fields of type {0}", fclaz.getCanonicalName());
                     }
                   }
+                } else {
+                  dbg.WARNING("No object for field {0}, and autocreation not enabled or not possible (no workable constructor or constructor excepted.)", name);
                 }
                 continue;//in order to not increment 'changes'
               }
@@ -778,7 +774,7 @@ public class Storable {
       Generator generator = null;
       if (r.create) {
         try {
-          generator = Generator.forField(field);//explicit
+          generator = Generator.forField(field, false);//explicit on Map class
           if (generator == null) { //try to guess one
             java.lang.reflect.Type[] tps = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
             if (tps[0].getTypeName().equals(String.class.getTypeName())) {
@@ -1157,7 +1153,7 @@ public class Storable {
       changes += kids.next().applyTo(oit.next(), r);
     }
     if (r.create && kids.hasNext()) {
-      Generator generator = Generator.forField(field);
+      Generator generator = Generator.forField(field, true);
       if (generator != null) {
         try {
           while (kids.hasNext()) {
@@ -1259,12 +1255,6 @@ public class Storable {
       return new Generator(ReflectX.classForName(typeName));
     }
 
-    /**
-     * can't try/catch inside a delegating constructor :(
-     */
-    private Generator(Field field) {
-      this(classForName(field.getAnnotation(Generatable.class).fqcn()));
-    }
 
     Object newInstance(Storable child, Rules r) {
       if (factory == null || child == null) {
@@ -1296,14 +1286,17 @@ public class Storable {
     /**
      * to create normal fields (not collection-like)
      */
-    static Generator forField(Field field) {
-      try {
-        return new Generator(field);
-      } catch (NullPointerException e) {
-        //either field isn't annotated, or the annotation is not a known class name.
-        dbg.Caught(e, "Trying to create a generator for field:{0}", field);
-        return null;
+    static Generator forField(Field field, boolean scalarly) {
+      Generatable annotation = field.getAnnotation(Generatable.class);
+      if (annotation != null) {
+        String generatable = annotation.fqcn();
+        if (NonTrivial(generatable)) {
+          return forClass(generatable);
+        }
+      } else if (scalarly) {
+        return new Generator(field.getType());
       }
+      return null;
     }
 
     enum Arguable {

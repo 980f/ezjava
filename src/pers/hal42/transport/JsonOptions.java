@@ -1,5 +1,6 @@
 package pers.hal42.transport;
 
+import pers.hal42.lang.Finally;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
@@ -14,10 +15,14 @@ import java.util.Properties;
  */
 @Storable.Stored  //someday inheritance might work with this
 public class JsonOptions {
-  /** root of the options DOM, typically named for the file it is loaded from */
+  /**
+   * root of the options DOM, typically named for the file it is loaded from
+   */
   transient  //don't want unexpected recursions
   public Storable node;
-  /** how forcefully to map the DOM to the object */
+  /**
+   * how forcefully to map the DOM to the object
+   */
   transient  //don't save, and especially don't load, the rules.
   public Storable.Rules rules;
 
@@ -44,7 +49,9 @@ public class JsonOptions {
     //#_# while it might seem like a nice idea to invoke load() here, the derived object's own fields don't yet exist and as such cannot therefore set defaults like they are supposed to. so no "load(altfilename)";
   }
 
-  /** apply DOM to object */
+  /**
+   * apply DOM to object
+   */
   public void applyNode() {
     node.applyTo(this, rules);
   }
@@ -54,59 +61,77 @@ public class JsonOptions {
     applyNode();
   }
 
-  /** loads=parses file and applies it to the data members of extension classes */
+  /**
+   * loads=parses file and applies it to the data members of extension classes
+   */
   public void load(String filename) {
     updateDOM(); //bring in defaults from object construction.
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(JsonStorable.Filenamer(node, filename))) {
-      optsloader.parse(node);
-      applyNode();
+      try (Finally pop = dbg.Push(optsloader.filename)) {//adds filename to trace messages
+        optsloader.parse(node);
+        applyNode();
+      }
     }
   }
 
-  /** load from default file, named for extended class. */
+  /**
+   * load from default file, named for extended class.
+   */
   public void load() {
     load(null);
   }
 
-  /** if @param filename is null then writes over file was loaded from, or default for extended class. */
+  /**
+   * if @param filename is null then writes over file was loaded from, or default for extended class.
+   */
   public void save(String filename) {
     // apply object to DOM
     updateDOM();
-    try (PrintStream ps=new PrintStream(JsonStorable.Filenamer(node, filename))){//#using TWR to expedite the file closing.
+    try (PrintStream ps = new PrintStream(JsonStorable.Filenamer(node, filename))) {//#using TWR to expedite the file closing.
       JsonStorable.SaveOptions(node, ps, 0);
     } catch (FileNotFoundException e) {
       dbg.ERROR("saving options to file got {0}", e);
     }
   }
 
-  /** applies fields of extended class to the text represenation, especially useful when saving data. */
+  /**
+   * applies fields of extended class to the text represenation, especially useful when saving data.
+   */
   public void updateDOM() {
     node.apply(this, rules);
   }
 
-  /** when you are too busy to make a variable to receive a value: */
+  /**
+   * when you are too busy to make a variable to receive a value:
+   */
   public long byName(String name, long ell) {
     Storable child = node.child(name);
     child.setDefault(ell);
     return (long) child.getValue();
   }
 
-  /** when you are too busy to make a variable to receive a value: */
+  /**
+   * when you are too busy to make a variable to receive a value:
+   */
   public double byName(String name, double ell) {
     Storable child = node.child(name);
     child.setDefault(ell);
     return child.getValue();
   }
 
-  /** when you are too busy to make a variable to receive a value: */
+  /**
+   * when you are too busy to make a variable to receive a value:
+   */
   public boolean byName(String name, boolean ell) {
     Storable child = node.child(name);
     child.setDefault(ell);
     return child.getTruth();
   }
 
-  /** set backing store AND related field of this object. Initially this is very picky about what it is willing to update, add more logic in setSelf as the need arises. */
+  /**
+   * set backing store AND related field of this object. Initially this is very picky about what it is willing to update, add more logic in setSelf as the need arises.
+   */
   @SuppressWarnings("BooleanMethodIsAlwaysInverted")
   public boolean setByName(String name, String value, boolean autocreate) {
     Storable field = node.findChild(name, false);
@@ -119,12 +144,16 @@ public class JsonOptions {
     }
   }
 
-  /** iteroperate with legacy properties representations */
+  /**
+   * iteroperate with legacy properties representations
+   */
   public void putInto(PropertyCursor pc) {
     node.applyTo(pc);
   }
 
-  /** iteroperate with legacy properties representations */
+  /**
+   * iteroperate with legacy properties representations
+   */
   public void putInto(Properties props, boolean stringify) {
     node.applyTo(props, stringify);
   }
