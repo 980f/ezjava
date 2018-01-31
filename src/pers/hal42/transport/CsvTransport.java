@@ -12,9 +12,11 @@ import java.lang.reflect.Modifier;
 import java.util.function.Predicate;
 
 /**
- * uses reflection to decide which fiels of a record to include in writing to a comma separated file.
+ * uses reflection to decide which fields of a record to include in writing to a comma separated file.
  * NB: the default comma is actually a tab character.
  * as of writing this header comment we only write such files, no parsing.
+ *
+ * first pass the field iteration was shallow. That is not very useful.
  *
  * @see pers.hal42.stream.CSVOutStream for a simpler form of CSV output.
  */

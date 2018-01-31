@@ -17,7 +17,7 @@ import static pers.hal42.lang.Index.BadIndex;
  * There is a flag to optimize via a shallow scan.
  */
 public class FieldIterator<Type> implements Iterator<Type> {
-  private final Class type;//must keep this ourselves as java generics are compile time.
+  private final Class type;//must keep this ourselves as java generics are compile time.  =>see new Reflection Operator getGeneric...
   private final Object parent;
   private final boolean deeply;
 

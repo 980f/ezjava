@@ -7,8 +7,11 @@ import pers.hal42.timer.UTC;
 
 import java.io.*;
 import java.nio.file.*;
+import java.nio.file.FileSystem;
 
-/** utilties related to files and stream.  Look in java.nio for newer equivalents */
+/**
+ * utilties related to files and stream.  Look in java.nio for newer equivalents
+ */
 public class IOX {
   private IOX() {
     // don't construct me; I am for static functions
@@ -23,7 +26,7 @@ public class IOX {
         Path path = system.getPath(filename);
         Path bakdir = system.getPath(filename + ".bak");
         createDir(bakdir);
-        Path bakfile=system.getPath(bakdir.toString(),Long.toString(System.currentTimeMillis()));
+        Path bakfile = system.getPath(bakdir.toString(), Long.toString(System.currentTimeMillis()));
         Files.move(path, bakfile);
         return true;
       } else {
@@ -35,7 +38,9 @@ public class IOX {
     }
   }
 
-  /** @returns bytes from file, on any error null */
+  /**
+   * @returns bytes from file, on any error null
+   */
   public static byte[] readBlob(Path path) {
     try {
       return Files.readAllBytes(path);
@@ -58,11 +63,9 @@ public class IOX {
     try {
       Files.createDirectories(parent);
       return true;
-    }
-    catch(FileAlreadyExistsException feh){
+    } catch (FileAlreadyExistsException feh) {
       return true;//JFC why do so many people think this is exceptional?
-    }
-    catch (IOException e) {
+    } catch (IOException e) {
       dbg.Caught(e);
       return false;
     }
@@ -163,7 +166,7 @@ public class IOX {
    */
   public static <T extends AutoCloseable> boolean Close(T closeable) {
     try {
-      if(closeable!=null) {
+      if (closeable != null) {
         if (closeable instanceof Flushable) {
           ((Flushable) closeable).flush();
         }
@@ -396,5 +399,14 @@ public class IOX {
 
   public static void main(String[] args) {
     System.out.println(showAsciiProfile(args[0]));
+  }
+
+  /**
+   * close something that might be Closeable
+   */
+  public static void Close(Object perhaps) {
+    if (perhaps instanceof AutoCloseable) {
+      IOX.Close((AutoCloseable) perhaps);
+    }
   }
 }
