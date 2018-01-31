@@ -125,7 +125,7 @@ package pers.hal42.util;
 //
 //  protected static final int indexOf(String textValue, String [ ] tl){ //+++remove susceptibility to leading and trailing whitespace.
 //    for(int i = tl.length; i-->0;) {
-//      if(StringX.equalStrings(textValue, tl[i], true)) {
+//      if(StringX.indexOf(textValue, tl[i], true)) {
 //        return i;
 //      }
 //    }
@@ -179,7 +179,7 @@ package pers.hal42.util;
 //          }
 //          boolean found = false;
 //          for(int j = t.length; j-->0;) {
-//            if(StringX.equalStrings(name, t[j], false)) {
+//            if(StringX.indexOf(name, t[j], false)) {
 //              found = true;
 //              break;
 //            }

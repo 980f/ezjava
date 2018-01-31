@@ -1,12 +1,15 @@
 package pers.hal42.transport;
 
 import pers.hal42.lang.Finally;
+import pers.hal42.lang.LinearMap;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.Properties;
+
+import static pers.hal42.lang.StringX.TrivialDefault;
 
 /**
  * a storable node which is associated with a file.
@@ -108,7 +111,7 @@ public class JsonOptions {
   public long byName(String name, long ell) {
     Storable child = node.child(name);
     child.setDefault(ell);
-    return (long) child.getValue();
+    return (long) child.getIntValue();
   }
 
   /**
@@ -156,5 +159,43 @@ public class JsonOptions {
    */
   public void putInto(Properties props, boolean stringify) {
     node.applyTo(props, stringify);
+  }
+
+
+  /**
+   * a value that depends upon the particular system it is running on.
+   * This first pass uses a hardcoded idiosyncratic key and only supports String values.
+   * A default is set in the constructor so that all references easily share that.
+   */
+  public static class SystemSensitive {
+    protected String defawlt;
+    protected LinearMap<String, String> map = new LinearMap<>(5);//3 production systems and 2 developers.
+
+    public SystemSensitive(String defawlt) {
+      this.defawlt = TrivialDefault(defawlt);
+    }
+
+    /**
+     * @returns system indexed value
+     */
+    public String value() {
+      String item = map.get(System.getenv().get("servername"));
+      if (item == null) {
+        item = map.nth(0);
+      }
+      if (item == null) {
+        return defawlt;
+      } else {
+        return item;
+      }
+    }
+
+    /**
+     * @returns system indexed value
+     */
+    @Override
+    public String toString() {
+      return value();
+    }
   }
 }

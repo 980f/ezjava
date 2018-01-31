@@ -194,11 +194,16 @@ public class Storable {
         Stored stored = field.getAnnotation(Stored.class);
         if (stored != null || (all != null && !usuallySkip(field))) {
           String name = field.getName();
+//          uncomment below and edit to chase a field that is having problems.
+//          if(name.equals("maxPasses")){
+//            dbg.VERBOSE("");
+//          }
           Storable child = existingChild(name);
           if (child == null) {
             String altname = stored != null ? stored.legacy() : all.legacy();
             if (NonTrivial(altname)) {//optional search for prior equivalent
               if (altname.endsWith("..")) {//a minor convenience, drop if buggy.
+                altname += splitchar;
                 altname += name;
               }
               child = findChild(altname, false);
@@ -223,7 +228,7 @@ public class Storable {
               } else if (fclaz == double.class) {
                 field.setDouble(obj, child.getValue());
               } else if (fclaz == int.class) {
-                field.setInt(obj, (int) child.getValue());
+                field.setInt(obj, child.getIntValue());
               } else if (fclaz.isEnum()) {
                 //noinspection unchecked
                 child.setEnumerizer(fclaz);

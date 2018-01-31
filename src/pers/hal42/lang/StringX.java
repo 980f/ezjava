@@ -455,22 +455,26 @@ public class StringX {
     return retval;
   }
 
-  ///////////////////////////////////////////////
+  /**
+   * @returns whether the string is nonnull and has at least one character, which might however be whitespace.
+   */
   public static boolean NonTrivial(String s) {
     return s != null && s.length() > 0;
   }
 
+  /** @returns whether the string is nonnull and has at least one character, which might however be whitespace. */
   public static boolean NonTrivial(StringBuffer sb) {
     return sb != null && NonTrivial(String.valueOf(sb));
   }
 
+  /** @returns a string that is never null*/
   public static String TrivialDefault(Object o) {
-    return TrivialDefault(o, null);
+    return TrivialDefault(o, "");
   }
 
+  /** @returns a string that is never null*/
   public static String TrivialDefault(Object o, String def) {
-    def = TrivialDefault(def, "");
-    return ObjectX.NonTrivial(o) ? String.valueOf(o) : def;
+    return ObjectX.NonTrivial(o) ? String.valueOf(o) : TrivialDefault(def, "");
   }
 
   /**
@@ -482,7 +486,7 @@ public class StringX {
    * @param ignoreCase how to compare
    * @return which string matches, or INVALIDINDEX
    */
-  public static int equalStrings(String one, String[] two, boolean ignoreCase) {
+  public static int indexOf(String one, String[] two, boolean ignoreCase) {
     if (two != null) {
       for (int i = 0; i < two.length; i++) {
         if (equalStrings(one, two[i], ignoreCase)) {
@@ -493,16 +497,16 @@ public class StringX {
     return BadIndex;
   }
 
-  public static int equalStrings(String one, String[] two) {
-    return equalStrings(one, two, false);
+  public static int indexOf(String one, String[] two) {
+    return indexOf(one, two, false);
   }
 
-  public static boolean equalAnyStrings(String one, String[] two) {
-    return equalAnyStrings(one, two, false);
+  public static boolean isOneOf(String one, String[] two) {
+    return isOneOf(one, two, false);
   }
 
-  public static boolean equalAnyStrings(String one, String[] two, boolean ignoreCase) {
-    return equalStrings(one, two, ignoreCase) != BadIndex;
+  public static boolean isOneOf(String one, String[] two, boolean ignoreCase) {
+    return indexOf(one, two, ignoreCase) != BadIndex;
   }
 
   public static boolean equalStrings(String one, String two) {
