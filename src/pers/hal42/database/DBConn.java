@@ -38,7 +38,7 @@ public class DBConn {
       dbConnection.setReadOnly(connInfo.readOnly); //NEW
     } catch (SQLException e) {
       dbConnection = null;
-      dbg.ERROR("Couldn''t connect to datasource {0}  via user: {1} reason: {2}", url, connInfo.username, e.getMessage());
+      dbg.ERROR("Couldn''t connect to datasource {0}  via user: {1} reason: {2} due to {3}", url, connInfo.username, e.getMessage(), e.getCause());
     }
     return dbConnection;
   }
