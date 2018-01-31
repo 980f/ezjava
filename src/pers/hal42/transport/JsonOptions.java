@@ -175,11 +175,15 @@ public class JsonOptions {
       this.defawlt = TrivialDefault(defawlt);
     }
 
+    public static String getServerKey() {
+      return System.getenv().get("servername");
+    }
+
     /**
      * @returns system indexed value
      */
     public String value() {
-      String item = map.get(System.getenv().get("servername"));
+      String item = map.get(getServerKey());
       if (item == null) {
         item = map.nth(0);
       }

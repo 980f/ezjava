@@ -634,6 +634,9 @@ public class StringX {
     return MathX.INVALIDINTEGER;
   }
 
+  /**
+   * @returns fault tolerant parse of @param s, ignores trailing text.
+   */
   public static int parseInt(String s) {//default radix 10
     return parseInt(s, 10);
   }
@@ -732,6 +735,7 @@ public class StringX {
     }
   }
 
+  /** @returns fault tolerant parse of @param s, usually 0 if things go wrong. */
   public static int parseInt(String s, int radix) {
     return (int) parseLong(s, radix);
   }
