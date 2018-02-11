@@ -1,5 +1,0 @@
-CardIssuer                 //MC VISA and such
-DriversLicenseBureau      //MajorTaxAreas
-Paymate                   //us!
-Other                     //reconized, but not relevent to any of our code
-//leaving the intrinsic 'unknown' for codes we don't know.
