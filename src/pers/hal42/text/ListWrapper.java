@@ -75,6 +75,7 @@ public class ListWrapper implements AutoCloseable {
    *
    * @returns this
    */
+  @SuppressWarnings("unchecked")
   public ListWrapper append(Function<Object, String> fier, Object... things) {
     for (Object thing : things) {
       if (thing == null) {

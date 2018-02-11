@@ -10,7 +10,8 @@ public class ArrayIterator<T> implements Iterator<T> {
   int pointer;
   T[] things;
 
-  public ArrayIterator(T[] things) {
+  @SafeVarargs
+  public ArrayIterator(T ... things) {
     pointer = 0;
     this.things = things;
   }

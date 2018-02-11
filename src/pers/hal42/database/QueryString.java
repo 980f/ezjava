@@ -2,10 +2,12 @@ package pers.hal42.database;
 
 import pers.hal42.data.ObjectRange;
 import pers.hal42.ext.DeepIterator;
+import pers.hal42.lang.ArrayIterator;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.AsciiIterator;
 import pers.hal42.text.ListWrapper;
+import pers.hal42.text.StringIterator;
 import pers.hal42.text.TextList;
 
 import java.util.Arrays;
@@ -86,6 +88,36 @@ public class QueryString {
     QueryString.Lister lister = qry.startList("", closer);
     names.forEachRemaining(lister::append);
     return lister;
+  }
+
+
+  /** a,b,c => x.a,x.b,x.c */
+  public static class TablingIterator implements StringIterator {
+    String tablname;
+    StringIterator colnames;
+
+    public TablingIterator(final String tablname, final StringIterator colnames) {
+      this.tablname=tablname;
+      this.colnames=colnames;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return colnames.hasNext();
+    }
+
+    @Override
+    public String next() {
+      return tablname+"."+colnames.next();
+    }
+  }
+
+  /** @returns a query on a single table where @param maxed is greatest, @param correlate is from the row where maxed is greatest and is expected to be filtered on by terms added to this query by the caller.
+   * it uses table aliases 'o' for the outer query, which you should prefix all column names with,
+   * alias 'i' for the max seeking query so you must not use that alias.*/
+  public static QueryString SelectByGreatest(TableInfo ti,String maxed,String correlate,StringIterator colnames){
+    return Select(ti, new TablingIterator("o",colnames)).Close().alias("o").where("o."+maxed,
+      Select().function(MAX,"i."+maxed).from(ti).alias("i").whereJoin(correlate,"i","o"));
   }
 
   /**
@@ -266,6 +298,15 @@ public class QueryString {
     nvPair(columnish, String.valueOf(valued));
     return this;
   }
+
+  /**
+   * @returns this after appending where/and @param columnish = @param valued .toString()
+   * @apiNote does NOT quote the @param valued.image.
+   */
+  public QueryString whereJoin(String columnish, String t1name, String t2name) {
+    return where().cat(format("{1}.{0}={2}.{0}", columnish, t1name, t2name));
+  }
+
 
   /**
    * @returns query text
@@ -1023,9 +1064,9 @@ public class QueryString {
    * @returns this after appending 'functioname('.
    * <br> mysql doesn't tolerate space between function name and opening paren
    */
-  public QueryString function(SqlKeyword keyword) {
+  public QueryString function(SqlKeyword keyword,String colname) {
     guts.append(keyword.toString().trim());
-    return Open();
+    return Open().cat(colname).Close();
   }
 
   public QueryString catf(String pattern, Object... field) {
@@ -1084,7 +1125,7 @@ public class QueryString {
   }
 
   public static QueryString Count(ColumnAttributes col) {
-    return Select().function(COUNT).cat(col.name).Close();
+    return Select().function(COUNT,col.name);
   }
 
   /**
@@ -1455,6 +1496,12 @@ public class QueryString {
 
     public void append(Integer id) {
       append(id.toString());
+    }
+
+    /** end list process, @returns the QueryString the list was modifying. */
+    public QueryString Close() {
+      close();
+      return QueryString.this;
     }
   }
 }
