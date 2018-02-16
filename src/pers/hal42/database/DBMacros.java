@@ -1404,6 +1404,25 @@ public class DBMacros extends GenericDB {
   }
 
   /**
+   * @param actor will receive a result set that has already been next'ed once, use a do{}while(rs.next());, else has already been exhausted.
+   * @returns whether actor was called at least once.
+   */
+  public boolean doRows(String query, Consumer<ResultSet> actor) {
+    try (Statement st = makeStatement()) {
+      ResultSet rs = st.executeQuery(query);
+      if (rs.next() && actor != null) {
+        actor.accept(rs);
+        return true;
+      } else {
+        return false;
+      }
+    } catch (SQLException e) {
+      dbg.Caught(e, query);
+      return false;
+    }
+  }
+
+  /**
    * if the query doesn't actually have any prepared params then give @param prepare a null.
    *
    * @param actor will receive a result set that has already been next'ed once, use a do{}while(rs.next());, else has already been exhausted.
@@ -1426,6 +1445,8 @@ public class DBMacros extends GenericDB {
       return false;
     }
   }
+
+
 
   /**
    * @param actor will receive a result set that if @param iterate is false has already been next'ed once, use a do{}while(rs.next());, else has already been exhausted.
