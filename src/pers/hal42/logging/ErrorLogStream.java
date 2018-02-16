@@ -264,6 +264,12 @@ public class ErrorLogStream implements AtExit, Finally.Lambda {
     }
   }
 
+  public void showEnum(Class<? extends Enum> E, String token) {
+    FATAL("Token not known: {0}. Known values are:...", token);
+    for (Enum g : E.getEnumConstants()) {
+      FATAL(g.toString());
+    }
+  }
 
   public void _objectDump(Object o, String path, TextList tl) {
     try {
