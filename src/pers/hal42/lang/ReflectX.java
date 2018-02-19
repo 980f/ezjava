@@ -17,6 +17,24 @@ import java.util.function.Predicate;
 public class ReflectX {
 
   /**
+   * poorly tested as to scope, this gives the types of a map when given a field that is or is derived from a Map.
+   */
+//  It will most likely hang your program if used with any other type.
+  public static Type[] getInterfaceTypes(Field field, int numTypes) {
+    Class<?> aClass = field.getType();
+    Type[] genericInterfaces = aClass.getGenericInterfaces();
+    for (Type type = field.getGenericType(); type != Object.class; type = aClass.getGenericSuperclass()) {
+      if (type instanceof ParameterizedType) {
+        Type[] types = ((ParameterizedType) type).getActualTypeArguments();
+        if (types.length == numTypes) {//then we hopefully have the desired interface
+          return types;
+        }
+      }
+    }
+    return new Type[0];
+  }
+
+  /**
    * marker annotation for use by applyTo and apply()
    * if class is annotated with @Stored then process all fields except those marked with this.
    */
@@ -30,7 +48,9 @@ public class ReflectX {
     String legacy() default "";
   }
 
-  /** @deprecated NYI */
+  /**
+   * @deprecated NYI
+   */
   public static Field findGlobalField(String key) {
     for (int searchSplit = key.lastIndexOf('.'); searchSplit >= 0; ) {
       String classname = key.substring(0, searchSplit);
@@ -45,7 +65,9 @@ public class ReflectX {
     return null;
   }
 
-  /** @returns whether method was invoked */
+  /**
+   * @returns whether method was invoked
+   */
   public static boolean doMethodNamed(Object o, String methodName, Object... args) {
     try {
       Class[] arglist = new Class[args.length];
@@ -60,7 +82,9 @@ public class ReflectX {
     }
   }
 
-  /** run a method, @returns null if the method invocation faulted, which can't be distinguished from a method which might return a null. */
+  /**
+   * run a method, @returns null if the method invocation faulted, which can't be distinguished from a method which might return a null.
+   */
   @SuppressWarnings("unchecked")
   public static <R> R doMethodWithReturn(Object obj, Method method, Object... args) {
     if (method != null) {
@@ -73,7 +97,9 @@ public class ReflectX {
     return null;
   }
 
-  /** @returns whether method @param parser was invoked. */
+  /**
+   * @returns whether method @param parser was invoked.
+   */
   public static boolean doMethod(Object obj, Method method, Object... args) {
     if (method != null) {
       try {
@@ -90,7 +116,9 @@ public class ReflectX {
     return eClass.getEnumConstants().length;
   }
 
-  /** if Object o has a String field named 'name' then set that field's value to the name of o in parent */
+  /**
+   * if Object o has a String field named 'name' then set that field's value to the name of o in parent
+   */
   public static void eponomize(Object o, Object parent) {
     Class claz = o.getClass();
     final Field[] fields = claz.getFields();
@@ -186,11 +214,12 @@ public class ReflectX {
     }
   }
 
-  /** marker for a method that can parse an enum. Used by parseEnum for when the default enum parser faults. */
-  @Retention(RetentionPolicy.RUNTIME)
-  @Target({ElementType.METHOD})
-  public @interface Parser {
-
+  /**
+   * @returns in essence (negative of) whether field's class has fields.
+   */
+  public static boolean isScalar(Field field) {
+    Class type = field.getType();
+    return type != Void.class && (type.isPrimitive() || type == String.class || type.isEnum());
   }
 
   @SuppressWarnings("unchecked")
@@ -328,10 +357,28 @@ public class ReflectX {
     return skipper;
   }
 
-  /** @returns in essence (negative of) whether field's class has fields. */
-  public static boolean isScalar(Field field) {
-    Class type = field.getType();
-    return type != Void.class && (type.isPrimitive() || type == String.class || type.isEnum());
+  /**
+   * try to find a static constructor, if not then find a constructor. first one with matching args list wins. @returns new object or null if something fails
+   */
+  @SuppressWarnings("unchecked")
+  public static <T> T newInstance(Class tclaz, Object... args) {
+    final Method cfactory = ReflectX.factoryFor(tclaz, args);
+    if (cfactory != null) {
+      try {
+        return (T) cfactory.invoke(args);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        return null;
+      }
+    }
+    final Constructor maker = constructorFor(tclaz, args);
+    if (maker != null) {
+      try {
+        return (T) maker.newInstance(args);
+      } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
+        return null;
+      }
+    }
+    return null;//no available factory
   }
 
   /**
@@ -473,26 +520,25 @@ public class ReflectX {
     }
   }
 
-  /** try to find a static constructor, if not then find a constructor. first one with matching args list wins. @returns new object or null if something fails */
-  @SuppressWarnings("unchecked")
-  public static <T> T newInstance(Class tclaz, Object... args) {
-    final Method cfactory = ReflectX.factoryFor(tclaz, args);
-    if (cfactory != null) {
-      try {
-        return (T) cfactory.invoke(args);
-      } catch (IllegalAccessException | InvocationTargetException e) {
-        return null;
+  /**
+   * @returns a method of @param claz that has an annotation of @param noted which matches the optional argument @param matches. The compiler chooses which if there are more than one.
+   */
+  public static <A extends Annotation> Method methodFor(Class claz, Class<A> noted, Predicate<A> matches) {
+    for (Method method : claz.getDeclaredMethods()) {
+      A annotation = method.getAnnotation(noted);
+      if (annotation != null && (matches == null || matches.test(annotation))) {
+        method.setAccessible(true);
+        return method;
       }
     }
-    final Constructor maker = constructorFor(tclaz, args);
-    if (maker != null) {
-      try {
-        return (T) maker.newInstance(args);
-      } catch (InstantiationException | InvocationTargetException | IllegalAccessException e) {
-        return null;
-      }
-    }
-    return null;//no available factory
+//    for (Method method : claz.getMethods()) {
+//      A annotation = method.getAnnotation(noted);
+//      if (annotation != null && (matches == null || matches.test(annotation))) {
+//         return method;
+//      }
+//    }
+
+    return null;
   }
 
   /**
@@ -570,6 +616,15 @@ public class ReflectX {
   }
 
   /**
+   * marker for a method that can parse an enum. Used by parseEnum for when the default enum parser faults.
+   */
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({ElementType.METHOD})
+  public @interface Parser {
+
+  }
+
+  /**
    * infinite descent if class has an outer class that has other inner classes.
    * walk all the Scalar fields of a class hierarchy.
    * This looks through definitions, an extended class's fields will NOT be seen.
@@ -584,7 +639,9 @@ public class ReflectX {
     protected boolean aggressive = true;
     protected Field lookAhead = null;
 
-    /** @param ref is root class for the walk */
+    /**
+     * @param ref is root class for the walk
+     */
     public FieldWalker(Class ref) {
       this.ref = ref;
       fields = ref.getDeclaredFields();
@@ -658,7 +715,9 @@ public class ReflectX {
       }
     }
 
-    /** @returns whether the field is something that a human would see as normal */
+    /**
+     * @returns whether the field is something that a human would see as normal
+     */
     public boolean isNormal(Field f) {
       if (f.isSynthetic()) {
         return false;
@@ -679,7 +738,9 @@ public class ReflectX {
       return true;
     }
 
-    /** call this after calling next but before calling hasNext to get the parentage of what next() returned, that item will be at the end of the returned array. */
+    /**
+     * call this after calling next but before calling hasNext to get the parentage of what next() returned, that item will be at the end of the returned array.
+     */
     public Field[] genealogy() {
       int level = depth();
       Field[] parentage = new Field[level];
@@ -706,26 +767,6 @@ public class ReflectX {
       }
       return root;
     }
-  }
-
-
-  /** @returns a method of @param claz that has an annotation of @param noted which matches the optional argument @param matches. The compiler chooses which if there are more than one. */
-  public static <A extends Annotation> Method methodFor(Class claz, Class<A> noted, Predicate<A> matches) {
-    for (Method method : claz.getDeclaredMethods()) {
-      A annotation = method.getAnnotation(noted);
-      if (annotation != null && (matches == null || matches.test(annotation))) {
-        method.setAccessible(true);
-        return method;
-      }
-    }
-//    for (Method method : claz.getMethods()) {
-//      A annotation = method.getAnnotation(noted);
-//      if (annotation != null && (matches == null || matches.test(annotation))) {
-//         return method;
-//      }
-//    }
-
-    return null;
   }
 //
 //  /**

@@ -12,7 +12,10 @@ import pers.hal42.text.TextList;
 
 import java.lang.Boolean;
 import java.lang.annotation.*;
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.text.MessageFormat;
 import java.util.*;
 
@@ -781,7 +784,8 @@ public class Storable {
         try {
           generator = Generator.forField(field, false);//explicit on Map class
           if (generator == null) { //try to guess one
-            java.lang.reflect.Type[] tps = ((ParameterizedType) field.getGenericType()).getActualTypeArguments();
+            java.lang.reflect.Type[] tps = ReflectX.getInterfaceTypes(field, 2);
+
             if (tps[0].getTypeName().equals(String.class.getTypeName())) {
               generator = Generator.forClass(tps[1].getTypeName());
             }

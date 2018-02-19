@@ -167,9 +167,8 @@ public class JsonOptions {
    * This first pass uses a hardcoded idiosyncratic key and only supports String values.
    * A default is set in the constructor so that all references easily share that.
    */
-  public static class SystemSensitive {
+  public static class SystemSensitive extends LinearMap<String, String> {
     protected String defawlt;
-    protected LinearMap<String, String> map = new LinearMap<>(5);//3 production systems and 2 developers.
 
     public SystemSensitive(String defawlt) {
       this.defawlt = TrivialDefault(defawlt);
@@ -183,9 +182,9 @@ public class JsonOptions {
      * @returns system indexed value
      */
     public String value() {
-      String item = map.get(getServerKey());
+      String item = get(getServerKey());
       if (item == null) {
-        item = map.nth(0);
+        item = nth(0);
       }
       if (item == null) {
         return defawlt;
