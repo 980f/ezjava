@@ -1706,7 +1706,7 @@ public class DBMacros extends GenericDB {
       }
       swatch.Start(); // to be sure to start either passed-in or locally-created ones
       try {
-        dbg.VERBOSE("Calling ResultSet.next() ...");
+//        dbg.VERBOSE("Calling ResultSet.next() ...");
         return rs.next();
       } catch (Exception e) {
         dbg.ERROR("next() excepted attempting to get the next row in the ResultSet ... ");
@@ -1715,7 +1715,7 @@ public class DBMacros extends GenericDB {
       } finally {
         long dur = swatch.Stop();
         nextStats.add(dur);
-        dbg.VERBOSE("Done calling ResultSet.next().");
+//        dbg.VERBOSE("Done calling ResultSet.next().");
         if (dur > 0) {
           logQuery(DBFunctionType.NEXT, dur, -1, false, -1);
         }
