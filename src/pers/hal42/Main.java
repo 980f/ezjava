@@ -175,6 +175,9 @@ public class Main {
     return ObjectX.NonTrivial(Application) ? Application.localFile(fileroot + '.' + extension) : null;
   }
 
+  /**
+   * save the logging controls to @param aName
+   */
   public static void saveLogging(String aName) {
     if (!StringX.NonTrivial(aName)) {
       aName = logcontrolName;
@@ -195,6 +198,8 @@ public class Main {
     }
   }
 
+
+  /** @param aName is root name for logging control file. Null or blank gets default name. */
   public static EasyCursor loadLogging(String aName) {
     if (!StringX.NonTrivial(aName)) {
       aName = logcontrolName;
