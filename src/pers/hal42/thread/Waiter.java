@@ -6,7 +6,7 @@ package pers.hal42.thread;
   call waiter.Start(...) to wait for notification. It returns "state" or you can get
   that same value from the state() function.
 
-  All parameters are set by prepare(...) variations, internal defaults used for ones omitted
+  All parameters are set by prepare(...) variations, internal defaults are used for ones omitted
   Start(...) variations only modify the parameters passed, retaining ones set by the last prepare()
 
   see end of file for more extensive usage advice
@@ -23,6 +23,7 @@ import pers.hal42.timer.StopWatch;
 import static pers.hal42.thread.Waiter.State.*;
 
 public class Waiter {
+
   ////////////////////
   public enum State {
     Ready, Notified, Timedout, Interrupted, Excepted, Extending
@@ -108,6 +109,11 @@ public class Waiter {
     this.millisecs = millisecs;
     return this;
   }
+
+  public Waiter setSeconds(double timeoutOneSeconds) {
+    return set((long) (Math.ceil(1000 * timeoutOneSeconds)));
+  }
+
 
   /**
    * set
@@ -380,25 +386,6 @@ public class Waiter {
   public String toSpam() {
     return Ascii.bracket(this.toString() + " elapsed:" + this.elapsedTime());
   }
-
-//  public static String stateString(State state) {
-//    switch (state) {
-//      case Ready:
-//        return "Ready";
-//      case Notified:
-//        return "Notified";
-//      case Timedout:
-//        return "Timedout";
-//      case Interrupted:
-//        return "Interrupted";
-//      case Excepted:
-//        return "Excepted";
-//      case Extending:
-//        return "Extending";
-//      default:
-//        return "Unknown";
-//    }
-//  }
 
   /**
    * Create

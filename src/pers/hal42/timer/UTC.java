@@ -67,12 +67,22 @@ public class UTC implements Comparable<UTC> {
     return UTC.New(secondsToMillis(seconds));
   }
 
-  public static int toSeconds(UTC when) {
-    return (int) (when.getTime() / 1000L);
+  /**
+   * @returns @param when as seconds.
+   */
+  public static double toSeconds(UTC when) {
+    return ((double) when.getTime()) / 1000.0;
   }
 
   public static long secondsToMillis(int seconds) {
     return 1000L * (long) seconds;
+  }
+
+  /**
+   * @returns milliseconds that is greater than or equal to @param seconds, even dribbles round up to the next milli
+   */
+  public static long secondsToMillis(double seconds) {
+    return (long) Math.ceil(1000 * seconds);
   }
 
   public static long Elapsed(UTC first, UTC second) {
@@ -192,11 +202,11 @@ public class UTC implements Comparable<UTC> {
     return setto(rhs.getTime());
   }
 
-  public final int toSeconds() {
+  public final double toSeconds() {
     return toSeconds(this);
   }
 
-  public final UTC settoSeconds(int seconds) {
+  public final UTC settoSeconds(double seconds) {
     return setto(secondsToMillis(seconds));
   }
 
