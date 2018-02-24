@@ -9,6 +9,5 @@
   :omit-source true
   :source-paths ["src"]
   :java-source-paths ["src"]
-  :main pers.hal42.Main
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})

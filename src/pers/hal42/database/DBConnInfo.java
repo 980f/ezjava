@@ -27,6 +27,14 @@ public class DBConnInfo {
   public int intervalsecs = 0;
   /** sql for this engine that is executed periodically to keep a connection alive.*/
   public String keepaliveSQL = "";
+  /**
+   * whether ddl should be deferred through writing a file.
+   */
+  public boolean spoolDDL = false;
+  /**
+   * filename for spoolDDL feature
+   */
+  public String ddlSpoolFilename = "ddlspool.sql";
 
   public DBConnInfo() {
     //#nada

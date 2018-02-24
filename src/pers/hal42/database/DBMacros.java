@@ -858,6 +858,7 @@ public class DBMacros extends GenericDB {
   public final boolean dropTable(TableInfo tablename) {
     try (Finally pop = dbg.Push("dropTable")) {
       if (tableExists(tablename)) {
+        //todo:1 tryspool(ddl)&&
         dbg.WARNING("DropTable {0} update returned {1}", tablename, update(modeler.genDropTable(tablename.fullName())));
         return !tableExists(tablename);
       } else {
