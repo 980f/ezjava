@@ -36,6 +36,7 @@ public class CsvIterator implements StringIterator {
   @Override
   public String next() {
     try {
+      //the 2nd arg below alters the span to start after where it presently ends.
       return span.subString(line, inReverse ? ~1 : 1).trim();
     } finally {
       bump();
@@ -47,6 +48,7 @@ public class CsvIterator implements StringIterator {
   }
 
   private void bump() {
+    //this depends upon the leapfrog argument in the next():
     if (inReverse) {
       span.lowest = 1 + line.lastIndexOf(comma, span.highest - 1);
     } else {

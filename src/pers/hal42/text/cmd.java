@@ -7,13 +7,13 @@ import static pers.hal42.lang.Index.BadIndex;
 import static pers.hal42.lang.StringX.*;
 
 /** key=value pair, with parsing to create them. */
-public class NamedValue {
+public class cmd {
   public String key;
   public String value;
   public char cutter;
 
   /** constructor for most common case of simple commandline arg */
-  public NamedValue(String pair, char cutter) {
+  public cmd(String pair, char cutter) {
     split(pair, cutter);
   }
 
@@ -22,7 +22,7 @@ public class NamedValue {
   }
 
   /** constructor for most common case of simple commandline arg */
-  public NamedValue(String pair) {
+  public cmd(String pair) {
     this(pair, '=');
   }
 
@@ -41,7 +41,7 @@ public class NamedValue {
     splitAt(cutPoint(pair, cutter), pair);
   }
 
-  public NamedValue() {
+  public cmd() {
     this(null);
   }
 
@@ -50,7 +50,7 @@ public class NamedValue {
    *
    * @returns this
    */
-  public NamedValue splitAt(int splitter, String pair) {
+  public cmd splitAt(int splitter, String pair) {
     if (pair == null) {
       key = null;
       value = null;

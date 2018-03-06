@@ -2,8 +2,8 @@ package pers.hal42.ext;
 
 import pers.hal42.lang.LinearMap;
 import pers.hal42.lang.StringX;
-import pers.hal42.text.NamedValue;
 import pers.hal42.text.StringIterator;
+import pers.hal42.text.cmd;
 
 public class ArgMap extends LinearMap<String, String> {
 
@@ -12,7 +12,7 @@ public class ArgMap extends LinearMap<String, String> {
   }
 
   public void parse(StringIterator args) {
-    NamedValue opt = new NamedValue();
+    cmd opt = new cmd();
     while (args.hasNext()) {
       String arg = args.next();
       if (!StringX.NonTrivial(arg)) {

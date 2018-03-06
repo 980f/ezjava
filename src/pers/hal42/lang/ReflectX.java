@@ -289,15 +289,16 @@ public class ReflectX {
     return null;
   }
 
-
-  public static Object enumObject(Class fclaz, String string) {
+  /** constructs an object IFFI a public static somemethod(String) exists */
+  public static <T> T enumObject(Class<? extends T> fclaz, String string) {
     if (string == null) {
       return null;
     }
     Method factory = factoryFor(fclaz, String.class);
     if (factory != null) {
       try {
-        return factory.invoke(string);
+        //noinspection unchecked
+        return (T) factory.invoke(string);
       } catch (IllegalAccessException | InvocationTargetException e) {
         ErrorLogStream.Global().Caught(e, "ReflectX.enumObject on {0}", fclaz);
         return null;

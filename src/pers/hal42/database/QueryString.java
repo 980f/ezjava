@@ -2,7 +2,6 @@ package pers.hal42.database;
 
 import pers.hal42.data.ObjectRange;
 import pers.hal42.ext.DeepIterator;
-import pers.hal42.lang.ArrayIterator;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
 import pers.hal42.text.AsciiIterator;
@@ -51,6 +50,50 @@ public class QueryString {
 
   public QueryString() {
     guts.append("");
+  }
+
+  /**
+   * sql keywords, in CAPS and surrounded with spaces
+   */
+  public enum SqlKeyword {
+    FROM, UPDATE, SET, INSERT, DELETE, ON, IN, BETWEEN, //beware this is inclusive of both ends.
+    ADD, NULL, JOIN, LEFT, SHOW, EXPLAIN, /////////
+    SELECT, ALLFIELDS("*"),
+
+    AND, NOT, WHERE,
+
+    ORDERBY("ORDER BY"), GROUPBY("GROUP BY"), ASC, DESC, UNION, VALUES, OR, EQUALS("="), GTEQ(">="), GT(">"), LTEQ("<="), LT("<"),
+
+    IS,
+
+    DISTINCT,
+
+    COLUMN, SUM, COUNT, MAX, MIN, AS, HAVING,
+
+    SUBSTRING, TO, FOR, CASE, END, ELSE, THEN, WHEN, USING, CAST, BIGINT, LIMIT, LIKE;
+
+    String spaced;
+
+    SqlKeyword() {
+      spaced = " " + super.toString() + " ";
+    }
+
+    SqlKeyword(String opertor) {
+      spaced = " " + opertor + " ";
+    }
+
+    /**
+     * @return nominal name with spaces around it.
+     */
+    @Override
+    public String toString() {
+      return spaced;
+    }
+  }
+
+  /** @returns this after apprending "s like ?" */
+  public QueryString like(String s) {
+    return cat(s).cat(SqlKeyword.LIKE).qMark();
   }
 
   /**
@@ -907,8 +950,13 @@ public class QueryString {
     return this;
   }
 
-  public QueryString wherePrepared(ColumnAttributes col) {
-    return where().prepared(col);
+  /** @returns this after apprending where/and  col like/= ? */
+  public QueryString whereLike(ColumnAttributes col, String tableglob) {
+    if (tableglob.contains("%") || tableglob.contains("_")) {//todo:1 are these universal sql glob chars?
+      return where().like(col.name);
+    } else {
+      return wherePrepared(col);
+    }
   }
 
   /**
@@ -1306,87 +1354,9 @@ public class QueryString {
     return QueryString.Clause("").where().isTrue(column);
   }
 
-  /**
-   * sql keywords, in CAPS and surrounded with spaces
-   */
-  public enum SqlKeyword {
-    FROM,
-    UPDATE,
-    SET,
-    INSERT,
-    DELETE,
-    ON,
-    IN,
-    BETWEEN, //beware this is inclusive of both ends.
-    ADD,
-    NULL,
-    JOIN,
-    LEFT,
-    SHOW,
-    EXPLAIN,
-    /////////
-    SELECT,
-    ALLFIELDS("*"),
-
-    AND,
-    NOT,
-    WHERE,
-
-    ORDERBY("ORDER BY"),
-    GROUPBY("GROUP BY"),
-    ASC,
-    DESC,
-    UNION,
-    VALUES,
-    OR,
-    EQUALS("="),
-    GTEQ(">="),
-    GT(">"),
-    LTEQ("<="),
-    LT("<"),
-
-    IS,
-
-    DISTINCT,
-
-    COLUMN,
-    SUM,
-    COUNT,
-    MAX,
-    MIN,
-    AS,
-    HAVING,
-
-    SUBSTRING,
-    TO,
-    FOR,
-    CASE,
-    END,
-    ELSE,
-    THEN,
-    WHEN,
-    USING,
-    CAST,
-    BIGINT,
-    LIMIT,;
-
-    String spaced;
-
-    SqlKeyword() {
-      spaced = " " + super.toString() + " ";
-    }
-
-    SqlKeyword(String opertor) {
-      spaced = " " + opertor + " ";
-    }
-
-    /**
-     * @return nominal name with spaces around it.
-     */
-    @Override
-    public String toString() {
-      return spaced;
-    }
+  /** "where/and col.name = ?" */
+  public QueryString wherePrepared(ColumnAttributes col) {
+    return where().prepared(col);
   }
 
   /**
