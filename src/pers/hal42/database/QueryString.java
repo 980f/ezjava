@@ -96,6 +96,18 @@ public class QueryString {
     return cat(s).cat(SqlKeyword.LIKE).qMark();
   }
 
+  /** @returns this after appending "col IN (?,?) " */
+  public QueryString inPrepared(ColumnAttributes col, int listlength) {
+    if (listlength > 0) {
+      try (QueryString.Lister lister = startIn(col.name)) {
+        while (listlength-- > 0) {
+          lister.append("?");
+        }
+      }
+    }
+    return this;
+  }
+
   /**
    * create or replace a view given a name for it and a select statement
    */
@@ -868,6 +880,7 @@ public class QueryString {
     return startIn();
   }
 
+  /** mysql specific upsert 2nd phrase */
   private Lister dupLister() {
     return new Lister(" ON DUPLICATE KEY UPDATE ", "");//strange but true, a list with invisible parens
   }
