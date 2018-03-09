@@ -5,7 +5,7 @@ import pers.hal42.lang.ArrayIterator;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.text.CsvIterator;
+import pers.hal42.text.SimpleCsvIterator;
 import pers.hal42.text.StringIterator;
 
 import java.util.Iterator;
@@ -228,7 +228,7 @@ public class ColumnAttributes {
     if (line.endsWith(",")) {
       line = line.substring(0, line.length() - 1);
     }
-    StringIterator words = new CsvIterator(false, ' ', line);
+    StringIterator words = new SimpleCsvIterator(false, ' ', line);
 
     String word = words.next();
     if (isTicked(word)) {//then it is a column definition

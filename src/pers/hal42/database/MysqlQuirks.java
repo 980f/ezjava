@@ -5,8 +5,8 @@ import pers.hal42.lang.Bool;
 import pers.hal42.lang.Index;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
-import pers.hal42.text.CsvIterator;
 import pers.hal42.text.ListWrapper;
+import pers.hal42.text.SimpleCsvIterator;
 import pers.hal42.text.StringIterator;
 
 import java.sql.*;
@@ -58,14 +58,14 @@ public class MysqlQuirks {
       ResultSet rs = s.executeQuery(format("SHOW CREATE TABLE {0}", existing.ti.fullName()));
       if (rs.next()) {
         String paragraph = rs.getString(2);//aka "Create Table", col 1 is table name
-        StringIterator it = new CsvIterator(false, '\n', paragraph);
+        StringIterator it = new SimpleCsvIterator(false, '\n', paragraph);
         if (it.hasNext()) {
           dbg.VERBOSE("Ignoring first line:{0}", it.next());
         }
         Ordinator ord = new Ordinator();
         while (it.hasNext()) {
           String line = it.next();
-          StringIterator words = new CsvIterator(false, ' ', line);
+          StringIterator words = new SimpleCsvIterator(false, ' ', line);
           String word = words.next();
           switch (word) {
           case ")"://table attributes, not yet stored in model.
@@ -77,7 +77,7 @@ public class MysqlQuirks {
               if (word.startsWith("(")) {
                 //then is followed by parenthesized list of column names, each of which is a member of the pk
                 int pkordinator = 0;
-                final StringIterator cutter = new CsvIterator(false, ',', removeParens(word));
+                final StringIterator cutter = new SimpleCsvIterator(false, ',', removeParens(word));
                 while (cutter.hasNext()) {
                   final String name = unTick(cutter.next());
                   ColumnAttributes col = existing.getColByName(name);
@@ -105,7 +105,7 @@ public class MysqlQuirks {
               existing.indexes.add(noob);
               word = words.next();
               if (word.charAt(0) == '(') {
-                final StringIterator cutter = new CsvIterator(false, ',', removeParens(word));
+                final StringIterator cutter = new SimpleCsvIterator(false, ',', removeParens(word));
                 while (cutter.hasNext()) {
                   final String name = unTick(cutter.next());
                   ColumnAttributes col = existing.getColByName(name);

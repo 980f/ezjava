@@ -39,6 +39,7 @@ public class QueryString {
    * simplify multi ordering
    */
   private boolean ordered = false;
+  private final String ValuesClause = "{0}=VALUES({0})";
 
   public QueryString(SqlKeyword starter) {
     guts.append(starter);
@@ -1437,11 +1438,11 @@ public class QueryString {
      * mysql: update clause of insert or update.
      */
     public void duplicateUpdate(String columname) {
-      append(format("{0}=VALUES({0})", columname));
+      append(format(ValuesClause, columname));
     }
 
     public void duplicateUpdate(ColumnAttributes col) {
-      append(format("{0}=VALUES({0})", col.name));
+      append(format(ValuesClause, col.name));
     }
 
     public Lister appendList(String prefix, String closer) {
