@@ -15,6 +15,8 @@ import static pers.hal42.lang.Index.BadIndex;
  * One could craft a similar class that ignores existence and can find fields deeply at the expense of not handing out objects related to the field.
  * <p>
  * There is a flag to optimize via a shallow scan.
+ *
+ * At present we don't use the ErrorLogStream stuff in order to keep class dependencies simpler. This means you may struggle when access rights to a class in the hierarchy causes fields to be skipped.
  */
 public class FieldIterator<Type> implements Iterator<Type> {
   private final Class type;//must keep this ourselves as java generics are compile time.  =>see new Reflection Operator getGeneric...
@@ -55,6 +57,7 @@ public class FieldIterator<Type> implements Iterator<Type> {
     return type == null || ReflectX.isImplementorOf(f.getType(), type);
   }
 
+  /** NB: when debugging put breakpoints in the catch(IllegalAccessException clauses to trap classes that aren't public enough for reflection to access the Columns therein. */
   @Override
   public boolean hasNext() {
     if (nested != null) {

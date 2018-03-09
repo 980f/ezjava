@@ -168,16 +168,22 @@ public class ReflectX {
    * @returns name of @param child within object @param parent, null if not an accessible child
    */
   public static String fieldName(Object parent, Object child) {
-    for (Field field : parent.getClass().getDeclaredFields()) {
-      try {
-        Object probate = field.get(parent);
-        if (probate == child) {
-          field.setAccessible(true);//maybe gratuitous but is fast.
-          return field.getName();
+    Class<?> parentClass = parent.getClass();
+    while (parentClass != Object.class) { //are there classLoader issues here? is Object ever allowed to be classLoader specific?
+      final Field[] declaredFields = parentClass.getDeclaredFields();
+      for (Field field : declaredFields) {
+        try {
+          Object probate = field.get(parent);
+          if (probate == child) {
+            field.setAccessible(true);//maybe gratuitous but is fast.
+            return field.getName();
+          }
+        } catch (IllegalAccessException ignored) {
+          //noinspection UnnecessaryContinue
+          continue;//keep for breakpoint
         }
-      } catch (IllegalAccessException ignored) {
-        //
       }
+      parentClass = parentClass.getSuperclass();
     }
     return null;
   }

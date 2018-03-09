@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 import pers.hal42.ext.CountedLock;
 import pers.hal42.ext.Span;
 import pers.hal42.lang.ByteArray;
+import pers.hal42.lang.Finally;
 import pers.hal42.lang.ReflectX;
 import pers.hal42.lang.StringX;
 import pers.hal42.logging.ErrorLogStream;
@@ -211,7 +212,9 @@ public class JsonStorable extends PushedJSONParser {
 
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile)) {
-      optsloader.parse(root);
+      try (Finally pop = dbg.Push(optsloader.filename)) {
+        optsloader.parse(root);
+      }
     }
     //todo:2 either dbg the stats or print them to a '#attribute field
     return root;
@@ -369,7 +372,9 @@ public class JsonStorable extends PushedJSONParser {
     Storable root = Storable.Groot(optsfile.toString());//name in file gets lost
     final JsonStorable optsloader = new JsonStorable(true);
     if (optsloader.loadFile(optsfile.toString())) {//todo:1 path versions of this method
-      optsloader.parse(root);
+      try (Finally pop = dbg.Push(optsloader.filename)) {
+        optsloader.parse(root);
+      }
     }
     //todo:2 either dbg the stats or print them to a '#attribute field
     return root;
