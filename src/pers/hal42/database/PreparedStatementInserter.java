@@ -96,7 +96,11 @@ public class PreparedStatementInserter implements AutoCloseable {
     return sti;
   }
 
-  /** add to batch, run the batch if batchSize entries have been added */
+  /**
+   * add to batch, run the batch if batchSize entries have been added.
+   *
+   * @returns whether a query was made
+   */
   public boolean batch() throws SQLException {
     return legit && addbatch();
   }
@@ -113,6 +117,7 @@ public class PreparedStatementInserter implements AutoCloseable {
     }
   }
 
+  /** @returns whether a query was made */
   private boolean addbatch() throws SQLException {
     try {
       st.addBatch();
