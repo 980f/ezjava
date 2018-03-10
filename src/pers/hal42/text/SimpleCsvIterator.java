@@ -13,7 +13,7 @@ public class SimpleCsvIterator implements StringIterator {
   protected String line;
   Span span = new Span();
   private final boolean inReverse;
-  private final char comma;
+  protected final char comma;
 
   public SimpleCsvIterator(boolean inReverse, char comma, String line) {
     this.inReverse = inReverse;
