@@ -30,7 +30,7 @@ public class SimpleCsvIterator implements StringIterator {
 
   @Override
   public boolean hasNext() {
-    return line != null && span.nonTrivial();
+    return line != null && inReverse ? span.hasEnded() : span.isStarted();//half open is good enough, it is the final element.
   }
 
   @Override

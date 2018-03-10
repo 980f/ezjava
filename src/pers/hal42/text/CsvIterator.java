@@ -20,6 +20,12 @@ public class CsvIterator extends SimpleCsvIterator {
   @Override
   public String next() {
     String part = super.next();
+    if (part == null) {
+      return "";
+    }
+    if (part.length() == 0) {
+      return "";
+    }
     if (part.charAt(0) == '"') {
       while (part.charAt(part.length() - 1) != '"') {
         if (hasNext()) {
