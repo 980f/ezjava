@@ -5,11 +5,11 @@ import pers.hal42.lang.StringX;
 import java.util.Iterator;
 
 /** extract steam of name:value pairs, skipping blanks and items starting with '#' */
-public class NamedValueIterator implements Iterator<cmd> {
+public class NamedValueIterator implements Iterator<CommandArgument> {
   protected StringIterator source;
   protected char cutter;
   protected transient String lookahead;
-  cmd shared;
+  CommandArgument shared;
   private final boolean sharedReturn;
 
   public NamedValueIterator(StringIterator source, char cutter, boolean sharedReturn) {
@@ -39,9 +39,9 @@ public class NamedValueIterator implements Iterator<cmd> {
   }
 
   @Override
-  public cmd next() {
+  public CommandArgument next() {
     try {
-      cmd wrapper = sharedReturn ? shared : new cmd();
+      CommandArgument wrapper = sharedReturn ? shared : new CommandArgument();
       wrapper.split(lookahead, cutter);
       return wrapper;
     } finally {

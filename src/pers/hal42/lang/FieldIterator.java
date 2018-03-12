@@ -84,8 +84,8 @@ public class FieldIterator<Type> implements Iterator<Type> {
           }
         }
         if (deeply) {
-          final Field field = fields[pointer]; //maydo: exclude static members?
-          if (!ReflectX.isScalar(field)) {//todo:1 see if isNative also covers class not having a classLoader
+          final Field field = fields[pointer]; //maydo: exclude static members? yes: Storable.Rules infinite regresses because it has static members of itself. A 'final' filter might also be a good idea.
+          if (!ReflectX.isScalar(field) && !ReflectX.isStatic(field)) {//todo:1 see if isNative also covers class not having a classLoader
             try {
               final Object child = field.get(this.parent);
               if (child != null) {

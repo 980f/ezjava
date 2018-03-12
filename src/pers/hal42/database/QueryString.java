@@ -949,6 +949,7 @@ public class QueryString {
     }
   }
 
+  /** appends "from schema.table" */
   public QueryString from(TableInfo ti) {
     lineBreak();
     return cat(FROM).cat(ti.fullName());

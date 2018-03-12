@@ -13,6 +13,7 @@ import java.util.Iterator;
 import static java.text.MessageFormat.format;
 import static pers.hal42.database.MysqlQuirks.isTicked;
 import static pers.hal42.lang.Index.BadIndex;
+import static pers.hal42.lang.StringX.NonTrivial;
 
 /**
  * see ColumnProfile, which has too much legacy cruft
@@ -36,7 +37,6 @@ public class ColumnAttributes {
   /** for foreign keys this is the foreign table name */
   public String more;
   public boolean autoIncrement = false;
-
 
   public ColumnAttributes(boolean nullable, ColumnType dataType, int size, String name, String defawlt, boolean autoIncrement) {
     this.nullable = nullable;
@@ -124,7 +124,6 @@ public class ColumnAttributes {
       return false;
     }
     ColumnAttributes that = (ColumnAttributes) o;
-
     if (!nullable && that.nullable) {
       dbg.ERROR("Column <{0}> should be not null but existing is nullable", name);
       //mysql apparently ignores our request for nullable if there is a default
@@ -147,7 +146,7 @@ public class ColumnAttributes {
       return true;
     } else {
       if (that.defawlt.equals("NULL")) {//parsing mysql DDL sometimes gives us an explicit reference to NULL.
-        return !StringX.NonTrivial(defawlt);
+        return !NonTrivial(defawlt);
       }
       return false;
     }
@@ -193,11 +192,11 @@ public class ColumnAttributes {
    * @returns whether name is nonTrivial, not whether it was altered herein.
    */
   public boolean eponomize(Object parent) {
-    if (StringX.NonTrivial(name)) {
+    if (NonTrivial(name)) {
       return true;
     }
     String myName = ReflectX.fieldName(parent, this);
-    if (StringX.NonTrivial(myName)) {
+    if (NonTrivial(myName)) {
       name = myName;
       return true;
     }
@@ -216,6 +215,12 @@ public class ColumnAttributes {
     return this;
   }
 
+  public void setTrivialDefault() {
+    if (!NonTrivial(defawlt)) {
+      defawlt = dataType.isTextlike() ? "" : "0";
+    }
+  }
+
   /** a varchar big enough to contain the widest string associated with the @param given enum */
   public static ColumnAttributes Enumeration(Class<? extends Enum> eclass, boolean nullable) {
     Extremer<Integer> maxWidth = new Extremer<>();
@@ -229,7 +234,6 @@ public class ColumnAttributes {
       line = line.substring(0, line.length() - 1);
     }
     StringIterator words = new SimpleCsvIterator(false, ' ', line);
-
     String word = words.next();
     if (isTicked(word)) {//then it is a column definition
       ColumnAttributes noob = new ColumnAttributes();
@@ -242,7 +246,6 @@ public class ColumnAttributes {
       } else {
         noob.dataType = ColumnType.forName(typeinfo);
       }
-
       while (words.hasNext()) {
         word = words.next();
         switch (word.toUpperCase()) {//mysql is damnably inconsistent in its casing! guarding against them changing it in the future

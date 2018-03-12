@@ -29,17 +29,20 @@ public class CsvIterator extends SimpleCsvIterator {
     if (part.charAt(0) == '"') {
       if (part.charAt(part.length() - 1) != '"') {
         final StringBuilder sb = new StringBuilder(part);
-        do {
-          if (hasNext()) {
-            sb.append(comma).append(next());
-          } else {
-            sb.append('"');
+        sb.deleteCharAt(0);
+        while (hasNext()) {
+          sb.append(comma).append(next());
+          if (sb.charAt(sb.length() - 1) == '"') {
+            sb.deleteCharAt(sb.length() - 1);
             break;
           }
-        } while (sb.charAt(sb.length() - 1) != '"');
+        }
         part = sb.toString();
+      } else {
+        if (part.length() > 2) {
+          part = part.substring(1, part.length() - 1);//remove quotes.
+        }
       }
-      part = part.substring(1, part.length() - 1);//remove quotes.
     }
     return part;
   }

@@ -1334,7 +1334,11 @@ public class DBMacros extends GenericDB {
   }
 
   public Blob makeBlob(String content) {
-    return new Blobber(content.getBytes());
+    if (content != null) {
+      return new Blobber(content.getBytes());
+    } else {
+      return new Blobber("");//todo:1 decide whether null blobs are a good thing.
+    }
   }
 
   /**
@@ -1446,8 +1450,6 @@ public class DBMacros extends GenericDB {
       return false;
     }
   }
-
-
 
   /**
    * @param actor will receive a result set that if @param iterate is false has already been next'ed once, use a do{}while(rs.next());, else has already been exhausted.

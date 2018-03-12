@@ -224,8 +224,13 @@ public class ReflectX {
    * @returns in essence (negative of) whether field's class has fields.
    */
   public static boolean isScalar(Field field) {
+    //can't figure out a default for when field is null, so NPE.
     Class type = field.getType();
     return type != Void.class && (type.isPrimitive() || type == String.class || type.isEnum());
+  }
+
+  public static boolean isStatic(Field field) {
+    return Modifier.isStatic(field.getModifiers());
   }
 
   @SuppressWarnings("unchecked")
