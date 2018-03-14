@@ -50,8 +50,8 @@ public class ErrorLogStream implements AtExit, Finally.Lambda {
   }
 
   public boolean bare = false; //+_+ made a state to expedite big change.
-  //public
-  protected LogSwitch myLevel = null;
+
+  protected LogSwitch myLevel;
   /**
    * used to provide a stackable context, rather than having to fake an exception to get a stack trace.
    */

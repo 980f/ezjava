@@ -14,6 +14,7 @@ import java.util.Iterator;
 
 import static java.text.MessageFormat.format;
 import static pers.hal42.database.QueryString.SqlKeyword.*;
+import static pers.hal42.lang.StringX.NonTrivial;
 
 /**
  * wraps StringBuilder since someone decided that class should be final.
@@ -546,6 +547,15 @@ public class QueryString {
   public QueryString comma(TableProfile tp) {
     return comma().cat(tp.name());
   }
+
+  public QueryString comma(TableInfo tableInfo, String alias) {
+    comma().cat(tableInfo.fullName());
+    if (NonTrivial(alias)) {
+      alias(alias);
+    }
+    return this;
+  }
+
 
   public QueryString comma(QueryString qs) {
     return comma().cat(qs);
