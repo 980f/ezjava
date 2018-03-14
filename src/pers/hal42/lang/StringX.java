@@ -759,4 +759,17 @@ public class StringX {
     }
     return replace(purified, "_", "-");
   }
+
+  public static StringBuilder rework(StringBuilder sb, String pattern, String replacement) {
+    if (NonTrivial(pattern)) {
+      if (replacement == null) {
+        replacement = "";
+      }
+      for (int foundat = sb.indexOf(pattern); foundat >= 0; foundat = sb.indexOf(pattern, foundat + 1)) {
+        sb.replace(foundat, foundat + pattern.length(), replacement);
+      }
+    }
+    return sb;
+  }
+
 }
