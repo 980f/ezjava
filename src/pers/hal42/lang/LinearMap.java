@@ -141,7 +141,7 @@ public class LinearMap<K, V> implements Map<K, V>, VectorSet.StructureWatcher {
      */
     @Override
     public boolean hasNext() {
-      return pointer >= 0;
+      return pointer > 0;
     }
 
     /**
@@ -153,11 +153,8 @@ public class LinearMap<K, V> implements Map<K, V>, VectorSet.StructureWatcher {
     @Override
     public Entry<K, V> next() {
       if (hasNext()) {
-        try {
-          return new SimpleEntry<>(keys.get(pointer), values.get(pointer));
-        } finally {
-          ++pointer;
-        }
+        --pointer;
+        return new SimpleEntry<>(keys.get(pointer), values.get(pointer));
       } else {
         throw new NoSuchElementException("past end of LinearMap Entry iteration");
       }
