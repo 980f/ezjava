@@ -109,6 +109,7 @@ public class QueryString {
     return this;
   }
 
+
   /**
    * create or replace a view given a name for it and a select statement
    */
@@ -246,6 +247,19 @@ public class QueryString {
     guts.append(joincolumnname);
     cat(EQUALS);
     guts.append(aliaser.next());
+    dot(joincolumnname);
+    return this;
+  }
+
+  public QueryString join(TableInfo tableInfo, String alias, String joincolumnname, String otheralias) {
+    cat(JOIN);
+    cat(tableInfo.fullName());
+    alias(alias);
+    cat(ON);
+    cat(alias);
+    dot(joincolumnname);
+    cat(EQUALS);
+    cat(otheralias);
     dot(joincolumnname);
     return this;
   }
