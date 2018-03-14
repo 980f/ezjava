@@ -1,6 +1,7 @@
 package pers.hal42.lang;
 
 import pers.hal42.math.MathX;
+import pers.hal42.text.Ascii;
 
 import static pers.hal42.lang.Index.BadIndex;
 
@@ -13,6 +14,18 @@ public class StringX {
 
   private static final String opens = "({[<'`\"";
   private static final String closes = ")}]>'`\"";
+
+  public static String jsonEscape(String item) {
+    StringBuilder sb = new StringBuilder(item);
+    for (int i = 0; i < sb.length(); ++i) {
+      char c = sb.charAt(i);
+      if (i == Ascii.BACKSLASH || i == Ascii.DOUBLEQUOTE) {
+        sb.insert(i, Ascii.BACKSLASH);
+        ++i;//char just inserted
+      }
+    }
+    return sb.toString();
+  }
 
   /** build a string which is the image of the @param numImage multiplied by the given power of 10 */
   public StringBuilder decimalScale(String numImage, int powerof10) {
