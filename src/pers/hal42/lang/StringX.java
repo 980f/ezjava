@@ -28,7 +28,7 @@ public class StringX {
   }
 
   /** build a string which is the image of the @param numImage multiplied by the given power of 10 */
-  public StringBuilder decimalScale(String numImage, int powerof10) {
+  public static StringBuilder decimalScale(String numImage, int powerof10) {
     StringBuilder worker = new StringBuilder(numImage);
     int dp = numImage.indexOf('.');
     int end = numImage.length();
