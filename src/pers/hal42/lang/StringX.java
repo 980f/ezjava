@@ -42,14 +42,33 @@ public class StringX {
     boolean signed = firstChar == '-' || firstChar == '+';
     if (powerof10 > 0) {//move dp to the right or add zeroes
       if (dp >= 0) {
-        throw new IllegalArgumentException("not yet implemented");
+//        throw new IllegalArgumentException("not yet implemented");
+        worker.deleteCharAt(dp);
+        dp += powerof10;
+        int numzeroes = dp - end - 1;//-1 from deleting dp
+        if (numzeroes < 0) {
+          worker.insert(dp, '.');
+        } else {
+          while (numzeroes-- > 0) {
+            worker.append('0');
+          }
+        }
       } else {
         while (powerof10-- > 0) {
           worker.append('0');
         }
       }
     } else if (powerof10 < 0) { //move dp to left, might have to add 0.
-      throw new IllegalArgumentException("not yet implemented");
+      if (dp >= -powerof10) {//then it exists and we can move it
+        worker.deleteCharAt(dp);
+        worker.insert(dp + powerof10, '.');
+      } else if (dp < 0) {
+        if (end > -powerof10) {
+          worker.insert(end + powerof10, '.');
+        }
+      } else {
+        //have to insert 0. and maybe soem more 0's
+      }
     }
     return worker;
   }
