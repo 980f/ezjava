@@ -5,7 +5,9 @@ import pers.hal42.text.Ascii;
 
 import static pers.hal42.lang.Index.BadIndex;
 
-/** things the java standard library left our of string operations, especially tolerance for null arguments. */
+/**
+ * things the java standard library left our of string operations, especially tolerance for null arguments.
+ */
 public class StringX {
   //todo:1 replace replacers with cppext's logic (a single string with odd/even pairings of escape with key).
   protected static final String[][] replacers = {{"\\\\", "\\"}, {"\\b", "\b"}, {"\\t", "\t"}, {"\\n", "\n"}, {"\\f", "\f"}, {"\\\"", "\""}, {"\\r", "\r"}, {"\\'", "\'"},};
@@ -27,9 +29,14 @@ public class StringX {
     return sb.toString();
   }
 
-  /** build a string which is the image of the @param numImage multiplied by the given power of 10 */
+  /**
+   * build a string which is the image of the @param numImage multiplied by the given power of 10
+   */
   public static StringBuilder decimalScale(String numImage, int powerof10) {
     StringBuilder worker = new StringBuilder(numImage);
+    if ("0.00".equals(numImage)) {
+      return worker;//#frequent case. for one user.
+    }
     int dp = numImage.indexOf('.');
     int end = numImage.length();
     if (end < 1) {
@@ -65,9 +72,21 @@ public class StringX {
       } else if (dp < 0) {
         if (end > -powerof10) {
           worker.insert(end + powerof10, '.');
+        } else {
+          int need = -(dp + powerof10);
+          while (need-- > 0) {
+            worker.insert(0, '0');
+          }
+          worker.insert(0, "0.");
+
         }
-      } else {
-        //have to insert 0. and maybe soem more 0's
+      } else {//have dp but need leading digits
+        int need = -(dp + powerof10);
+        worker.deleteCharAt(dp);
+        while (need-- > 0) {
+          worker.insert(0, '0');
+        }
+        worker.insert(0, "0.");
       }
     }
     return worker;
@@ -110,7 +129,9 @@ public class StringX {
     return opens.charAt(closer);
   }
 
-  /** remove first and last chars of @param word. Always removes the first char, removes the last only if it matches the first. Actually, now @returns text between the first char and the last char that logically matches the first. */
+  /**
+   * remove first and last chars of @param word. Always removes the first char, removes the last only if it matches the first. Actually, now @returns text between the first char and the last char that logically matches the first.
+   */
   public static String removeParens(String word) {
     if (word == null || word.length() < 2) {
       return "";
@@ -125,7 +146,9 @@ public class StringX {
     }
   }
 
-  /** limited use conversion of camelcase to underscaore+lower */
+  /**
+   * limited use conversion of camelcase to underscaore+lower
+   */
   public static String camel2underscore(String cameled) {
     StringBuilder output = new StringBuilder(cameled.length() * 2);
     final char[] chars = cameled.toCharArray();
@@ -494,17 +517,23 @@ public class StringX {
     return s != null && s.length() > 0;
   }
 
-  /** @returns whether the string is nonnull and has at least one character, which might however be whitespace. */
+  /**
+   * @returns whether the string is nonnull and has at least one character, which might however be whitespace.
+   */
   public static boolean NonTrivial(StringBuffer sb) {
     return sb != null && NonTrivial(String.valueOf(sb));
   }
 
-  /** @returns a string that is never null*/
+  /**
+   * @returns a string that is never null
+   */
   public static String TrivialDefault(Object o) {
     return TrivialDefault(o, "");
   }
 
-  /** @returns a string that is never null*/
+  /**
+   * @returns a string that is never null
+   */
   public static String TrivialDefault(Object o, String def) {
     return ObjectX.NonTrivial(o) ? String.valueOf(o) : TrivialDefault(def, "");
   }
@@ -767,12 +796,16 @@ public class StringX {
     }
   }
 
-  /** @returns fault tolerant parse of @param s, usually 0 if things go wrong. */
+  /**
+   * @returns fault tolerant parse of @param s, usually 0 if things go wrong.
+   */
   public static int parseInt(String s, int radix) {
     return (int) parseLong(s, radix);
   }
 
-  /** with imputeDashes converts names into acceptable enum token */
+  /**
+   * with imputeDashes converts names into acceptable enum token
+   */
   public static String removeDashes(String dashed) {
     //todo:1 StringBuilder implemenation
     String purified = replace(dashed, "-", "_");
@@ -783,7 +816,9 @@ public class StringX {
     }
   }
 
-  /** with removeDashes converts names into acceptable enum token */
+  /**
+   * with removeDashes converts names into acceptable enum token
+   */
   public static String imputeDashes(String purified) {
     //todo:1 StringBuilder implemenation
     if (purified.charAt(0) == '_') {
