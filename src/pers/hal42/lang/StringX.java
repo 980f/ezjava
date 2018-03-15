@@ -31,10 +31,12 @@ public class StringX {
 
   /**
    * build a string which is the image of the @param numImage multiplied by the given power of 10
+   * first used for fis cu import.
    */
   public static StringBuilder decimalScale(String numImage, int powerof10) {
     StringBuilder worker = new StringBuilder(numImage);
     if ("0.00".equals(numImage)) {
+      worker.delete(1, worker.length());//pure "0" for db optimization of trivial values.
       return worker;//#frequent case. for one user.
     }
     int dp = numImage.indexOf('.');
