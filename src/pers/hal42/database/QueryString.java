@@ -1431,18 +1431,20 @@ public class QueryString {
     /**
      * add a preparedStatement clause: "name=?"
      */
-    public void prepareSet(String columnname) {
+    public Lister prepareSet(String columnname) {
       append(format("{0}=?", columnname));
+      return this;
     }
 
-    public void prepareSet(ColumnAttributes col) {
+    public Lister prepareSet(ColumnAttributes col) {
       append(format("{0}=?", col.name));
+      return this;
     }
 
     /**
      * append ,this=that with some intelligence on wrapping that
      */
-    public void setValue(String columname, Object value) {
+    public Lister setValue(String columname, Object value) {
       append(columname);
       query().cat(EQUALS);
       if (value != null) {
@@ -1457,6 +1459,7 @@ public class QueryString {
       } else {
         query().cat("null");
       }
+      return this;
     }
 
     /**
