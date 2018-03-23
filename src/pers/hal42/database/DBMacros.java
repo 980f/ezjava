@@ -97,8 +97,8 @@ public class DBMacros extends GenericDB {
   }
 
   class NamedStatement {
-    public Statement stmt = null;
-    public String name = "uninited"; // name is really the full query
+    public Statement stmt;
+    public String name;
 
     public NamedStatement(Statement stmt, String name) {
       this.stmt = stmt;

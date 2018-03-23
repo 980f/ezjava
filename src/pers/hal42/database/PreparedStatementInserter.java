@@ -3,6 +3,7 @@ package pers.hal42.database;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.function.Function;
 
@@ -27,6 +28,10 @@ public class PreparedStatementInserter implements AutoCloseable {
   //feel free to subvert this item, this class is an assistant not a manager
   /** preincrementing pointer to next field to insert */
   public int sti;
+  /**
+   * the returns of the most recent execution of the batched statement. batch() returns true when it has update this array.
+   */
+  public int[] ucs;
 
   public PreparedStatementInserter(PreparedStatement st) {
     legit = st != null;
@@ -122,7 +127,8 @@ public class PreparedStatementInserter implements AutoCloseable {
     try {
       st.addBatch();
       if (++counter >= batchSize) {
-        onBatchRun(DBMacros.doBatch(st));
+        ucs = st.executeBatch();
+        onBatchRun(Arrays.stream(ucs).filter(it -> it > 0).sum());
         return true;
       }
       return false;
