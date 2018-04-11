@@ -2,7 +2,12 @@ package pers.hal42.text;
 
 import java.util.Iterator;
 
-/** Iterate Strings from some other iterator */
+/**
+ * Iterate Strings from some other iterator using String.valueOf() to conver to text, except that null objects are mapped to the configured 'forNull' member.
+ * The 'forNull' functionality is handy for yielding a blank instead of the text "(null)" for null objects.
+ *
+ * @see pers.hal42.ext.StringifyingIterator for a fancier template checked + functional variation of this.
+ */
 public class StringifyingIterator implements StringIterator {
   /** what to convert null into. */
   public String forNull = "";
