@@ -171,7 +171,7 @@ public class QueryString {
   }
 
   /** @returns a query on a single table where @param maxed is greatest, @param correlate is from the row where maxed is greatest and is expected to be filtered on by terms added to this query by the caller.
-   * it uses table aliases 'o' for the outer query, which you should prefix all column names with,
+   * it uses table aliases 'o' for the outer query, which you should prefix all column names of your filter terms with,
    * alias 'i' for the max seeking query so you must not use that alias.*/
   public static QueryString SelectByGreatest(TableInfo ti,String maxed,String correlate,StringIterator colnames){
     return Select(ti, new TablingIterator("o",colnames)).Close().alias("o").where("o."+maxed,
