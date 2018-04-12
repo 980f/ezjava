@@ -25,6 +25,10 @@ public class SimpleTableInfo implements TableInfo {
     this.remark = StringX.TrivialDefault(remark, "");
   }
 
+  public SimpleTableInfo(String schema, String name, String remark) {
+    this(null, schema, name, null, remark);
+  }
+
   /**
    * know name and schema
    */
