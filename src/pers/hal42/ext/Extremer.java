@@ -11,6 +11,7 @@ import java.util.function.Function;
  * recordType max or min of a series  pushed at it
  * <p>
  * An example of one of the domains where C++ is vastly superior to java. Java engineers left out basic ordering functions from their Number classes.
+ *
  */
 public class Extremer<Scalar extends Number> {
   public Scalar extremum;

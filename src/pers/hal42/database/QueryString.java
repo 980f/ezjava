@@ -54,43 +54,8 @@ public class QueryString {
     guts.append("");
   }
 
-  /**
-   * sql keywords, in CAPS and surrounded with spaces
-   */
-  public enum SqlKeyword {
-    FROM, UPDATE, SET, INSERT, DELETE, ON, IN, BETWEEN, //beware this is inclusive of both ends.
-    ADD, NULL, JOIN, LEFT, SHOW, EXPLAIN, /////////
-    SELECT, ALLFIELDS("*"),
-
-    AND, NOT, WHERE,
-
-    ORDERBY("ORDER BY"), GROUPBY("GROUP BY"), ASC, DESC, UNION, VALUES, OR, EQUALS("="), GTEQ(">="), GT(">"), LTEQ("<="), LT("<"),
-
-    IS,
-
-    DISTINCT,
-
-    COLUMN, SUM, COUNT, MAX, MIN, AS, HAVING,
-
-    SUBSTRING, TO, FOR, CASE, END, ELSE, THEN, WHEN, USING, CAST, BIGINT, LIMIT, LIKE;
-
-    String spaced;
-
-    SqlKeyword() {
-      spaced = " " + super.toString() + " ";
-    }
-
-    SqlKeyword(String opertor) {
-      spaced = " " + opertor + " ";
-    }
-
-    /**
-     * @return nominal name with spaces around it.
-     */
-    @Override
-    public String toString() {
-      return spaced;
-    }
+  public QueryString whereNot(ColumnAttributes col) {
+    return where().word(col.name).cat(NOTEQUAL).qMark();
   }
 
   /** @returns this after apprending "s like ?" */
@@ -1200,6 +1165,46 @@ public class QueryString {
    */
   public QueryString prepared(ColumnAttributes field) {
     return nvPairPrepared(field.name);
+  }
+
+
+  /**
+   * sql keywords, in CAPS and surrounded with spaces
+   */
+  public enum SqlKeyword {
+    FROM, UPDATE, SET, INSERT, DELETE, ON, IN, BETWEEN, //beware this is inclusive of both ends.
+    ADD, NULL, JOIN, LEFT, SHOW, EXPLAIN, /////////
+    SELECT, ALLFIELDS("*"),
+
+    AND, NOT, WHERE,
+
+    ORDERBY("ORDER BY"), GROUPBY("GROUP BY"), ASC, DESC, UNION, VALUES, OR, EQUALS("="), NOTEQUAL("<>"), GTEQ(">="), GT(">"), LTEQ("<="), LT("<"),
+
+    IS,
+
+    DISTINCT,
+
+    COLUMN, SUM, COUNT, MAX, MIN, AS, HAVING,
+
+    SUBSTRING, TO, FOR, CASE, END, ELSE, THEN, WHEN, USING, CAST, BIGINT, LIMIT, LIKE;
+
+    String spaced;
+
+    SqlKeyword() {
+      spaced = " " + super.toString() + " ";
+    }
+
+    SqlKeyword(String opertor) {
+      spaced = " " + opertor + " ";
+    }
+
+    /**
+     * @return nominal name with spaces around it.
+     */
+    @Override
+    public String toString() {
+      return spaced;
+    }
   }
 
   /**
