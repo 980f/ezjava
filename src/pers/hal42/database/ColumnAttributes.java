@@ -408,11 +408,37 @@ public class ColumnAttributes {
     return noob;
   }
 
+  public ColumnAttributes setName(String name) {
+    this.name = name;
+    return this;
+  }
+
   public static class Ordinator {
     int ordinator = 0;
 
-    public void ordinate(ColumnAttributes col) {
-      col.ordinal = col.isAuto() ? 0 : ++ordinator;
+    /**
+     * add index of where column will appear in standard queries @returns whether column appears in standard select and insert/update lists
+     */
+    public boolean ordinate(ColumnAttributes col) {
+      if (col.isAuto()) {
+        col.ordinal = 0;
+        return false;
+      } else {
+        col.ordinal = ++ordinator;
+        return true;
+      }
+    }
+
+    /**
+     * re-enumerate pk @returns whether col is a pk entry
+     */
+    public boolean pkOrd(ColumnAttributes col) {
+      if (col.pkordinal >= 0) {//0 marks it is a pk, but that its position is unknown, this will be ~0 for non-pk columns
+        col.pkordinal = ++ordinator;
+        return true;
+      } else {
+        return false;
+      }
     }
   }
 
