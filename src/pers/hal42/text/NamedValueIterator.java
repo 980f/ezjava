@@ -16,6 +16,9 @@ public class NamedValueIterator implements Iterator<CommandArgument> {
     this.source = source;
     this.cutter = cutter;
     this.sharedReturn = sharedReturn;
+    if (sharedReturn) {
+      shared = new CommandArgument();
+    }
     preview();
   }
 
