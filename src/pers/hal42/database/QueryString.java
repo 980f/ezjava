@@ -14,7 +14,6 @@ import java.util.Iterator;
 
 import static java.text.MessageFormat.format;
 import static pers.hal42.database.QueryString.SqlKeyword.*;
-import static pers.hal42.lang.StringX.NonTrivial;
 
 /**
  * wraps StringBuilder since someone decided that class should be final.
@@ -58,21 +57,18 @@ public class QueryString {
     return where().word(col.name).cat(NOTEQUAL).qMark();
   }
 
-  /** @returns this after apprending "s like ?" */
-  public QueryString like(String s) {
-    return cat(s).cat(SqlKeyword.LIKE).qMark();
+  /**
+   * @returns a query on a single table where @param maxed is greatest, @param correlate is from the row where maxed is greatest and is expected to be filtered on by terms added to this query by the caller.
+   * it uses table aliases 'o' for the outer query, which you should prefix all column names of your filter terms with,
+   * alias 'i' for the max seeking query so you must not use that alias.
+   */
+  public static QueryString SelectByGreatest(TableInfo ti, String maxed, String correlate, StringIterator colnames) {
+    return Select(ti, new TablingIterator("o", colnames)).Close().alias("o").where("o." + maxed,
+      Select().function(MAX, "i." + maxed).from(ti).alias("i").whereJoin(correlate, "i", "o"));
   }
 
-  /** @returns this after appending "col IN (?,?) " */
-  public QueryString inPrepared(ColumnAttributes col, int listlength) {
-    if (listlength > 0) {
-      try (QueryString.Lister lister = startIn(col.name)) {
-        while (listlength-- > 0) {
-          lister.append("?");
-        }
-      }
-    }
-    return this;
+  public static QueryString Count(ColumnAttributes col) {
+    return Select().function(COUNT, col.name);
   }
 
 
@@ -113,34 +109,25 @@ public class QueryString {
     return lister;
   }
 
-
-  /** a,b,c => x.a,x.b,x.c */
-  public static class TablingIterator implements StringIterator {
-    String tablname;
-    StringIterator colnames;
-
-    public TablingIterator(final String tablname, final StringIterator colnames) {
-      this.tablname=tablname;
-      this.colnames=colnames;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return colnames.hasNext();
-    }
-
-    @Override
-    public String next() {
-      return tablname+"."+colnames.next();
-    }
+  /**
+   * @returns this after apprending "s like ?"
+   */
+  public QueryString like(String s) {
+    return cat(s).cat(SqlKeyword.LIKE).qMark();
   }
 
-  /** @returns a query on a single table where @param maxed is greatest, @param correlate is from the row where maxed is greatest and is expected to be filtered on by terms added to this query by the caller.
-   * it uses table aliases 'o' for the outer query, which you should prefix all column names of your filter terms with,
-   * alias 'i' for the max seeking query so you must not use that alias.*/
-  public static QueryString SelectByGreatest(TableInfo ti,String maxed,String correlate,StringIterator colnames){
-    return Select(ti, new TablingIterator("o",colnames)).Close().alias("o").where("o."+maxed,
-      Select().function(MAX,"i."+maxed).from(ti).alias("i").whereJoin(correlate,"i","o"));
+  /**
+   * @returns this after appending "col IN (?,?) "
+   */
+  public QueryString inPrepared(ColumnAttributes col, int listlength) {
+    if (listlength > 0) {
+      try (QueryString.Lister lister = startIn(col.name)) {
+        while (listlength-- > 0) {
+          lister.append("?");
+        }
+      }
+    }
+    return this;
   }
 
   /**
@@ -163,13 +150,6 @@ public class QueryString {
   public static QueryString Insert() {
     QueryString noob = new QueryString();
     return noob.cat(INSERT);
-  }
-
-  public QueryString dot(String name) {
-    guts.append('.');
-    guts.append(name);
-    space();
-    return this;
   }
 
   /**
@@ -204,29 +184,29 @@ public class QueryString {
    */
   public QueryString join(String tablename, String joincolumnname, AsciiIterator aliaser) {
     indent();
-    cat(JOIN);
-    cat(tablename);
-    alias(aliaser.peek());
-    cat(ON);
-    guts.append(aliaser.first());
-    guts.append('.');
-    guts.append(joincolumnname);
-    cat(EQUALS);
-    guts.append(aliaser.next());
-    dot(joincolumnname);
+    cat(JOIN).cat(tablename).alias(aliaser.peek());
+    cat(ON).dot(aliaser.first(), joincolumnname);
+    cat(EQUALS).dot(aliaser.next(), joincolumnname);
     return this;
   }
 
   public QueryString join(TableInfo tableInfo, String alias, String joincolumnname, String otheralias) {
-    cat(JOIN);
-    cat(tableInfo.fullName());
-    alias(alias);
-    cat(ON);
-    cat(alias);
-    dot(joincolumnname);
-    cat(EQUALS);
-    cat(otheralias);
-    dot(joincolumnname);
+    cat(JOIN).cat(tableInfo.fullName()).alias(alias);
+    if (StringX.NonTrivial(alias)) {
+      alias = tableInfo.name();//postgress doesn't like redundant schema
+    }
+    cat(ON).dot(alias, joincolumnname);
+    cat(EQUALS).dot(otheralias, joincolumnname);
+    return this;
+  }
+
+  /**
+   * alias must NOT be null else join expression will fault.
+   */
+  public QueryString join(String fullName, String alias, String joincolumnname, String otheralias) {
+    cat(JOIN).cat(fullName).alias(alias);
+    cat(ON).dot(alias, joincolumnname);
+    cat(EQUALS).dot(otheralias, joincolumnname);
     return this;
   }
 
@@ -249,7 +229,8 @@ public class QueryString {
   public QueryString dot(String prefix, String postfix) {
     space();
     guts.append(prefix);
-    dot(postfix);
+    guts.append('.');
+    guts.append(postfix);
     space();
     return this;
   }
@@ -477,11 +458,18 @@ public class QueryString {
 //    return this;
 //  }
 
+
+  /**
+   * sqlinjectionrisk @param val
+   */
+  public QueryString setJust(String fieldName, String val) {
+    return cat(SET).nvPair(fieldName, val);
+  }
+
   public QueryString SetJust(ColumnProfile field, String val) {
     // do NOT use nvPair(field,val) here, as it puts a table. prefix on the fieldname
     // eg: table.field=value.  This FAILS in PG!
-    // instead, use the following:
-    return cat(SET).nvPair(field.name(), val);
+    return setJust(field.name(), val);  //using name, not fullName
   }
 
   public QueryString SetJust(ColumnProfile field, int val) {//wishing for templates....
@@ -514,11 +502,7 @@ public class QueryString {
   }
 
   public QueryString comma(TableInfo tableInfo, String alias) {
-    comma().cat(tableInfo.fullName());
-    if (NonTrivial(alias)) {
-      alias(alias);
-    }
-    return this;
+    return comma().cat(tableInfo.fullName()).alias(alias);
   }
 
 
@@ -551,7 +535,11 @@ public class QueryString {
    * append AS clause, with generous spaces
    */
   public QueryString alias(String aliaser) {
-    return cat(AS).word(aliaser);
+    if (StringX.NonTrivial(aliaser)) {
+      return cat(AS).word(aliaser);
+    } else {
+      return this;
+    }
   }
 
   public QueryString quoted(char c) {
@@ -847,7 +835,7 @@ public class QueryString {
    */
   public Lister startSet() {
     lineBreak();
-    return new Lister(SqlKeyword.SET.toString(), "");
+    return new Lister(SET.toString(), "");
   }
 
   /**
@@ -856,7 +844,7 @@ public class QueryString {
    * @returns object for supplying the ...
    */
   public Lister startIn() {
-    cat(SqlKeyword.IN);
+    cat(IN);
     return new Lister("(");
   }
 
@@ -870,7 +858,9 @@ public class QueryString {
     return startIn();
   }
 
-  /** mysql specific upsert 2nd phrase */
+  /**
+   * mysql specific upsert 2nd phrase
+   */
   private Lister dupLister() {
     return new Lister(" ON DUPLICATE KEY UPDATE ", "");//strange but true, a list with invisible parens
   }
@@ -938,10 +928,19 @@ public class QueryString {
     }
   }
 
-  /** appends "from schema.table" */
-  public QueryString from(TableInfo ti) {
+  /**
+   * appends "from schema.table"
+   */
+  public QueryString from(String tableName, String as) {
     lineBreak();
-    return cat(FROM).cat(ti.fullName());
+    return cat(FROM).cat(tableName).alias(as);
+  }
+
+  /**
+   * appends "from schema.table"
+   */
+  public QueryString from(TableInfo ti) {
+    return from(ti.fullName(), null);
   }
 
   /**
@@ -954,7 +953,9 @@ public class QueryString {
     return this;
   }
 
-  /** @returns this after apprending where/and  col like/= ? */
+  /**
+   * @returns this after apprending where/and  col like/= ?
+   */
   public QueryString whereLike(ColumnAttributes col, String tableglob) {
     if (tableglob.contains("%") || tableglob.contains("_")) {//todo:1 are these universal sql glob chars?
       return where().like(col.name);
@@ -1116,7 +1117,7 @@ public class QueryString {
    * @returns this after appending 'functioname('.
    * <br> mysql doesn't tolerate space between function name and opening paren
    */
-  public QueryString function(SqlKeyword keyword,String colname) {
+  public QueryString function(SqlKeyword keyword, String colname) {
     guts.append(keyword.toString().trim());
     return Open().cat(colname).Close();
   }
@@ -1216,8 +1217,11 @@ public class QueryString {
     }
   }
 
-  public static QueryString Count(ColumnAttributes col) {
-    return Select().function(COUNT,col.name);
+  /**
+   * "where/and col.name = ?"
+   */
+  public QueryString wherePrepared(ColumnAttributes col) {
+    return where().prepared(col);
   }
 
   /**
@@ -1398,9 +1402,27 @@ public class QueryString {
     return QueryString.Clause("").where().isTrue(column);
   }
 
-  /** "where/and col.name = ?" */
-  public QueryString wherePrepared(ColumnAttributes col) {
-    return where().prepared(col);
+  /**
+   * a,b,c => x.a,x.b,x.c
+   */
+  public static class TablingIterator implements StringIterator {
+    String tablname;
+    StringIterator colnames;
+
+    public TablingIterator(final String tablname, final StringIterator colnames) {
+      this.tablname = tablname;
+      this.colnames = colnames;
+    }
+
+    @Override
+    public boolean hasNext() {
+      return colnames.hasNext();
+    }
+
+    @Override
+    public String next() {
+      return tablname + "." + colnames.next();
+    }
   }
 
   /**
@@ -1515,7 +1537,9 @@ public class QueryString {
       append(id.toString());
     }
 
-    /** end list process, @returns the QueryString the list was modifying. */
+    /**
+     * end list process, @returns the QueryString the list was modifying.
+     */
     public QueryString Close() {
       close();
       return QueryString.this;
