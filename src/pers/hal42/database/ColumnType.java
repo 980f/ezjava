@@ -52,7 +52,7 @@ public enum ColumnType {
       return MessageFormat.format("{0}({1})", toString(), size);
     } else {
       if (this == REF) {//mysql doesn't implement this part of the java specification
-        return "INT UNSIGNED";
+        return "INT UNSIGNED";//may have to boost this to bigint for some systems.
       }
       return toString();//will work for most, add exceptions for the few.
     }
@@ -77,8 +77,8 @@ public enum ColumnType {
       break;
     case INTEGER:
       return other == DECIMAL || other == TINYINT;//adding cases for fedfis optimization of column widths
-    case REF: //keys are integers, perhaps need to allow 64 bit or any size integers as well as 32
-      return other == INTEGER;
+    case REF: //keys are integers, perhaps need to allow 64 bit or any size integers as well as 32 bit
+      return other == INTEGER || other ==BIGINT;
     }
     return false;
   }
