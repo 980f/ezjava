@@ -270,6 +270,23 @@ public class DBMacros extends GenericDB {
     return getStringFromQuery(queryStr, 0);
   }
 
+  /**
+   * @returns blob content as string via getBytes, on any fault returns @param def
+   */
+  public static String blobString(Blob blob, String def){
+    try {
+      return new String(blob.getBytes(1, (int) blob.length()));
+    } catch(Exception any) {
+      return def;
+    }
+  }
+
+  /**
+   * @returns blob content as string via getBytes, on any fault returns null
+   */
+  public static String blobString(Blob blob){
+    return blobString(blob, null);
+  }
   public String getStringFromQuery(QueryString queryStr, ColumnProfile field) {
     return getStringFromQuery(queryStr, field.name());
   }

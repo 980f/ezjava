@@ -247,4 +247,19 @@ public class ByteArray {
       return i - sourceOffset; /* Found whole string. */
     }
   }
+
+  /**
+   * @returns index of next byte to match @param one starting at @param cursor.
+   * hint: you must bump the cursor to find a new entity.
+   */
+  public static int next(final byte[] content, final byte one, int cursor){
+    while(cursor < content.length) {
+      if(content[cursor] == one) {
+        return cursor;
+      } else {
+        ++cursor;
+      }
+    }
+    return -1;//none found
+  }
 }
