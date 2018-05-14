@@ -149,6 +149,9 @@ public class ThreadX {
     }
   }
 
+  /**
+   * join thread, deal with interruptedexception
+   */
   public static boolean join(Thread it, long maxwait) {
     try {
       it.join(maxwait);
