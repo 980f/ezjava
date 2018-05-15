@@ -50,7 +50,7 @@ public class Span {
    * @returns whether subString will return an actual subString as one normally thinks of that word.
    */
   public boolean isValid() {
-    return Invalid != highest && lowest != Invalid;//often the low is valid but the high is not
+    return hasEnded() && isStarted();//often the low is valid but the high is not
   }
 
   /**
@@ -89,6 +89,30 @@ public class Span {
         highest = lowest - ~skip;
         forgetLow();
       }
+    }
+  }
+
+  /**
+   * call when you know the ends were swapped
+   */
+  public void swap() {
+    int swapper = lowest;
+    lowest = highest;
+    highest = swapper;
+  }
+
+  /**
+   * @returns whether ends were swapped due to being out of order.
+   */
+  public boolean sort() {
+    if (ordered()) {
+      return false;
+    }
+    if (isValid()) {
+      swap();
+      return true;
+    } else {
+      return false;
     }
   }
 
