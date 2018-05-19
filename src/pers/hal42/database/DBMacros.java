@@ -874,13 +874,10 @@ public class DBMacros extends GenericDB {
    */
   public final boolean dropTable(TableInfo tablename) {
     try (Finally pop = dbg.Push("dropTable")) {
-      if (tableExists(tablename)) {
         //todo:1 tryspool(ddl)&&
-        dbg.WARNING("DropTable {0} update returned {1}", tablename, update(modeler.genDropTable(tablename.fullName())));
-        return !tableExists(tablename);
-      } else {
-        return true;
-      }
+      final int update = update(modeler.genDropTable(tablename.fullName()));
+      dbg.WARNING("DropTable {0} update returned {1}", tablename, update);
+      return !tableExists(tablename);
     }
   }
 //  /** checks the default schema for MINUTES before it decides whether to do something stupid ...*/
