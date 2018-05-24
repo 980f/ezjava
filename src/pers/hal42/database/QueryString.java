@@ -191,6 +191,7 @@ public class QueryString {
   }
 
   public QueryString join(TableInfo tableInfo, String alias, String joincolumnname, String otheralias) {
+    indent();
     cat(JOIN).cat(tableInfo.fullName()).alias(alias);
     if (StringX.NonTrivial(alias)) {
       alias = tableInfo.name();//postgress doesn't like redundant schema
@@ -204,6 +205,7 @@ public class QueryString {
    * alias must NOT be null else join expression will fault.
    */
   public QueryString join(String fullName, String alias, String joincolumnname, String otheralias) {
+    indent();
     cat(JOIN).cat(fullName).alias(alias);
     cat(ON).dot(alias, joincolumnname);
     cat(EQUALS).dot(otheralias, joincolumnname);
