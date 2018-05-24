@@ -547,20 +547,21 @@ public class DBMacros extends GenericDB {
         dbg.VERBOSE("Calling Statement.executeQuery() ...");
 //        preLogQuery(DBFunctionType.QUERY, queryStr, true, qn);
         if (stmt.executeQuery(qs) == null) {
-          dbg.ERROR("queryStmt() generates a null statement!");
+          dbg.ERROR("query() generates a null statement!");
         }
         dbg.VERBOSE("Done calling Statement.executeQuery().");
       } else {
-        dbg.ERROR("Cannot call queryStmt() unless connection exists!");
+        dbg.ERROR("Cannot call query() unless connection exists!");
       }
     } catch (SQLException t) { // catch throwables (out of memory errors)? +++
-      recycleConnection(t, mycon, queryStr);
+      recycleConnection(throwException ? t : null, mycon, queryStr);
       needsReattempt = true;
       if (throwException) {
         mye = t;
+        stmt = null;
       } else {
         String toLog = "Exception performing query: " + swatch.millis() + " ms = " + queryStr + "; [recycled] " + t;
-        dbg.Caught(t, toLog);
+        //if not thrown then let it die silently dbg.Caught(t, toLog);
         log(toLog);
       }
     }
@@ -602,9 +603,11 @@ public class DBMacros extends GenericDB {
 
   private boolean recycleConnection(Exception t, Connection mycon, QueryString originalQuery) {
     closeCon(mycon); // pray that nobody else is using it!  probably is hosed, either way
-    String msg = "DB.CONNCLOSED";
-//    service.PANIC(msg);
-    dbg.Caught(t, msg + ": " + originalQuery + "\n");
+
+    if (t != null) {
+      //    service.PANIC(msg);
+      dbg.Caught(t, "DB.CONNCLOSED" + ": " + originalQuery + "\n");
+    }
     return true;
   }
 
@@ -774,8 +777,8 @@ public class DBMacros extends GenericDB {
     //due to mysql we will try to trigger an exception, sigh. Need a model specific code for this.
     try {
 //todo:1   modeler.testTableExists()
-      query(QueryString.SelectAll(ti).limit(0), true, false);
-      return true;
+      Statement stmt = query(QueryString.SelectAll(ti).limit(0), false, false);
+      return stmt != null;
     } catch (SQLException mysqlisabysmal) {
       return false;
     }
