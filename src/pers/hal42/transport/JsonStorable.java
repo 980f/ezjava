@@ -114,7 +114,7 @@ public class JsonStorable extends PushedJSONParser {
               makeChild(parent);
             } else {
               //todo:1 to filter this out need a flag 'lastItem was an endWad'
-              dbg.VERBOSE("Ignoring null item, probably gratuitous comma or comma after end brace");
+              //until we find a problem this is tiresome. dbg.VERBOSE("Ignoring null item, probably gratuitous comma or comma after end brace");
             }
             return true;//might be more children
           case Done://terminate children all the way up.
