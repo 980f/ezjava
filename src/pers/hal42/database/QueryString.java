@@ -1546,5 +1546,10 @@ public class QueryString {
       close();
       return QueryString.this;
     }
+
+    public QueryString finishMarks(){
+      close();
+      return insertMarks(counter);
+    }
   }
 }

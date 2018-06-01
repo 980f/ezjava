@@ -70,7 +70,7 @@ public class StopWatch {
   /** @returns elapsed time and stops counting */
   public long Stop() {
     if (running) {
-      stopped = DateX.utcNow(); // +++ potentially make this Math.max(started, DateX.utcNow());??WHY
+      stopped = DateX.utcNow();
       running = false;
     }
     return millis();
