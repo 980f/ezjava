@@ -175,7 +175,15 @@ public class JsonOptions {
     }
 
     public static String getServerKey() {
-      return System.getenv().get("servername");
+      String fisbox = System.getenv().get("FISBOX");
+      if(StringX.NonTrivial(fisbox)){
+        return fisbox;
+      }
+      String legacy= System.getenv().get("servername");
+      if(StringX.NonTrivial(legacy)){
+        return legacy;
+      }
+      return "Set FIXBOX environment to something matching a database server key in Launcher.json";//which should blow hard.
     }
 
     /**
