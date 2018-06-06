@@ -38,6 +38,21 @@ public class DateX {
     // I exist for static reasons
   }
 
+  public static LocalDate fromArg(String yymmdd) {
+    if (yymmdd.equalsIgnoreCase("now")) {
+      return DateStamp(0);
+    }
+    int qcut = yymmdd.indexOf("-");
+    if (qcut == 0) {//leading negative is 'previous'
+      int previous = StringX.parseInt(yymmdd);
+      return DateStamp(-previous);
+    } else if (qcut >= 0) {
+      return LocalDate.from(DateTimeFormatter.ofPattern("yyyy-MM-dd").parse(yymmdd));
+    } else {
+      return LocalDate.from(DateTimeFormatter.ofPattern("yyyyMMdd").parse(yymmdd));
+    }
+  }
+
   /** zero hundred hours prior to now */
   public static LocalDate DateStamp(int daysAgo) {
     return ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(daysAgo).toLocalDate();
@@ -94,7 +109,6 @@ public class DateX {
     long minutesDiv = secondsDiv * 60;
     long hoursDiv = minutesDiv * 60;
     long daysDiv = hoursDiv * 24;
-
     long days = millis / daysDiv;
     millis = millis % daysDiv; // get the remainder
     long hours = millis / hoursDiv;
@@ -103,11 +117,7 @@ public class DateX {
     millis = millis % minutesDiv; // get the remainder
     long seconds = millis / secondsDiv;
     //millis = millis % secondsDiv; // get the remainder
-
-    return ((days > 0) ? ("" + days + " ") : "") +
-      Formatter.twoDigitFixed(hours) + ":" +
-      Formatter.twoDigitFixed(minutes) + ":" +
-      Formatter.twoDigitFixed(seconds);
+    return ((days > 0) ? ("" + days + " ") : "") + Formatter.twoDigitFixed(hours) + ":" + Formatter.twoDigitFixed(minutes) + ":" + Formatter.twoDigitFixed(seconds);
   }
 
   public static boolean NonTrivial(Date d) {
