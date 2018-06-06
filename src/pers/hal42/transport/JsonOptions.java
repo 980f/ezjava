@@ -183,7 +183,7 @@ public class JsonOptions {
       if(StringX.NonTrivial(legacy)){
         return legacy;
       }
-      return "Set FIXBOX environment to something matching a database server key in Launcher.json";//which should blow hard.
+      return "Set FISBOX environment to something matching a database server key in Launcher.json";//which should blow hard.
     }
 
     /**
