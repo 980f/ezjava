@@ -11,13 +11,20 @@ import pers.hal42.lang.StringX;
  */
 public class SimpleCsvIterator implements StringIterator {
   protected String line;
-  Span span = new Span();
+  final Span span = new Span();
   private final boolean inReverse;
   protected final char comma;
 
   public SimpleCsvIterator(boolean inReverse, char comma, String line) {
     this.inReverse = inReverse;
     this.comma = comma;
+    reload(line);
+  }
+
+  /**
+   * reuse object for new data but with same settings for parsing mode
+   */
+  public void reload(String line){
     this.line = StringX.TrivialDefault(line, "");
     span.highest = this.line.length();
     span.lowest = 0;
