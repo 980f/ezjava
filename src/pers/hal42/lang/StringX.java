@@ -49,6 +49,7 @@ public class StringX {
       return worker;//0 in is 0 out
     }
     boolean signed = firstChar == '-' || firstChar == '+';
+    int insertionpoint = signed ? 1 : 0;
     if (powerof10 > 0) {//move dp to the right or add zeroes
       if (dp >= 0) {
 //        throw new IllegalArgumentException("not yet implemented");
@@ -68,7 +69,7 @@ public class StringX {
         }
       }
     } else if (powerof10 < 0) { //move dp to left, might have to add 0.
-      if (dp >= -powerof10) {//then it exists and we can move it
+      if(dp - insertionpoint >= -powerof10) {//then it exists and we can move it
         worker.deleteCharAt(dp);
         worker.insert(dp + powerof10, '.');
       } else if (dp < 0) {
@@ -77,18 +78,17 @@ public class StringX {
         } else {
           int need = -(dp + powerof10);
           while (need-- > 0) {
-            worker.insert(0, '0');
+            worker.insert(insertionpoint, '0');
           }
-          worker.insert(0, "0.");
-
+          worker.insert(insertionpoint, "0.");
         }
       } else {//have dp but need leading digits
-        int need = -(dp + powerof10);
+        int need = -(dp - insertionpoint + powerof10);
         worker.deleteCharAt(dp);
         while (need-- > 0) {
-          worker.insert(0, '0');
+          worker.insert(insertionpoint, '0');
         }
-        worker.insert(0, "0.");
+        worker.insert(insertionpoint, "0.");
       }
     }
     return worker;
