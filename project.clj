@@ -8,7 +8,7 @@
     [org.jsoup/jsoup "1.11.3"]
     [org.jetbrains/annotations "15.0"]
   ]
-  :omit-source true
+  :omit-source false
   :java-source-paths ["src"]
   :target-path "target/%s"
   :profiles {:uberjar {:aot :all}})
