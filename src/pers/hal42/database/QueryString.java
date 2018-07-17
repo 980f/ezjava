@@ -1470,6 +1470,10 @@ public class QueryString {
       return this;
     }
 
+    public Lister setValue(ColumnAttributes colum, Object value) {
+      return setValue(colum.name, value);
+    }
+
     /**
      * append ,this=that with some intelligence on wrapping that
      */
