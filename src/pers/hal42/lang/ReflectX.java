@@ -300,7 +300,9 @@ public class ReflectX {
     return null;
   }
 
-  /** constructs an object IFFI a public static somemethod(String) exists */
+  /**
+   * constructs an object IFFI a public static somemethod(String) exists
+   */
   public static <T> T enumObject(Class<? extends T> fclaz, String string) {
     if (string == null) {
       return null;
@@ -554,7 +556,7 @@ public class ReflectX {
   }
 
   /**
-   * @returns name of @param child within object @param parent, null if not an accessible child
+   * @returns genealogy of @param child within object @param parent, null if not an accessible child
    */
   public static <T> Field[] findParentage(Object root, T child) {
     if (child == root) {
@@ -685,29 +687,41 @@ public class ReflectX {
       return false;
     }
 
+    private static int recursion = 0;
+
     public boolean hasNext() {
-      if (nested != null) {
-        if (nested.hasNext()) {
-          return true;
-        } else {
-          nested = null;
+//      if (++recursion > 5) {
+//        ErrorLogStream.Global().Location();
+//      }
+      try {
+        if (nested != null) {
+          if (nested.hasNext()) {
+            return true;
+          } else {
+            nested = null;
+          }
         }
-      }
-      while (lookAhead == null && fi-- > 0) {//while we haven't found one and there are still some to look at
-        lookAhead = fields[fi];
-        if (isScalar(lookAhead)) {
-          return true;
-        }
-        if (isNormal(lookAhead)) {
-          nested = new FieldWalker(lookAhead.getType());
-          if (nested.hasNext()) {//almost always true.
+        while (lookAhead == null && fi-- > 0) {//while we haven't found one and there are still some to look at
+          lookAhead = fields[fi];
+          if (isScalar(lookAhead)) {
             return true;
           }
-          nested = null;
+          if (isNormal(lookAhead)) {
+            final Class<?> type = lookAhead.getType();
+            if (!type.getName().startsWith("java")) {//java classes have loops and we are only interested in finding things we can annotate.
+              nested = new ReflectX.FieldWalker(type);
+              if (nested.hasNext()) {//almost always true.
+                return true;
+              }
+              nested = null;
+            }
+          }
+          lookAhead = null;
         }
-        lookAhead = null;
+        return false;
+      } finally {
+        --recursion;
       }
-      return false;
     }
 
     /**
@@ -778,6 +792,32 @@ public class ReflectX {
         return nested.getObject(root);
       }
       return root;
+    }
+  }
+
+  public static class AnnotationWalker extends ReflectX.FieldWalker {
+    final Class<? extends Annotation> filter;
+    final boolean all;
+
+    public AnnotationWalker(final Class ref, Class<? extends Annotation> filter) {
+      super(ref);
+      this.filter = filter;
+      all = pers.hal42.lang.ReflectX.<java.lang.annotation.Annotation>getAnnotation(ref, filter) != null;
+    }
+
+    @Override
+    public boolean hasNext() {
+      while(super.hasNext()) {//while lookahead exists
+        if (lookAhead.getAnnotation(filter) != null || (all && !ReflectX.ignorable(lookAhead))) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    @Override
+    public Field next() {
+      return super.next();
     }
   }
 //

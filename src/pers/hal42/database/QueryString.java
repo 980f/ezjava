@@ -137,6 +137,15 @@ public class QueryString {
     return new QueryString().cat(DELETE).cat(FROM).cat(ti.fullName());
   }
 
+
+  /**
+   * @returns new query list maker starting "insert  table.name set " for multi false, "insert table.name (" for multi==true
+   */
+  public static pers.hal42.database.QueryString.Lister Insert(pers.hal42.database.TableInfo ti, boolean multi) {
+    return Insert(ti).startList(multi?"(":SET.toString(),multi?")":"");
+  }
+
+
   /**
    * @returns new query starting "insert  table sch.tab"
    */
