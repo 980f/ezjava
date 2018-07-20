@@ -5,7 +5,7 @@ import java.util.Stack;
 /**
  * Created by Andy on 5/25/2017.
  * <p>
- * Intended for an argument list in which some members are instructions to include aother list.
+ * Intended for an argument list in which some members are instructions to include another list.
  * The determination that a member is an include reference is outside of this class.
  * Sensing 'include loops' is also outside the domain of this class.
  * This class discards exhausted iterators, a loop checking one has to hold on to them (or the info used to create them) to look for multi-level loops linked by last member of a list.
@@ -38,7 +38,7 @@ public class FancyArgIterator implements StringIterator {
   }
 
   /** iteration will exhaust the @param pusher then return to using the present one. */
-  public void push(StringIterator pusher) {
+  public FancyArgIterator push(StringIterator pusher) {
     if (pusher.hasNext()) {
       if (top != null && top.hasNext()) {//by testing hasNext we can replace instead of pushing an exhausted iterator
         if (nesters == null) {
@@ -48,6 +48,7 @@ public class FancyArgIterator implements StringIterator {
       }
       top = pusher;
     }
+    return this;
   }
 
   /** makes hasNext() return false, frees and resources */

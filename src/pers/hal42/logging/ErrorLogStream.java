@@ -540,7 +540,7 @@ public class ErrorLogStream implements AtExit, Finally.Lambda {
   }
 
   protected static String extendedInfo(Throwable t) {
-    if ((t != null) && (t instanceof SQLException)) {
+    if ((t instanceof SQLException)) {
       SQLException e = (SQLException) t;
       return MessageFormat.format("\n\tSQLState: {0} \n\tSQLMessage: {1}\tSQLVendor:{2}", e.getSQLState(), e.getMessage(), e.getErrorCode());
     }

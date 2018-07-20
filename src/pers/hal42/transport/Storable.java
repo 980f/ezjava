@@ -45,7 +45,7 @@ public class Storable{
   }
 
   /**
-   * globally rooted tree
+   * globally rooted tree  (name from Norse mytholoy)
    */
   private static Storable Yggdrasil = new Storable("/");
 

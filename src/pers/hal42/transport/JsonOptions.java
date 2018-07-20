@@ -9,8 +9,6 @@ import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.Properties;
 
-import static pers.hal42.lang.StringX.TrivialDefault;
-
 /**
  * a storable node which is associated with a file.
  * Extend from this as the concrete class name is used to find the file.
@@ -167,11 +165,11 @@ public class JsonOptions {
    * This first pass uses a hardcoded idiosyncratic key and only supports String values.
    * A default is set in the constructor so that all references easily share that.
    */
-  public static class SystemSensitive extends LinearMap<String, String> {
-    protected String defawlt;
+  public static class SystemSensitive<T> extends LinearMap<String, T> {
+    protected T defawlt;
 
-    public SystemSensitive(String defawlt) {
-      this.defawlt = TrivialDefault(defawlt);
+    public SystemSensitive(T defawlt) {
+      this.defawlt = defawlt;
     }
 
     public static String getServerKey() {
@@ -189,8 +187,8 @@ public class JsonOptions {
     /**
      * @returns system indexed value
      */
-    public String value() {
-      String item = get(getServerKey());
+    public T value() {
+      T item = get(getServerKey());
       if (item == null) {
         item = nth(0);
       }
@@ -206,7 +204,7 @@ public class JsonOptions {
      */
     @Override
     public String toString() {
-      return value();
+      return String.valueOf(value());
     }
   }
 }
