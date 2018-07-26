@@ -41,6 +41,8 @@ enum DBFunctionType {
 
 public class DBMacros extends GenericDB {
 
+  private static final TableInfo InfoTable = new SimpleTableInfo("information_schema", "tables");
+
   public enum Op {
     FAILED, ALREADY, DONE;
 
@@ -68,13 +70,17 @@ public class DBMacros extends GenericDB {
     return this.doSimpleAction(query.toString(), null);
   }
 
-  /** @returns last automatically generated value, such as for an auto primary key */
+  /**
+   * @returns last automatically generated value, such as for an auto primary key
+   */
   public int getLastAuto() {
     //mysql version:
     return getIntFromQuery(QueryString.Select().cat("LAST_INSERT_ID()"));
   }
 
-  /** this executes profoundly poorly on mysql! It takes *minutes* */
+  /**
+   * this executes profoundly poorly on mysql! It takes *minutes*
+   */
   public TableInfoList getTableList(TableInfo tableInfo) {
     // get the list of all tables in the new database
     TableInfoList tables = new TableInfoList();
@@ -273,10 +279,10 @@ public class DBMacros extends GenericDB {
   /**
    * @returns blob content as string via getBytes, on any fault returns @param def
    */
-  public static String blobString(Blob blob, String def){
+  public static String blobString(Blob blob, String def) {
     try {
       return new String(blob.getBytes(1, (int) blob.length()));
-    } catch(Exception any) {
+    } catch (Exception any) {
       return def;
     }
   }
@@ -284,9 +290,10 @@ public class DBMacros extends GenericDB {
   /**
    * @returns blob content as string via getBytes, on any fault returns null
    */
-  public static String blobString(Blob blob){
+  public static String blobString(Blob blob) {
     return blobString(blob, null);
   }
+
   public String getStringFromQuery(QueryString queryStr, ColumnProfile field) {
     return getStringFromQuery(queryStr, field.name());
   }
@@ -308,7 +315,9 @@ public class DBMacros extends GenericDB {
     return str1;
   }
 
-  /** @returns the first field of the first recordType of @param query, null if anything goes wrong. */
+  /**
+   * @returns the first field of the first recordType of @param query, null if anything goes wrong.
+   */
   public String getStringFromQuery(String query) {
     try (Statement stmt = makeStatement()) {
       if (stmt.execute(query)) {
@@ -522,12 +531,16 @@ public class DBMacros extends GenericDB {
     return StringX.parseDouble(getStringFromRS(column, myrs));
   }
 
-  /** @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure */
+  /**
+   * @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure
+   */
   public Statement query(QueryString queryStr, boolean throwException) throws Exception {
     return query(queryStr, throwException, true /*canReattempt*/);
   }
 
-  /** @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure. @param canReattempt is whether to try to deal with exceptions not related to the query string */
+  /**
+   * @returns an executed statement for the sql in @param queryStr, @param throwException is whether to allow exceptions else return null on failure. @param canReattempt is whether to try to deal with exceptions not related to the query string
+   */
   private Statement query(QueryString queryStr, boolean throwException, boolean canReattempt) throws SQLException {
 //    checkDBthreadSelect();
     Statement stmt = null;
@@ -611,7 +624,9 @@ public class DBMacros extends GenericDB {
     return true;
   }
 
-  /** @returns an executed statement for the sql in @param queryStr, null on failure */
+  /**
+   * @returns an executed statement for the sql in @param queryStr, null on failure
+   */
   public Statement query(QueryString queryStr) {
     try {
       return query(queryStr, false);
@@ -761,7 +776,9 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  /** used by getTableList so that we can watch it execute, no one else should use this. */
+  /**
+   * used by getTableList so that we can watch it execute, no one else should use this.
+   */
   private String getTableInfo(ResultSet rs, String info) {
     try (Finally pop = dbg.Push("getTableInfo")) {
       dbg.VERBOSE("Calling ResultSet.getString() regarding: " + info + "...");
@@ -772,13 +789,31 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  /** check whether a table exists. If you put wildcards in @param ti all this will tell you is that something like that exists. */
+  public PreparedStatementInserter psi(QueryString qry, int batchSize) throws SQLException {
+    PreparedStatementInserter psier = new PreparedStatementInserter(makePreparedStatement(qry.toString()));
+    psier.batchSize = batchSize;
+    return psier;
+  }
+
+  public PreparedStatementInserter psi(QueryString qry) throws SQLException {
+    return psi(qry, 1);
+  }
+
+  public static boolean Ok(ResultSet rs) throws SQLException {
+    return rs != null && rs.next();
+  }
+
+
+  /**
+   * check whether a table exists. If you put wildcards in @param ti all this will tell you is that something like that exists.
+   */
   public boolean tableExists(TableInfo ti) {
-    //due to mysql we will try to trigger an exception, sigh. Need a model specific code for this.
-    try {
-//todo:1   modeler.testTableExists()
-      Statement stmt = query(QueryString.SelectAll(ti).limit(0), false, false);
-      return stmt != null;
+    QueryString qry = QueryString.SelectAll(InfoTable).wherePrepared("table_schema", "table_name");
+
+    try (PreparedStatementInserter psi = psi(qry)) {
+      psi.setMany(ti.schema(), ti.name());
+      ResultSet rs = psi.execute();
+      return Ok(rs);//if there is a record then the table exists
     } catch (SQLException mysqlisabysmal) {
       return false;
     }
@@ -877,7 +912,7 @@ public class DBMacros extends GenericDB {
    */
   public final boolean dropTable(TableInfo tablename) {
     try (Finally pop = dbg.Push("dropTable")) {
-        //todo:1 tryspool(ddl)&&
+      //todo:1 tryspool(ddl)&&
       final int update = update(modeler.genDropTable(tablename.fullName()));
       dbg.WARNING("DropTable {0} update returned {1}", tablename, update);
       return !tableExists(tablename);
@@ -1419,7 +1454,9 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  /** @returns integer from executing @param selector, -1 on some of the faults. If -1 is a legitimate response and not acceptible on error then don't use this convenience method. */
+  /**
+   * @returns integer from executing @param selector, -1 on some of the faults. If -1 is a legitimate response and not acceptible on error then don't use this convenience method.
+   */
   public int getIntFrom(PreparedStatement selector, int whichcolumn) throws SQLException {
     final ResultSet rs = selector.executeQuery();
     return rs.next() ? getIntFromRS(whichcolumn, rs) : BadIndex;
@@ -1511,7 +1548,9 @@ public class DBMacros extends GenericDB {
     //add more Consumer features as needed
   }
 
-  /** insert value[s] and run a query that of a nature that never generates a resultset. @returns whether operation executed, any results or updatecount are lost. */
+  /**
+   * insert value[s] and run a query that of a nature that never generates a resultset. @returns whether operation executed, any results or updatecount are lost.
+   */
   public boolean doPreparedDML(String query, SqlConsumer<PreparedStatement> preparer) {
     try (PreparedStatement pst = makePreparedStatement(query)) {
       if (preparer != null) {
@@ -1636,7 +1675,9 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  /** @returns sum of non-error-code int returns from executing a batch statement */
+  /**
+   * @returns sum of non-error-code int returns from executing a batch statement
+   */
   public static int doBatch(Statement pst) throws SQLException {
     int[] qty = pst.executeBatch();
     int batchsum = 0;
@@ -1745,7 +1786,9 @@ public class DBMacros extends GenericDB {
     }
   }
 
-  /** @returns result set from <b>already executed</b> @param stmt, or null with lots of diagnostic spew */
+  /**
+   * @returns result set from <b>already executed</b> @param stmt, or null with lots of diagnostic spew
+   */
   public static ResultSet getResultSet(Statement stmt) {
     if (stmt != null) {
       try (Finally pop = dbg.Push("getResultSet()")) {
