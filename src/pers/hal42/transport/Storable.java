@@ -787,7 +787,7 @@ public class Storable{
             }
           }
         } catch(Exception ignored) {
-          dbg.ERROR("Trying to get type of map gave:{0}", ignored);
+          dbg.ERROR("Trying to get type of map for {1} gave:{0}", ignored, field.getName());
         }
       }
 
@@ -1228,29 +1228,30 @@ public class Storable{
 
     public Generator(Class glass){
       this.glass = glass;
+      if(glass != null) {
+        for(Arguable arg : Arguable.values()) {
+          arg2use = arg;
+          try {
+            switch(arg2use) {
+              case storied:
+                factory = glass.getConstructor(Storable.class);
+                return;
+              case stringy:
+                factory = glass.getConstructor(String.class);
+                return;
+              case numbing:
+                factory = glass.getConstructor(Double.class);
+                return;
+              case integral:
+                factory = glass.getConstructor(Integer.class);
+                return;
+              case nullary:
+                factory = glass.getConstructor();
+                return;
+            }
+          } catch(NoSuchMethodException ignored) {
 
-      for(Arguable arg : Arguable.values()) {
-        arg2use = arg;
-        try {
-          switch(arg2use) {
-            case storied:
-              factory = glass.getConstructor(Storable.class);
-              return;
-            case stringy:
-              factory = glass.getConstructor(String.class);
-              return;
-            case numbing:
-              factory = glass.getConstructor(Double.class);
-              return;
-            case integral:
-              factory = glass.getConstructor(Integer.class);
-              return;
-            case nullary:
-              factory = glass.getConstructor();
-              return;
           }
-        } catch(NoSuchMethodException ignored) {
-
         }
       }
 
